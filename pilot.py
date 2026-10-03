@@ -118,6 +118,8 @@ def main():
     p.add_argument('--override-fast-interval',action='store_true',
                     help='Allow --interval below the NVML counter-telescoping floor (0.3s). Logs a warning.')
     p.add_argument('--threads',type=int,default=4); p.add_argument('--warmup',type=float,default=3)
+    p.add_argument('--codecarbon',action='store_true',help='Run CodeCarbon concurrently with the RAPL/NVML reads on each active window.')
+    p.add_argument('--codecarbon-country',default='CZE',help='ISO code for CodeCarbon offline grid-intensity lookup (energy figure itself is country-independent).')
     p.add_argument('--checkpoint'); a=p.parse_args()
     out=Path(a.out); out.mkdir(parents=True,exist_ok=False)
     env=dict(platform=platform.platform(),cpu=platform.processor(),arguments=vars(a),
@@ -165,7 +167,17 @@ def main():
                                 start=time.perf_counter()
                                 while time.perf_counter()-start<a.warmup: work(); sync()
                             else: time.sleep(a.warmup) # same declared settling delay, no thermal equilibrium claim
+                            cc_tracker=None
+                            if a.codecarbon and phase.startswith('a'):
+                                from codecarbon import OfflineEmissionsTracker
+                                cc_tracker=OfflineEmissionsTracker(country_iso_code=a.codecarbon_country,
+                                                                    log_level='error',save_to_file=False,
+                                                                    measure_power_secs=max(a.interval,1))
+                                cc_tracker.start()
                             result=window(sensor,seconds,a.interval,work if phase.startswith('a') else None,sync)
+                            if cc_tracker is not None:
+                                cc_tracker.stop()
+                                result['codecarbon_energy_j']=cc_tracker.final_emissions_data.energy_consumed*3.6e6
                             row=dict(device=a.device,size=size,batch=batch,requested_s=seconds,repeat=rep,phase=phase,**result)
                             rows.append({k:v for k,v in row.items() if k!='trace'})
                             with (out/'raw.jsonl').open('a') as f: f.write(json.dumps(row)+'\n')

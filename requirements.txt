@@ -2,3 +2,4 @@ torch==2.5.1
 torchvision==0.20.1
 numpy==1.26.4
 nvidia-ml-py==12.560.30
+codecarbon==3.3.1
