@@ -3,7 +3,7 @@ import argparse, csv, glob, json, math, os, platform, random, statistics, sys, t
 from pathlib import Path
 
 class Sensor:
-    def __init__(self, device):
+    def __init__(self, device, legacy_cumulative=False):
         self.device = device
         if device == 'cpu':
             paths = glob.glob('/sys/class/powercap/intel-rapl:*/energy_uj')
@@ -15,10 +15,17 @@ class Sensor:
             import pynvml as nv
             self.nv = nv; nv.nvmlInit(); self.handle = nv.nvmlDeviceGetHandleByIndex(0)
             self.power_cap_w = nv.nvmlDeviceGetEnforcedPowerLimit(self.handle) / 1000
-            try:
-                nv.nvmlDeviceGetTotalEnergyConsumption(self.handle)
-                self.backend = 'NVML cumulative energy'; self.ranges = [None]
-            except nv.NVMLError_NotSupported:
+            # Default is nvmlDeviceGetPowerUsage (sampled power, trapezoidal-integrated): validated
+            # 2026-10-03 against live telemetry to within -0.02W (results/active_power_baseline_investigation.md).
+            # nvmlDeviceGetTotalEnergyConsumption (cumulative counter) over-reports active-phase power
+            # by ~30% on this GPU -- kept only behind --legacy-cumulative-counter for reproducing old numbers.
+            if legacy_cumulative:
+                try:
+                    nv.nvmlDeviceGetTotalEnergyConsumption(self.handle)
+                    self.backend = 'NVML cumulative energy (legacy, --legacy-cumulative-counter)'; self.ranges = [None]
+                except nv.NVMLError_NotSupported:
+                    self.backend = 'NVML sampled power'; self.ranges = []
+            else:
                 self.backend = 'NVML sampled power'; self.ranges = []
     def read(self):
         if self.device == 'cpu': return [float(p.read_text()) / 1e6 for p in self.paths]
@@ -161,6 +168,11 @@ def main():
                     help='Allow --interval faster than the RAPL/perf-events ceiling (100Hz / 0.01s). Logs a warning.')
     p.add_argument('--allow-concurrent-gpu',action='store_true',
                     help='Allow measurement to proceed even if another process is using the GPU. Logs a warning.')
+    p.add_argument('--legacy-cumulative-counter',action='store_true',
+                    help='Use nvmlDeviceGetTotalEnergyConsumption instead of the validated default '
+                         'nvmlDeviceGetPowerUsage. Confirmed 2026-10-03 to over-report active-phase power '
+                         'by ~30%% on this GPU (results/active_power_baseline_investigation.md). Only for '
+                         'reproducing/citing pre-correction numbers. Logs a warning.')
     p.add_argument('--threads',type=int,default=4); p.add_argument('--warmup',type=float,default=3)
     p.add_argument('--codecarbon',action='store_true',help='Run CodeCarbon concurrently with the RAPL/NVML reads on each active window.')
     p.add_argument('--codecarbon-country',default='CZE',help='ISO code for CodeCarbon offline grid-intensity lookup (energy figure itself is country-independent).')
@@ -179,7 +191,12 @@ def main():
         check_interval_floor(a.device=='cpu', a.interval, 0.01, a.override_fast_rapl_interval, '--override-fast-rapl-interval',
             f'--interval {a.interval}s exceeds the RAPL/perf-events sampling ceiling (100Hz / 0.01s, plan checklist item 4).')
         platform_profile=check_platform_profile()
-        sensor=Sensor(a.device)
+        if a.device=='cuda' and a.legacy_cumulative_counter:
+            print('WARNING: --legacy-cumulative-counter selected; nvmlDeviceGetTotalEnergyConsumption is '
+                  'known to over-report active-phase power by ~30% on this GPU (see '
+                  'results/active_power_baseline_investigation.md). Use only to reproduce/cite pre-correction numbers.',
+                  file=sys.stderr)
+        sensor=Sensor(a.device, legacy_cumulative=a.legacy_cumulative_counter)
         import torch, torchvision
         from torchvision import transforms
         torch.manual_seed(2026); random.seed(2026); torch.set_num_threads(a.threads)
