@@ -1,7 +1,7 @@
-import os, sys, types, unittest
+import os, sys, tempfile, types, unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from pilot import integrate, summarize, check_interval_floor, check_no_concurrent_gpu
+from pilot import integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile
 
 class MathTests(unittest.TestCase):
     def test_wrap(self):
@@ -58,5 +58,18 @@ class ConcurrentGpuGuardTests(unittest.TestCase):
     def test_cpu_device_is_noop(self):
         sensor=FakeSensor('cpu',[12345])
         check_no_concurrent_gpu(sensor,allow=False) # RAPL/CPU path unaffected, must not raise
+
+class PlatformProfileGuardTests(unittest.TestCase):
+    def _path(self, value):
+        f=tempfile.NamedTemporaryFile(mode='w',delete=False,suffix='.profile')
+        f.write(value); f.close()
+        self.addCleanup(os.unlink, f.name)
+        return Path(f.name)
+    def test_performance_passes(self):
+        self.assertEqual(check_platform_profile(self._path('performance')),'performance')
+    def test_other_profile_rejected(self):
+        with self.assertRaises(RuntimeError): check_platform_profile(self._path('balanced'))
+    def test_missing_path_rejected(self):
+        with self.assertRaises(RuntimeError): check_platform_profile(Path('/nonexistent/platform_profile'))
 
 if __name__=='__main__': unittest.main()

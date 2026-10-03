@@ -88,6 +88,7 @@ INT8 is also narrower than the proposal assumed: works only via `torchvision.mod
 11. Phase separation: inference energy isolated from data-loading/post-processing.
 12. Raw traces retained, not just summary statistics.
 13. **No concurrent GPU jobs during any measurement run.**
+14. **Power profile locked to performance via ACPI `platform_profile`, verified and logged per run.**
 
 ---
 

@@ -51,13 +51,25 @@ of every `window()` call when `--device cuda`. Queries
 harness's own is using the GPU; `--allow-concurrent-gpu` permits it and logs a
 warning. No-op for `--device cpu`.
 
+## Platform power-profile guard
+
+Checklist item 14: the OS power profile is a controlled variable for the whole
+project. Setup: `echo performance | sudo tee /sys/firmware/acpi/platform_profile`
+— standard ACPI interface, no `legion_laptop` kernel module needed/available on
+this kernel build (7.0.0-31-generic). Enforced in `pilot.py`'s
+`check_platform_profile()`, called from `main()` before any measurement run
+starts: aborts (no override) unless `/sys/firmware/acpi/platform_profile` reads
+exactly `performance`. The value is logged into `environment.json` for every
+run, alongside the NVIDIA driver version and CPU governor.
+
 ## What's here
 
 - `pilot.py` — RAPL+NVML paired measurement logic, idle-baseline capture, the
   interval floor/ceiling and concurrent-GPU guard above.
 - `tests/test_pilot.py` — unit tests: the original 4 (counter wrap, power
   integration, counter-reset rejection, idle-duration/detection) plus the
-  interval-floor and concurrent-GPU-guard tests added 2026-10-03.
+  interval-floor, concurrent-GPU-guard, and platform-profile-guard tests added
+  2026-10-03.
 - `docs/` — the Phase 1 execution plan and Stage 1 implementation brief this repo
   is built against.
 

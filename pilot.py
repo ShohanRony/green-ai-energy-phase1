@@ -40,6 +40,16 @@ def check_no_concurrent_gpu(sensor, allow=False):
     if not allow: raise RuntimeError(msg+' Pass --allow-concurrent-gpu to proceed anyway.')
     print(f'WARNING: {msg}', file=sys.stderr)
 
+def check_platform_profile(path=Path('/sys/firmware/acpi/platform_profile')):
+    """Checklist item 14: abort if the ACPI platform power profile isn't locked to performance."""
+    if not path.exists():
+        raise RuntimeError(f'{path} not found; cannot verify platform power profile is locked to performance.')
+    value = path.read_text().strip()
+    if value != 'performance':
+        raise RuntimeError(f"Platform power profile is '{value}', not 'performance' — this is a controlled "
+                            f'variable for the whole project. Set it with: echo performance | sudo tee {path}')
+    return value
+
 def integrate(trace, ranges):
     energy = 0.
     for (t0, x0), (t1, x1) in zip(trace, trace[1:]):
@@ -159,6 +169,7 @@ def main():
             f'this RTX 3050; 20ms implies ~300W against a 60W cap).')
         check_interval_floor(a.device=='cpu', a.interval, 0.01, a.override_fast_rapl_interval, '--override-fast-rapl-interval',
             f'--interval {a.interval}s exceeds the RAPL/perf-events sampling ceiling (100Hz / 0.01s, plan checklist item 4).')
+        platform_profile=check_platform_profile()
         sensor=Sensor(a.device)
         import torch, torchvision
         from torchvision import transforms
@@ -177,6 +188,7 @@ def main():
                    gpu=torch.cuda.get_device_name(0) if a.device=='cuda' else None,
                    nvidia_driver_version=sensor.nv.nvmlSystemGetDriverVersion() if a.device=='cuda' else None,
                    cpu_governors=sorted({Path(p).read_text().strip() for p in gov_paths}) if gov_paths else None,
+                   platform_profile=platform_profile,
                    weights='checkpoint' if a.checkpoint else 'seeded random weights: timing pilot only')
         (out/'environment.json').write_text(json.dumps(env,indent=2))
         with torch.inference_mode():
