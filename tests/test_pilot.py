@@ -1,7 +1,7 @@
 import sys, unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from pilot import integrate, summarize
+from pilot import integrate, summarize, check_interval_floor
 
 class MathTests(unittest.TestCase):
     def test_wrap(self):
@@ -25,5 +25,17 @@ class MathTests(unittest.TestCase):
         self.assertTrue(result['candidate_for_confirmation'])
         self.assertAlmostEqual(rows[1]['above_idle_fraction'],.5)
         self.assertEqual(summarize(rows[:4]),[])
+
+class IntervalFloorTests(unittest.TestCase):
+    def test_rapl_ceiling_default_rejects(self):
+        with self.assertRaises(ValueError): check_interval_floor(True,0.005,0.01,False,'--x','reason')
+    def test_rapl_ceiling_override_allows(self):
+        check_interval_floor(True,0.005,0.01,True,'--x','reason') # must not raise
+    def test_rapl_ceiling_skipped_on_other_device(self):
+        check_interval_floor(False,0.005,0.01,False,'--x','reason') # device doesn't match: no-op
+    def test_nvml_floor_default_rejects(self):
+        with self.assertRaises(ValueError): check_interval_floor(True,0.02,0.3,False,'--y','reason')
+    def test_nvml_floor_override_allows(self):
+        check_interval_floor(True,0.02,0.3,True,'--y','reason') # must not raise
 
 if __name__=='__main__': unittest.main()

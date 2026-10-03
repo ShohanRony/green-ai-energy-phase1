@@ -24,6 +24,12 @@ class Sensor:
         if self.ranges: return [self.nv.nvmlDeviceGetTotalEnergyConsumption(self.handle) / 1000]
         return [self.nv.nvmlDeviceGetPowerUsage(self.handle) / 1000]
 
+def check_interval_floor(device_matches, interval, floor, override, flag_name, reason):
+    """Reject (or warn-and-allow, behind an override flag) a polling interval below a measured floor."""
+    if not device_matches or interval>=floor: return
+    if not override: raise ValueError(f'{reason} Pass {flag_name} to force it anyway.')
+    print(f'WARNING: {reason}', file=sys.stderr)
+
 def integrate(trace, ranges):
     energy = 0.
     for (t0, x0), (t1, x1) in zip(trace, trace[1:]):
@@ -121,6 +127,8 @@ def main():
     p.add_argument('--repeats',type=int,default=6); p.add_argument('--interval',type=float,default=.4)
     p.add_argument('--override-fast-interval',action='store_true',
                     help='Allow --interval below the NVML counter-telescoping floor (0.3s). Logs a warning.')
+    p.add_argument('--override-fast-rapl-interval',action='store_true',
+                    help='Allow --interval faster than the RAPL/perf-events ceiling (100Hz / 0.01s). Logs a warning.')
     p.add_argument('--threads',type=int,default=4); p.add_argument('--warmup',type=float,default=3)
     p.add_argument('--codecarbon',action='store_true',help='Run CodeCarbon concurrently with the RAPL/NVML reads on each active window.')
     p.add_argument('--codecarbon-country',default='CZE',help='ISO code for CodeCarbon offline grid-intensity lookup (energy figure itself is country-independent).')
@@ -133,13 +141,11 @@ def main():
     rows=[]
     try:
         if min(a.windows)<=0 or min(a.batches)<=0 or a.interval<=0: raise ValueError('Positive durations/batches required')
-        if a.device=='cuda' and a.interval<0.3:
-            if not a.override_fast_interval:
-                raise ValueError(f'--interval {a.interval}s is below the measured NVML counter-telescoping '
-                                  f'floor (0.3-0.5s on this RTX 3050; 20ms implies ~300W against a 60W cap). '
-                                  f'Pass --override-fast-interval to force it anyway.')
-            print(f'WARNING: --interval {a.interval}s is below the 0.3s NVML floor; '
-                  f'readings will be inflated by the counter-telescoping artifact.', file=sys.stderr)
+        check_interval_floor(a.device=='cuda', a.interval, 0.3, a.override_fast_interval, '--override-fast-interval',
+            f'--interval {a.interval}s is below the measured NVML counter-telescoping floor (0.3-0.5s on '
+            f'this RTX 3050; 20ms implies ~300W against a 60W cap).')
+        check_interval_floor(a.device=='cpu', a.interval, 0.01, a.override_fast_rapl_interval, '--override-fast-rapl-interval',
+            f'--interval {a.interval}s exceeds the RAPL/perf-events sampling ceiling (100Hz / 0.01s, plan checklist item 4).')
         sensor=Sensor(a.device)
         import torch, torchvision
         from torchvision import transforms

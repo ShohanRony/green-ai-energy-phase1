@@ -31,13 +31,23 @@ Confirmed-reproducible counter-telescoping artifact on this RTX 3050: polling
 The floor is enforced in code, not just documented: `--interval` defaults to 0.4s,
 and any `--device cuda` run with `--interval < 0.3` raises unless
 `--override-fast-interval` is passed, which prints a warning and proceeds anyway.
+Enforced in `pilot.py`'s `check_interval_floor()`, called from `main()`.
+
+## RAPL sampling-rate ceiling
+
+Checklist item 4's other half: RAPL/CPU reads via perf-events must never sample
+faster than 100Hz (interval < 0.01s). Enforced the same way, same function:
+`pilot.py`'s `check_interval_floor()`, called a second time from `main()` for
+`--device cpu`. Default rejects; `--override-fast-rapl-interval` allows it and
+logs a warning.
 
 ## What's here
 
 - `pilot.py` — RAPL+NVML paired measurement logic, idle-baseline capture, the
-  interval floor above.
-- `tests/test_pilot.py` — the 4 unit tests ported unchanged (counter wrap, power
-  integration, counter-reset rejection, idle-duration/detection).
+  interval floor/ceiling above.
+- `tests/test_pilot.py` — the 4 original unit tests (counter wrap, power
+  integration, counter-reset rejection, idle-duration/detection) plus the
+  interval-floor/ceiling tests added 2026-10-03.
 - `docs/` — the Phase 1 execution plan and Stage 1 implementation brief this repo
   is built against.
 
