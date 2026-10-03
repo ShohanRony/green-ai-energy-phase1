@@ -1,5 +1,19 @@
 # green-ai-energy-phase1
 
+> **⚠️ Superseded-data notice (2026-10-03):** every GPU energy number collected
+> in this project before commit `672ce93` — both prior Stage 1 exit tests, the
+> original NVML interval sweep, the `idle_after` and concurrent-GPU
+> investigations' raw data, and **the original `research/energy-pilot` pilot's
+> `0.0447 J/image` finding** — was measured via `nvmlDeviceGetTotalEnergyConsumption`
+> (the cumulative-energy counter), which is now confirmed to over-report
+> active-phase GPU power by ~30% on this hardware (not real boost overshoot —
+> a counter-reporting artifact). The harness's default CUDA backend is now
+> `nvmlDeviceGetPowerUsage`, validated against live telemetry to within
+> -0.02W. **None of the pre-`672ce93` numbers should be cited as validated
+> measurements** — kept for the evidence trail only (each affected
+> `results/*/` directory has its own `DEPRECATED.md`). Full explanation:
+> `results/active_power_baseline_investigation.md`.
+
 RAPL+NVML paired energy-measurement harness for the Masaryk Green AI proposal's
 Phase 1 (see `docs/phase1-execution-plan.md`, `docs/stage1-implementation-brief.md`).
 Ported from `research/energy-pilot` (2026-10-03) — that repo stays with the other,
@@ -21,15 +35,26 @@ energy), not `psys` (whole-system). This is a stated deviation, not a bug: packa
 energy excludes DRAM/VRM/peripheral rails that `psys` would include, so reported
 CPU-side energy is a lower bound on true system energy for that component.
 
-## NVML sampling interval
+## NVML energy backend (corrected 2026-10-03) and sampling interval
 
-Confirmed-reproducible counter-telescoping artifact on this RTX 3050: polling
-`nvmlDeviceGetTotalEnergyConsumption` faster than ~0.3s inflates implied power
-(20ms -> ~300W against a 60W cap; converges to a plausible idle wattage only at
-0.3-0.5s). Swept again 2026-10-03, same shape as the original September finding.
+Default CUDA backend is `nvmlDeviceGetPowerUsage` (sampled instant power,
+trapezoidal-integrated), **not** `nvmlDeviceGetTotalEnergyConsumption`
+(cumulative counter). The cumulative counter over-reports active-phase power
+by ~30% on this hardware — confirmed against live, independently-logged
+telemetry (`results/active_power_baseline_investigation.md`). The old
+counter remains available via `--legacy-cumulative-counter`, purely to
+reproduce/cite pre-correction numbers; it logs a warning when used.
 
-The floor is enforced in code, not just documented: `--interval` defaults to 0.4s,
-and any `--device cuda` run with `--interval < 0.3` raises unless
+The originally-reported counter-telescoping artifact (20ms -> ~300W against a
+60W cap, converging to plausible only at 0.3-0.5s) was swept again
+2026-10-03 **with the corrected backend**: flat 12.6-13.0W across the entire
+20ms-500ms range, no interval-dependence at all. That artifact was specific
+to the cumulative counter, not a general GPU/polling-rate limitation.
+
+The 0.3-0.5s floor is still enforced in code (unchanged this session — not
+yet decided whether to relax it now that its original justification doesn't
+reproduce with the corrected backend). `--interval` defaults to 0.4s; any
+`--device cuda` run with `--interval < 0.3` raises unless
 `--override-fast-interval` is passed, which prints a warning and proceeds anyway.
 Enforced in `pilot.py`'s `check_interval_floor()`, called from `main()`.
 
