@@ -124,3 +124,40 @@ defaults yet):
    reported (e.g. the original `0.0447 J/image` pilot finding, the Stage 1
    exit test's numbers) need to be flagged as provisional/inflated by ~30%
    rather than treated as validated going forward.
+
+## Candidate 2 checked: does `nvmlDeviceGetPowerUsage` actually track live reality?
+
+Checked this directly, without changing `pilot.py`'s default. `Sensor`'s
+constructor always picks `nvmlDeviceGetTotalEnergyConsumption` on this GPU
+(it reports as supported, so the `except NVMLError_NotSupported` branch that
+would select `nvmlDeviceGetPowerUsage` never fires) — so the alternate path
+exists in the code but has never actually run. Forced it on for a real test
+via a standalone script (`sensor.ranges = []` right after construction,
+which is exactly the state that branch would have left it in — no edit to
+`pilot.py` itself), then ran 8 real active windows through the harness's own
+unmodified `window()`/`integrate()`, with the same independent 100ms monitor
+running concurrently as ground truth.
+
+| rep | harness's own sampled-power implied W | live mean W | live max W | SM clock range (MHz) |
+|---|---|---|---|---|
+| 0 | 59.90 | 59.88 | 60.05 | 1635–1732 |
+| 1 | 59.93 | 59.90 | 60.03 | 1612–1657 |
+| 2 | 59.92 | 59.89 | 60.07 | 1612–1650 |
+| 3 | 59.84 | 59.87 | 60.07 | 1597–1650 |
+| 4 | 59.83 | 59.87 | 60.05 | 1605–1650 |
+| 5 | 59.83 | 59.87 | 60.05 | 1597–1642 |
+| 6 | 59.79 | 59.84 | 60.08 | 1590–1642 |
+| 7 | 59.82 | 59.87 | 60.08 | 1590–1650 |
+
+Mean across all 8 windows: harness (sampled-power) = **59.86W**, independent
+live monitor = **59.88W** — **gap of -0.02W**, within sensor noise. No
+systematic bias either direction, unlike the cumulative-counter path's
+consistent +18W/+30% inflation.
+
+**`nvmlDeviceGetPowerUsage`, integrated the way `pilot.py` already implements
+it, is trustworthy.** If this had been the default backend all along, the
+"active" numbers would correctly have read ~60W, not ~78W. This directly
+answers candidate 2 above: re-validation is done, confirmed, and the
+mechanism (swap which `except`/`try` branch `Sensor.__init__` takes) requires
+no new code — just a decision to actually make the switch, which hasn't been
+made yet, per instruction.
