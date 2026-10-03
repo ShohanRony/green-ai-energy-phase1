@@ -41,13 +41,23 @@ faster than 100Hz (interval < 0.01s). Enforced the same way, same function:
 `--device cpu`. Default rejects; `--override-fast-rapl-interval` allows it and
 logs a warning.
 
+## Concurrent-GPU-job guard
+
+Checklist item 13: a second GPU job contaminates the measurement (confirmed
+~2x slowdown for both jobs in `thesis_arch_results`' VGG-19/ResNet-18 contention
+finding). Enforced in `pilot.py`'s `check_no_concurrent_gpu()`, called at the top
+of every `window()` call when `--device cuda`. Queries
+`nvmlDeviceGetComputeRunningProcesses` and aborts if any PID besides the
+harness's own is using the GPU; `--allow-concurrent-gpu` permits it and logs a
+warning. No-op for `--device cpu`.
+
 ## What's here
 
 - `pilot.py` — RAPL+NVML paired measurement logic, idle-baseline capture, the
-  interval floor/ceiling above.
-- `tests/test_pilot.py` — the 4 original unit tests (counter wrap, power
+  interval floor/ceiling and concurrent-GPU guard above.
+- `tests/test_pilot.py` — unit tests: the original 4 (counter wrap, power
   integration, counter-reset rejection, idle-duration/detection) plus the
-  interval-floor/ceiling tests added 2026-10-03.
+  interval-floor and concurrent-GPU-guard tests added 2026-10-03.
 - `docs/` — the Phase 1 execution plan and Stage 1 implementation brief this repo
   is built against.
 

@@ -30,6 +30,16 @@ def check_interval_floor(device_matches, interval, floor, override, flag_name, r
     if not override: raise ValueError(f'{reason} Pass {flag_name} to force it anyway.')
     print(f'WARNING: {reason}', file=sys.stderr)
 
+def check_no_concurrent_gpu(sensor, allow=False):
+    """Checklist item 13: abort (or warn-and-allow) if another process besides us is using the GPU."""
+    if sensor.device != 'cuda': return
+    others=[proc.pid for proc in sensor.nv.nvmlDeviceGetComputeRunningProcesses(sensor.handle) if proc.pid != os.getpid()]
+    if not others: return
+    msg=(f'Other process(es) using the GPU: {others} — measurement would be contaminated by '
+         f'concurrent GPU work (checklist item 13).')
+    if not allow: raise RuntimeError(msg+' Pass --allow-concurrent-gpu to proceed anyway.')
+    print(f'WARNING: {msg}', file=sys.stderr)
+
 def integrate(trace, ranges):
     energy = 0.
     for (t0, x0), (t1, x1) in zip(trace, trace[1:]):
@@ -43,7 +53,8 @@ def integrate(trace, ranges):
                 energy += d
     return energy
 
-def window(sensor, seconds, interval, work=None, sync=lambda: None):
+def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concurrent_gpu=False):
+    check_no_concurrent_gpu(sensor, allow_concurrent_gpu)
     sync(); trace=[]; errors=[]; stop=threading.Event()
     def sample():
         try:
@@ -129,6 +140,8 @@ def main():
                     help='Allow --interval below the NVML counter-telescoping floor (0.3s). Logs a warning.')
     p.add_argument('--override-fast-rapl-interval',action='store_true',
                     help='Allow --interval faster than the RAPL/perf-events ceiling (100Hz / 0.01s). Logs a warning.')
+    p.add_argument('--allow-concurrent-gpu',action='store_true',
+                    help='Allow measurement to proceed even if another process is using the GPU. Logs a warning.')
     p.add_argument('--threads',type=int,default=4); p.add_argument('--warmup',type=float,default=3)
     p.add_argument('--codecarbon',action='store_true',help='Run CodeCarbon concurrently with the RAPL/NVML reads on each active window.')
     p.add_argument('--codecarbon-country',default='CZE',help='ISO code for CodeCarbon offline grid-intensity lookup (energy figure itself is country-independent).')
@@ -187,7 +200,7 @@ def main():
                                                                     log_level='error',save_to_file=False,
                                                                     measure_power_secs=max(a.interval,1))
                                 cc_tracker.start()
-                            result=window(sensor,seconds,a.interval,work if phase.startswith('a') else None,sync)
+                            result=window(sensor,seconds,a.interval,work if phase.startswith('a') else None,sync,a.allow_concurrent_gpu)
                             if cc_tracker is not None:
                                 cc_tracker.stop()
                                 result['codecarbon_energy_j']=cc_tracker.final_emissions_data.energy_consumed*3.6e6

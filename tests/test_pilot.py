@@ -1,7 +1,7 @@
-import sys, unittest
+import os, sys, types, unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from pilot import integrate, summarize, check_interval_floor
+from pilot import integrate, summarize, check_interval_floor, check_no_concurrent_gpu
 
 class MathTests(unittest.TestCase):
     def test_wrap(self):
@@ -37,5 +37,26 @@ class IntervalFloorTests(unittest.TestCase):
         with self.assertRaises(ValueError): check_interval_floor(True,0.02,0.3,False,'--y','reason')
     def test_nvml_floor_override_allows(self):
         check_interval_floor(True,0.02,0.3,True,'--y','reason') # must not raise
+
+class FakeSensor:
+    def __init__(self, device, pids):
+        self.device=device
+        self.handle=None
+        self.nv=types.SimpleNamespace(
+            nvmlDeviceGetComputeRunningProcesses=lambda h: [types.SimpleNamespace(pid=p) for p in pids])
+
+class ConcurrentGpuGuardTests(unittest.TestCase):
+    def test_other_process_blocks_by_default(self):
+        sensor=FakeSensor('cuda',[os.getpid(),99999])
+        with self.assertRaises(RuntimeError): check_no_concurrent_gpu(sensor,allow=False)
+    def test_override_allows_with_warning(self):
+        sensor=FakeSensor('cuda',[os.getpid(),99999])
+        check_no_concurrent_gpu(sensor,allow=True) # must not raise
+    def test_only_our_own_pid_is_fine(self):
+        sensor=FakeSensor('cuda',[os.getpid()])
+        check_no_concurrent_gpu(sensor,allow=False) # must not raise
+    def test_cpu_device_is_noop(self):
+        sensor=FakeSensor('cpu',[12345])
+        check_no_concurrent_gpu(sensor,allow=False) # RAPL/CPU path unaffected, must not raise
 
 if __name__=='__main__': unittest.main()
