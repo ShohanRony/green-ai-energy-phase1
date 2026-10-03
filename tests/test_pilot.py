@@ -12,7 +12,7 @@ class MathTests(unittest.TestCase):
         with self.assertRaises(RuntimeError): integrate([(0,[2]),(1,[1])],[None])
     def test_idle_duration_and_detection(self):
         rows=[]
-        for i in range(30):
+        for i in range(31): # 31 so dropping the discarded cold rep 0 leaves a balanced 15/15 parity split
             for phase in ['idle_before','a1','a2','idle_after']:
                 active=phase.startswith('a'); duration=5.2 if active else 5
                 energy=duration*(20 if active else 10)

@@ -75,17 +75,21 @@ def summarize(rows):
         for rep in ids:
             d={r['phase']:r for r in group if r['repeat']==rep}
             if set(d) != {'idle_before','a1','a2','idle_after'}: continue
+            # First run of each configuration is cold-cache/cold-thermal: discard from the summary
+            # (checklist item 3), but still annotate it below so raw/windows logs retain it (item 12).
+            cold=rep==ids[0] and len(ids)>1
             idlepower=statistics.mean(d[p]['energy_j']/d[p]['duration_s'] for p in ['idle_before','idle_after'])
-            # Match both idle readings to the planned window to avoid timing overshoot bias.
-            idle.extend(d[p]['energy_j']/d[p]['duration_s']*key[3] for p in ['idle_before','idle_after'])
             per=[]
             for p in ['a1','a2']:
                 r=d[p]; gross=r['energy_j']; above=gross-idlepower*r['duration_s']
-                active.append(gross); net.append(above); fractions.append(above/gross if gross else float('nan'))
                 per.append(gross/(r['batches']*key[2]))
                 r['estimated_idle_j']=idlepower*r['duration_s']; r['above_idle_j']=above
                 r['above_idle_fraction']=above/gross if gross else None
                 r['gross_j_per_image']=per[-1]
+                if not cold: active.append(gross); net.append(above); fractions.append(above/gross if gross else float('nan'))
+            if cold: continue
+            # Match both idle readings to the planned window to avoid timing overshoot bias.
+            idle.extend(d[p]['energy_j']/d[p]['duration_s']*key[3] for p in ['idle_before','idle_after'])
             pairs.append(statistics.mean(per)); diffs.append(per[1]-per[0])
         if len(pairs)<3: continue
         n=len(pairs); mean=statistics.mean(pairs); sd=statistics.stdev(diffs)
@@ -149,8 +153,11 @@ def main():
         ds=torchvision.datasets.CIFAR10(a.data,train=False,download=a.download,transform=transforms.ToTensor())
         raw=torch.stack([ds[i][0] for i in range(max(a.batches))])
         sync=torch.cuda.synchronize if a.device=='cuda' else lambda:None
+        gov_paths=glob.glob('/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor')
         env.update(torch=torch.__version__,torchvision=torchvision.__version__,backend=sensor.backend,
                    gpu=torch.cuda.get_device_name(0) if a.device=='cuda' else None,
+                   nvidia_driver_version=sensor.nv.nvmlSystemGetDriverVersion() if a.device=='cuda' else None,
+                   cpu_governors=sorted({Path(p).read_text().strip() for p in gov_paths}) if gov_paths else None,
                    weights='checkpoint' if a.checkpoint else 'seeded random weights: timing pilot only')
         (out/'environment.json').write_text(json.dumps(env,indent=2))
         with torch.inference_mode():
