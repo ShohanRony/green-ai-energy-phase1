@@ -1,7 +1,7 @@
-import os, sys, tempfile, types, unittest
+import os, subprocess, sys, tempfile, time, types, unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from pilot import integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile
+from pilot import Sensor, integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile
 
 class MathTests(unittest.TestCase):
     def test_wrap(self):
@@ -58,6 +58,33 @@ class ConcurrentGpuGuardTests(unittest.TestCase):
     def test_cpu_device_is_noop(self):
         sensor=FakeSensor('cpu',[12345])
         check_no_concurrent_gpu(sensor,allow=False) # RAPL/CPU path unaffected, must not raise
+
+class RealConcurrentGpuGuardTest(unittest.TestCase):
+    """End-to-end: a real subprocess holding the GPU, checked via a real Sensor/pynvml call.
+    Skips if no CUDA GPU is present rather than failing the whole suite on CPU-only machines."""
+    @classmethod
+    def setUpClass(cls):
+        try:
+            cls.sensor=Sensor('cuda')
+        except Exception as e:
+            raise unittest.SkipTest(f'No CUDA GPU available: {e}')
+        cls.holder=subprocess.Popen([sys.executable,'-c',
+            'import torch,time\nx=torch.zeros(1000,1000).cuda()\n'
+            'while True:\n x=x+1\n time.sleep(0.5)'])
+        for _ in range(20): # up to ~10s for it to register a CUDA context
+            if any(p.pid==cls.holder.pid for p in cls.sensor.nv.nvmlDeviceGetComputeRunningProcesses(cls.sensor.handle)):
+                break
+            time.sleep(0.5)
+        else:
+            cls.holder.kill(); raise unittest.SkipTest('Background GPU holder never registered with NVML')
+    @classmethod
+    def tearDownClass(cls):
+        cls.holder.kill(); cls.holder.wait()
+    def test_blocks_by_default_and_names_the_pid(self):
+        with self.assertRaises(RuntimeError) as ctx: check_no_concurrent_gpu(self.sensor,allow=False)
+        self.assertIn(str(self.holder.pid),str(ctx.exception))
+    def test_override_allows_with_warning(self):
+        check_no_concurrent_gpu(self.sensor,allow=True) # must not raise
 
 class PlatformProfileGuardTests(unittest.TestCase):
     def _path(self, value):
