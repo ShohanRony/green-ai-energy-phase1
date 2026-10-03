@@ -153,3 +153,87 @@ delta as a hard error. That would catch this specific artifact mechanically
 in future runs instead of relying on manual inspection. Left unimplemented
 pending your decision — it's a new validation rule, not the fix this
 investigation was scoped to find.
+
+## Follow-up implemented (2026-10-03, later): the plausibility flag, with the threshold verified
+
+Implemented the follow-up above, but verified the threshold first rather than
+trusting the "60W" figure used informally throughout this document.
+
+**Verification, two independent sources, same answer:**
+```
+$ nvidia-smi -q -d POWER
+    Current Power Limit  : 60.00 W
+    Default Power Limit  : 60.00 W
+    Max Power Limit      : 95.00 W   (the ceiling the limit COULD be raised to -- not currently enforced)
+
+$ python3 -c "import pynvml as nv; nv.nvmlInit(); h=nv.nvmlDeviceGetHandleByIndex(0); print(nv.nvmlDeviceGetEnforcedPowerLimit(h))"
+60000   # mW -- matches nvidia-smi exactly
+```
+
+`pynvml.nvmlDeviceGetPowerManagementLimit` (the API name that would seem
+obvious) returns `NotSupported` on this driver; `nvmlDeviceGetEnforcedPowerLimit`
+is the one that actually works, and it agrees with `nvidia-smi`. **The real,
+currently-enforced cap is 60.00W** -- the round number used earlier in this
+doc happened to be right, but it's now confirmed from the hardware, not
+assumed, and queried at runtime (`Sensor.power_cap_w`, set from this same
+call at `Sensor.__init__`) so it would self-correct on a different GPU.
+
+**Implementation** (`pilot.py`): a pure, directly-testable function, same
+pattern as the other guards --
+
+```python
+def flag_implausible_power(device, implied_w, power_cap_w):
+    return device == 'cuda' and implied_w > power_cap_w
+```
+
+Called from `window()`'s own return, adding a `plausibility_flag` field to
+every row -- `True` means flagged, `False` means within the cap, never a
+dropped row. `gpu_power_cap_w` is logged into `environment.json` alongside
+driver version and governor. 3 new unit tests (above cap flagged, at/below
+cap not flagged, CPU path never flagged regardless of value) -- 21/21 total
+pass. Verified end-to-end on a real run: `environment.json` logs
+`gpu_power_cap_w: 60.0`; `raw.jsonl` carries `plausibility_flag` on every row.
+
+**The actual count, across every stored `--device cuda` run in this repo's
+`results/`, is itself the reportable finding the brief asked for:**
+
+| dataset | cuda rows | flagged | idle flagged | active flagged |
+|---|---|---|---|---|
+| anomaly_investigation_rep15 | 60 | 30 | 0 | 30 |
+| anomaly_investigation_rep5 | 20 | 10 | 0 | 10 |
+| anomaly_investigation_repro10 | 40 | 29 | 9 | 20 |
+| guard_sanity_check | 8 | 4 | 0 | 4 |
+| interval_sweep_20ms | 12 | 12 | 6 | 6 |
+| interval_sweep_50ms | 12 | 12 | 6 | 6 |
+| interval_sweep_100ms | 12 | 12 | 6 | 6 |
+| interval_sweep_200ms | 12 | 6 | 0 | 6 |
+| interval_sweep_300ms | 12 | 6 | 0 | 6 |
+| interval_sweep_500ms | 12 | 6 | 0 | 6 |
+| platform_profile_sanity_check | 8 | 4 | 0 | 4 |
+| plausibility_flag_sanity_check | 8 | 4 | 0 | 4 |
+| stage1_exit_test | 40 | 21 | 1 | 20 |
+| task4_codecarbon_demo | 4 | 2 | 0 | 2 |
+| **total** | **260** | **158** | **19** | **139** |
+
+**60.8% of every stored CUDA measurement in this repo would be flagged.** Not
+a typo. The overwhelming majority of flags (139/158) are **active-phase (a1/a2)
+windows during ordinary, previously-accepted inference measurement** -- not
+the `idle_after` anomaly this document set out to investigate. Active-phase
+windows consistently imply 71-90W via `nvmlDeviceGetTotalEnergyConsumption`,
+every single run, including the very first September validation sprint's
+"active 71-78W, physically plausible" finding that's been treated as a
+reliable baseline throughout this whole project.
+
+**This is bigger than the `idle_after` anomaly and needs a decision, not a
+unilateral call:** either (a) a 60W *average-over-a-1.5-5s-window* reading can
+legitimately exceed the *enforced* cap on this hardware (e.g. short boost
+excursions the firmware's control loop permits before throttling, averaged
+into a window too short to average them back down -- `nvidia-smi`'s
+"Max Power Limit: 95.00W" hints there's headroom above 60W the firmware can
+use), in which case flagging against the enforced cap is the wrong rule for
+active windows and a looser bound (or an active/idle-specific threshold)
+is needed; or (b) the counter-reporting-quirk already established for
+`idle_after` is in fact pervasive across active-phase readings too, and this
+project's active-power baseline has been running inflated all along. Not
+resolved here -- reported as-is, flag intact, nothing silently adjusted to
+make the count look smaller.

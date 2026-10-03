@@ -1,7 +1,7 @@
 import os, subprocess, sys, tempfile, time, types, unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from pilot import Sensor, integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile
+from pilot import Sensor, integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile, flag_implausible_power
 
 class MathTests(unittest.TestCase):
     def test_wrap(self):
@@ -85,6 +85,15 @@ class RealConcurrentGpuGuardTest(unittest.TestCase):
         self.assertIn(str(self.holder.pid),str(ctx.exception))
     def test_override_allows_with_warning(self):
         check_no_concurrent_gpu(self.sensor,allow=True) # must not raise
+
+class PlausibilityFlagTests(unittest.TestCase):
+    def test_above_cap_is_flagged(self):
+        self.assertTrue(flag_implausible_power('cuda', 85.14, 60.0)) # this GPU's real enforced cap, confirmed 2026-10-03
+    def test_at_or_below_cap_is_not_flagged(self):
+        self.assertFalse(flag_implausible_power('cuda', 26.44, 60.0))
+        self.assertFalse(flag_implausible_power('cuda', 60.0, 60.0)) # exactly at the cap: not a violation
+    def test_cpu_device_is_never_flagged(self):
+        self.assertFalse(flag_implausible_power('cpu', 999.0, None)) # no GPU cap concept on the RAPL path
 
 class PlatformProfileGuardTests(unittest.TestCase):
     def _path(self, value):

@@ -10,10 +10,11 @@ class Sensor:
             self.paths = [Path(p) for p in paths if Path(p).parent.name.count(':') == 1]
             if not self.paths: raise RuntimeError('No accessible Intel RAPL package counters; native Linux required.')
             self.ranges = [float(p.with_name('max_energy_range_uj').read_text()) / 1e6 for p in self.paths]
-            self.backend = 'RAPL package energy counters'
+            self.backend = 'RAPL package energy counters'; self.power_cap_w = None
         else:
             import pynvml as nv
             self.nv = nv; nv.nvmlInit(); self.handle = nv.nvmlDeviceGetHandleByIndex(0)
+            self.power_cap_w = nv.nvmlDeviceGetEnforcedPowerLimit(self.handle) / 1000
             try:
                 nv.nvmlDeviceGetTotalEnergyConsumption(self.handle)
                 self.backend = 'NVML cumulative energy'; self.ranges = [None]
@@ -49,6 +50,13 @@ def check_platform_profile(path=Path('/sys/firmware/acpi/platform_profile')):
         raise RuntimeError(f"Platform power profile is '{value}', not 'performance' — this is a controlled "
                             f'variable for the whole project. Set it with: echo performance | sudo tee {path}')
     return value
+
+def flag_implausible_power(device, implied_w, power_cap_w):
+    """Mark (never drop) a window whose implied power exceeds the GPU's own enforced
+    hardware power cap -- a physically impossible reading, not just noise. Verified
+    2026-10-03 via both `nvidia-smi -q -d POWER` and nvmlDeviceGetEnforcedPowerLimit:
+    this RTX 3050's current enforced limit is 60.00W (default; max settable 95.00W)."""
+    return device == 'cuda' and implied_w > power_cap_w
 
 def integrate(trace, ranges):
     energy = 0.
@@ -90,7 +98,8 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
     return dict(energy_j=energy,duration_s=duration,batches=batches,
                 max_sample_gap_s=max(b[0]-a[0] for a,b in zip(trace,trace[1:])),
                 changed_reads=sum(a[1]!=b[1] for a,b in zip(trace,trace[1:])),
-                trace=trace,backend=sensor.backend)
+                trace=trace,backend=sensor.backend,
+                plausibility_flag=flag_implausible_power(sensor.device, energy/duration, sensor.power_cap_w))
 
 def summarize(rows):
     # Independently paired A/A differences estimate the noise relevant to a future A/B comparison.
@@ -187,6 +196,7 @@ def main():
         env.update(torch=torch.__version__,torchvision=torchvision.__version__,backend=sensor.backend,
                    gpu=torch.cuda.get_device_name(0) if a.device=='cuda' else None,
                    nvidia_driver_version=sensor.nv.nvmlSystemGetDriverVersion() if a.device=='cuda' else None,
+                   gpu_power_cap_w=sensor.power_cap_w,
                    cpu_governors=sorted({Path(p).read_text().strip() for p in gov_paths}) if gov_paths else None,
                    platform_profile=platform_profile,
                    weights='checkpoint' if a.checkpoint else 'seeded random weights: timing pilot only')
