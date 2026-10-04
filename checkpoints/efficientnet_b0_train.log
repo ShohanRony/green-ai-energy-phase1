@@ -1,0 +1,34 @@
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+epoch 1/30 loss=2.7748 train_acc=0.1127 elapsed=35s
+epoch 2/30 loss=2.2706 train_acc=0.1718 elapsed=69s
+epoch 3/30 loss=2.0119 train_acc=0.2587 elapsed=104s
+epoch 4/30 loss=1.7429 train_acc=0.3519 elapsed=138s
+epoch 5/30 loss=1.6329 train_acc=0.3963 elapsed=173s
+epoch 6/30 loss=1.5179 train_acc=0.4452 elapsed=207s
+epoch 7/30 loss=1.4331 train_acc=0.4785 elapsed=242s
+epoch 8/30 loss=1.3584 train_acc=0.5069 elapsed=276s
+epoch 9/30 loss=1.2499 train_acc=0.5483 elapsed=311s
+epoch 10/30 loss=1.1668 train_acc=0.5798 elapsed=345s
+epoch 11/30 loss=1.0914 train_acc=0.6080 elapsed=380s
+epoch 12/30 loss=1.0312 train_acc=0.6323 elapsed=414s
+epoch 13/30 loss=0.9629 train_acc=0.6574 elapsed=449s
+epoch 14/30 loss=0.9040 train_acc=0.6801 elapsed=483s
+epoch 15/30 loss=0.8500 train_acc=0.6984 elapsed=518s
+epoch 16/30 loss=0.8099 train_acc=0.7161 elapsed=552s
+epoch 17/30 loss=0.7801 train_acc=0.7254 elapsed=587s
+epoch 18/30 loss=0.7433 train_acc=0.7371 elapsed=622s
+epoch 19/30 loss=0.7223 train_acc=0.7472 elapsed=656s
+epoch 20/30 loss=0.6850 train_acc=0.7615 elapsed=691s
+epoch 21/30 loss=0.6587 train_acc=0.7698 elapsed=725s
+epoch 22/30 loss=0.6296 train_acc=0.7798 elapsed=760s
+epoch 23/30 loss=0.6009 train_acc=0.7897 elapsed=794s
+epoch 24/30 loss=0.5741 train_acc=0.8000 elapsed=829s
+epoch 25/30 loss=0.5507 train_acc=0.8080 elapsed=863s
+epoch 26/30 loss=0.5222 train_acc=0.8189 elapsed=898s
+epoch 27/30 loss=0.5016 train_acc=0.8254 elapsed=933s
+epoch 28/30 loss=0.4831 train_acc=0.8319 elapsed=967s
+epoch 29/30 loss=0.4687 train_acc=0.8373 elapsed=1002s
+epoch 30/30 loss=0.4613 train_acc=0.8394 elapsed=1037s
+FINAL test_acc=0.8359
+Saved checkpoints/efficientnet_b0_fp32.pt and checkpoints/efficientnet_b0_fp32.json

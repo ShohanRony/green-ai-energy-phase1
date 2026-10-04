@@ -1,0 +1,29 @@
+{
+  "baseline": {
+    "acc": 0.9309,
+    "macs": 557216778.0,
+    "params": 11173962,
+    "latency_ms": 34.66372173999844
+  },
+  "zero_finetune": {
+    "acc": 0.1035,
+    "macs": 49999268.0,
+    "params": 997272,
+    "latency_ms": 8.799030040026992,
+    "nominal_sparsity": 0.7,
+    "realized_macs_reduction": 0.9102696293900899,
+    "realized_params_reduction": 0.9107503676851595,
+    "realized_speedup": 3.939493510342886
+  },
+  "brief_recovery": {
+    "acc": 0.8424,
+    "macs": 49999268.0,
+    "params": 997272,
+    "latency_ms": 9.028102779993787,
+    "recovery_epochs": 3,
+    "nominal_sparsity": 0.7,
+    "realized_macs_reduction": 0.9102696293900899,
+    "realized_params_reduction": 0.9107503676851595,
+    "realized_speedup": 3.8395355685153474
+  }
+}

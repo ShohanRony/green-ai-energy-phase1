@@ -1,0 +1,134 @@
+{
+  "resnet18": {
+    "baseline": {
+      "acc": 0.9309,
+      "macs": 557216778.0,
+      "params": 11173962,
+      "latency_ms": 34.33252018003259
+    },
+    "prune_30": {
+      "acc": 0.6484,
+      "macs": 269787494.0,
+      "params": 5459866,
+      "latency_ms": 28.908581099967705,
+      "nominal_sparsity": 0.3,
+      "realized_macs_reduction": 0.5158302753044526,
+      "realized_params_reduction": 0.5113760007417244,
+      "realized_speedup": 1.1876238429450605,
+      "flagged_collapse": false,
+      "policy": "zero-finetune"
+    },
+    "prune_50": {
+      "acc": 0.1758,
+      "macs": 140196362.0,
+      "params": 2797610,
+      "latency_ms": 14.131666519970167,
+      "nominal_sparsity": 0.5,
+      "realized_macs_reduction": 0.7483988861512709,
+      "realized_params_reduction": 0.7496313304090348,
+      "realized_speedup": 2.429474268410989,
+      "flagged_collapse": false,
+      "policy": "zero-finetune"
+    },
+    "prune_70": {
+      "acc": 0.1035,
+      "macs": 49999268.0,
+      "params": 997272,
+      "latency_ms": 8.875404499995057,
+      "nominal_sparsity": 0.7,
+      "realized_macs_reduction": 0.9102696293900899,
+      "realized_params_reduction": 0.9107503676851595,
+      "realized_speedup": 3.868276671790194,
+      "flagged_collapse": true,
+      "policy": "zero-finetune"
+    }
+  },
+  "mobilenet_v3_small": {
+    "baseline": {
+      "acc": 0.8499,
+      "macs": 5801890.0,
+      "params": 1528106,
+      "latency_ms": 5.120913560022018
+    },
+    "prune_30": {
+      "acc": 0.1117,
+      "macs": 3089911.0,
+      "params": 762585,
+      "latency_ms": 3.8387766999949235,
+      "nominal_sparsity": 0.3,
+      "realized_macs_reduction": 0.46743026841253454,
+      "realized_params_reduction": 0.5009606663412094,
+      "realized_speedup": 1.3339962077056449,
+      "flagged_collapse": true,
+      "policy": "zero-finetune"
+    },
+    "prune_50": {
+      "acc": 0.1116,
+      "macs": 1790678.0,
+      "params": 403354,
+      "latency_ms": 2.4897751399839763,
+      "nominal_sparsity": 0.5,
+      "realized_macs_reduction": 0.6913629868887552,
+      "realized_params_reduction": 0.7360431802505847,
+      "realized_speedup": 2.056777528935796,
+      "flagged_collapse": true,
+      "policy": "zero-finetune"
+    },
+    "prune_70": {
+      "acc": 0.1,
+      "macs": 763726.0,
+      "params": 153434,
+      "latency_ms": 1.5635915599705186,
+      "nominal_sparsity": 0.7,
+      "realized_macs_reduction": 0.8683659979765215,
+      "realized_params_reduction": 0.8995920440074183,
+      "realized_speedup": 3.2750967011606105,
+      "flagged_collapse": true,
+      "policy": "zero-finetune"
+    }
+  },
+  "efficientnet_b0": {
+    "baseline": {
+      "acc": 0.8359,
+      "macs": 33282182.0,
+      "params": 4020358,
+      "latency_ms": 24.965398679996724
+    },
+    "prune_30": {
+      "acc": 0.6114,
+      "macs": 17187501.0,
+      "params": 2011183,
+      "latency_ms": 18.148384560045088,
+      "nominal_sparsity": 0.3,
+      "realized_macs_reduction": 0.48358250669983116,
+      "realized_params_reduction": 0.4997502709957671,
+      "realized_speedup": 1.375626497080063,
+      "flagged_collapse": false,
+      "policy": "zero-finetune"
+    },
+    "prune_50": {
+      "acc": 0.2046,
+      "macs": 9575368.0,
+      "params": 1066856,
+      "latency_ms": 11.084912719961721,
+      "nominal_sparsity": 0.5,
+      "realized_macs_reduction": 0.7122974689580148,
+      "realized_params_reduction": 0.73463656719128,
+      "realized_speedup": 2.2521962338087707,
+      "flagged_collapse": false,
+      "policy": "zero-finetune"
+    },
+    "prune_70": {
+      "acc": 0.1,
+      "macs": 3946073.0,
+      "params": 408920,
+      "latency_ms": 6.930581720007467,
+      "nominal_sparsity": 0.7,
+      "realized_macs_reduction": 0.8814358685977981,
+      "realized_params_reduction": 0.8982876649293421,
+      "realized_speedup": 3.602208254456572,
+      "flagged_collapse": true,
+      "policy": "zero-finetune"
+    }
+  }
+}

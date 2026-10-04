@@ -1,0 +1,34 @@
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+epoch 1/30 loss=2.1183 train_acc=0.2402 elapsed=45s
+epoch 2/30 loss=1.4959 train_acc=0.4479 elapsed=89s
+epoch 3/30 loss=1.1961 train_acc=0.5681 elapsed=134s
+epoch 4/30 loss=0.9672 train_acc=0.6567 elapsed=179s
+epoch 5/30 loss=0.8080 train_acc=0.7176 elapsed=224s
+epoch 6/30 loss=0.6780 train_acc=0.7642 elapsed=269s
+epoch 7/30 loss=0.5972 train_acc=0.7950 elapsed=313s
+epoch 8/30 loss=0.5443 train_acc=0.8111 elapsed=358s
+epoch 9/30 loss=0.5044 train_acc=0.8269 elapsed=403s
+epoch 10/30 loss=0.4635 train_acc=0.8396 elapsed=448s
+epoch 11/30 loss=0.4403 train_acc=0.8503 elapsed=493s
+epoch 12/30 loss=0.4134 train_acc=0.8579 elapsed=538s
+epoch 13/30 loss=0.3856 train_acc=0.8676 elapsed=582s
+epoch 14/30 loss=0.3640 train_acc=0.8777 elapsed=627s
+epoch 15/30 loss=0.3395 train_acc=0.8837 elapsed=672s
+epoch 16/30 loss=0.3171 train_acc=0.8922 elapsed=717s
+epoch 17/30 loss=0.2904 train_acc=0.8999 elapsed=762s
+epoch 18/30 loss=0.2692 train_acc=0.9077 elapsed=806s
+epoch 19/30 loss=0.2413 train_acc=0.9164 elapsed=851s
+epoch 20/30 loss=0.2152 train_acc=0.9260 elapsed=896s
+epoch 21/30 loss=0.1873 train_acc=0.9356 elapsed=941s
+epoch 22/30 loss=0.1594 train_acc=0.9447 elapsed=986s
+epoch 23/30 loss=0.1328 train_acc=0.9550 elapsed=1030s
+epoch 24/30 loss=0.1074 train_acc=0.9632 elapsed=1075s
+epoch 25/30 loss=0.0838 train_acc=0.9717 elapsed=1120s
+epoch 26/30 loss=0.0623 train_acc=0.9793 elapsed=1165s
+epoch 27/30 loss=0.0487 train_acc=0.9849 elapsed=1210s
+epoch 28/30 loss=0.0396 train_acc=0.9883 elapsed=1254s
+epoch 29/30 loss=0.0324 train_acc=0.9907 elapsed=1299s
+epoch 30/30 loss=0.0288 train_acc=0.9923 elapsed=1344s
+FINAL test_acc=0.9309
+Saved checkpoints/resnet18_fp32.pt and checkpoints/resnet18_fp32.json

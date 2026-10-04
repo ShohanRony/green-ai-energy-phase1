@@ -1,0 +1,9 @@
+{
+  "arch": "resnet18",
+  "fp32_ms": 34.39117996000277,
+  "fp16_ms": 19.35192315999302,
+  "speedup": 1.7771453346353185,
+  "dtype_confirmed": true,
+  "batch_size": 128,
+  "reps": 50
+}

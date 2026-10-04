@@ -1,0 +1,7 @@
+{
+  "arch": "efficientnet_b0",
+  "batch_size": 64,
+  "warmup_epoch_s": 37.65872359275818,
+  "steady_state_epoch_s": 37.5568311214447,
+  "gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU"
+}

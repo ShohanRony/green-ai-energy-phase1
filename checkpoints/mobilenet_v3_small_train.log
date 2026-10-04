@@ -1,0 +1,34 @@
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+epoch 1/30 loss=1.6592 train_acc=0.3756 elapsed=8s
+epoch 2/30 loss=1.2730 train_acc=0.5418 elapsed=15s
+epoch 3/30 loss=1.0956 train_acc=0.6106 elapsed=22s
+epoch 4/30 loss=0.9901 train_acc=0.6468 elapsed=30s
+epoch 5/30 loss=0.9243 train_acc=0.6717 elapsed=37s
+epoch 6/30 loss=0.8773 train_acc=0.6907 elapsed=45s
+epoch 7/30 loss=0.8462 train_acc=0.7019 elapsed=52s
+epoch 8/30 loss=0.8150 train_acc=0.7147 elapsed=59s
+epoch 9/30 loss=0.7959 train_acc=0.7225 elapsed=67s
+epoch 10/30 loss=0.7729 train_acc=0.7284 elapsed=74s
+epoch 11/30 loss=0.7553 train_acc=0.7371 elapsed=82s
+epoch 12/30 loss=0.7372 train_acc=0.7420 elapsed=89s
+epoch 13/30 loss=0.7208 train_acc=0.7482 elapsed=96s
+epoch 14/30 loss=0.7071 train_acc=0.7541 elapsed=104s
+epoch 15/30 loss=0.6835 train_acc=0.7639 elapsed=111s
+epoch 16/30 loss=0.6681 train_acc=0.7685 elapsed=119s
+epoch 17/30 loss=0.6478 train_acc=0.7751 elapsed=126s
+epoch 18/30 loss=0.6286 train_acc=0.7839 elapsed=133s
+epoch 19/30 loss=0.6101 train_acc=0.7888 elapsed=141s
+epoch 20/30 loss=0.5914 train_acc=0.7942 elapsed=148s
+epoch 21/30 loss=0.5703 train_acc=0.8026 elapsed=156s
+epoch 22/30 loss=0.5476 train_acc=0.8094 elapsed=163s
+epoch 23/30 loss=0.5197 train_acc=0.8201 elapsed=170s
+epoch 24/30 loss=0.5022 train_acc=0.8249 elapsed=178s
+epoch 25/30 loss=0.4821 train_acc=0.8323 elapsed=185s
+epoch 26/30 loss=0.4607 train_acc=0.8396 elapsed=193s
+epoch 27/30 loss=0.4405 train_acc=0.8478 elapsed=200s
+epoch 28/30 loss=0.4233 train_acc=0.8530 elapsed=207s
+epoch 29/30 loss=0.4143 train_acc=0.8553 elapsed=215s
+epoch 30/30 loss=0.4073 train_acc=0.8593 elapsed=222s
+FINAL test_acc=0.8499
+Saved checkpoints/mobilenet_v3_small_fp32.pt and checkpoints/mobilenet_v3_small_fp32.json

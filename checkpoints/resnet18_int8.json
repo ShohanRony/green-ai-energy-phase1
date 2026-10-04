@@ -1,0 +1,9 @@
+{
+  "arch": "resnet18",
+  "verdict": "pass",
+  "fp32_acc": 0.9309,
+  "int8_acc": 0.9314,
+  "kernel_dtype_check": "torch.ao.nn.quantized modules found",
+  "calib_batches": 20,
+  "backend": "fbgemm (CPU)"
+}
