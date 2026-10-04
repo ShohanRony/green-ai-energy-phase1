@@ -1,9 +1,11 @@
-# Stage 2 Retrain Report — Tasks E–G
+# Stage 2 Retrain Report — Tasks E–H
 
 Follow-up to `stage2_closeout_report.md` (Task B flagged MobileNetV3-Small and EfficientNet-B0 as not
-plateaued at 30 epochs, but left them untouched). Run 2026-10-04, same session day. Three items: retrain
-the two unconverged baselines, propagate the new baselines through every downstream artifact, commit and
-push. ResNet-18 (loss 0.0288 at epoch 30, already plateaued) was not touched anywhere in this pass.
+plateaued at 30 epochs, but left them untouched). Run 2026-10-04, same session day. Retrain the two
+unconverged baselines (Task E), propagate the new baselines through every downstream artifact (Task F),
+commit and push (Task G), then follow up on three review items against that work (Task H + two
+confirmation checks). ResNet-18 (loss 0.0288 at epoch 30, already plateaued) was not touched anywhere
+in this pass.
 
 ---
 
@@ -142,6 +144,65 @@ documentation bug independent of this retrain.
 
 ## Task G — Commit and push
 
-See the commit immediately following this report. Pushed to `origin` — this and
-the two prior Stage 2 commits (`bc37ff9`, `888c585`) had been local-only, a single-laptop point of
-failure for several hours of GPU work.
+Committed (`24a5c94`) and pushed to `origin` — this and the two prior Stage 2 commits (`bc37ff9`,
+`888c585`) had been local-only, a single-laptop point of failure for several hours of GPU work. The
+push itself needed two retries: it kept failing with HTTP 408 (request timeout) pushing ~179MB of
+packed checkpoint binaries. Diagnosed as genuinely poor upload throughput on this connection at the
+time (~54KB/s measured directly against an unrelated endpoint, not a git/GitHub-specific problem —
+confirmed before retrying rather than assumed) rather than a git configuration issue; `http.postBuffer`,
+forcing `HTTP/1.1`, and local `git gc` were all tried and made no difference, consistent with that
+diagnosis. Succeeded on a later retry once the connection recovered.
+
+---
+
+## Task H — Fine-grained probe, 15-20% in 1% steps (follow-up review item)
+
+The 5%-step probe above located a -29.6pt drop somewhere in the 15%→20% bin, too coarse to tell a
+genuine sharp threshold apart from several smaller drops that happen to bin together. Reran
+`prune_mbv3_probe.py` (extended with a `--ratios` flag and a `channel_snapshot()` helper that records
+every Conv2d/Linear's output-channel count alongside accuracy) at 15/16/17/18/19/20%:
+
+| Sparsity | 15% | 16% | 17% | 18% | 19% | 20% |
+|---|---|---|---|---|---|---|
+| Accuracy | 59.83% | 56.18% | 56.17% | 51.57% | 31.09% | 30.21% |
+| Step Δ | — | -3.65 | -0.01 | -4.60 | **-20.48** | -0.88 |
+
+The cliff is real and precisely located: 18%→19% alone accounts for -20.48pt, more than 4x any other
+single step in the range. Not a sampling artifact.
+
+**Is it one critical block?** Diffed channel counts for every Conv2d/Linear between the 18% and 19%
+models. Result: no. All ~40 layers that change lose only 1-10 channels each (1-8% relative, roughly
+proportional to layer size — consistent with `torch-pruning` spreading a global ratio target evenly
+rather than concentrating it on one layer). No layer collapses to a near-zero channel count at 19% that
+wasn't already small at 18%. Checked the two obvious candidates specifically — SE squeeze gates
+(`*.fc1`) and the pre-classifier depthwise stage (`features.11.block.*`) — neither shows an outlier cut
+at this step relative to the rest of the network.
+
+**Conclusion:** the cliff is real and sharp (one specific percentage point, not a 5-point-wide region),
+but it isn't attributable to any single structurally critical layer. The mechanism looks like dozens of
+layers simultaneously losing a small, individually-survivable number of channels, where the *combined*
+effect crosses a capacity threshold for the network's composed function — a genuinely nonlinear
+interaction, not a localized failure. This still argues against a `torch-pruning` dependency-graph bug
+(which would show as one disproportionately-cut layer, not this globally-proportional pattern) and if
+anything strengthens the "MobileNetV3-Small has thin, collectively fragile channel redundancy" reading
+of Task A, while correcting the specific claim that the degradation curve has no cliff anywhere.
+`stage2_deliverable.md` §6 updated with this precise version; the 5%-only table there now carries the
+1%-resolution follow-up alongside it rather than standing alone.
+
+---
+
+## Confirmation checks on the review's other two items
+
+**Regenerated checkpoints actually load (not just "should," per Task D's existing proof path):** ran
+`pilot.py` end-to-end against one regenerated file per retrained model —
+`mobilenet_v3_small_fp16.pt` and `efficientnet_b0_pruned50.pt`, both TorchScript traces produced by this
+session's `materialize_checkpoints.py` rerun. Both exit 0 with real energy traces
+(`results_stage2/pilot_proof_retrain_mbv3_fp16/`, `results_stage2/pilot_proof_retrain_effnet_pruned50/`
+— `gross_j_per_image` 0.0400 and 0.0400-0.0656 respectively across windows). Confirmed, not assumed.
+
+**EfficientNet-B0@50% convergence-fragility finding, flagged not settled:** added an explicit caveat to
+`stage2_deliverable.md` §6 — this is one before/after comparison at a single pair of epoch budgets (30
+vs. 60), not a swept relationship. Worth raising in Stage 5's discussion section as literature-consistent
+("sharper minima, less pruning-tolerant"), but confirming it would need a third checkpoint (e.g. 45
+epochs) to check for a monotonic trend. Not run here — correctly out of Stage 2's scope, flagged for
+later rather than either asserted as fact or silently dropped.

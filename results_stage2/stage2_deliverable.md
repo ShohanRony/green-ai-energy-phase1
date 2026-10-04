@@ -132,6 +132,13 @@ named 70% sparsity on the smaller architectures as the likely collapse point. Ac
   severely. Not an artifact of measurement noise (MACs/params reduction at each ratio is bit-identical
   to the old run — architecture-dependent, not weight-dependent — so this is a real accuracy shift).
 
+  **Flagged for Stage 5 discussion, not a settled mechanism:** this rests on a single before/after
+  comparison at one pair of epoch budgets (30 vs. 60), not a convergence sweep. "Sharper minima are
+  less pruning-tolerant" is literature-consistent and worth raising in the discussion section, but
+  confirming it would need a third checkpoint (e.g., 45 epochs) to check whether fragility actually
+  trends monotonically with convergence, rather than being a one-off difference between two specific
+  runs. That sweep is Stage 5/discussion-section scope, not a Stage 2 blocker — not run here.
+
 **Fine-grained MobileNetV3-Small probe (Task A), rerun against the converged baseline — curve shape
 changed, headline verdict did not:**
 
@@ -145,19 +152,42 @@ changed, headline verdict did not:**
 | 30% | 11.17% | 17.13% |
 
 The original Task A verdict ("genuine architectural fragility, not a `torch-pruning` dependency-graph
-bug") rested partly on the curve being **smooth and monotonic with no cliff**. That specific claim does
-**not** hold with the converged baseline: there's now a near-plateau from 10%→15% (-3.75pt) followed by
-a sharp cliff from 15%→20% (-29.6pt) — a much more abrupt, localized drop than the old curve showed.
-This is flagged as a correction to the earlier "smooth curve" evidence, not swept forward silently.
+bug") rested partly on the curve being **smooth and monotonic with no cliff**. The 5%-step data above
+doesn't resolve whether that claim holds — a -29.6pt drop over a 5-point-wide bin could be a genuine
+sharp threshold, or five 1%-wide steps that happen to look like a cliff when binned coarsely. Resolved
+by sampling every 1% from 15% to 20% (`prune_mbv3_probe.py --ratios 0.15 .. 0.20`, zero-finetune, same
+probe):
 
-The rest of Task A's evidence still holds, though: realized/nominal MACs-reduction amplification at 30%
-is still 1.56x (identical to the old run — architecture-dependent, not weight-dependent), still in line
-with ResNet-18's 1.72x and EfficientNet-B0's 1.61x at the same nominal ratio — no outlier amplification
-that would point to a dependency-graph bug at the depthwise/pointwise boundary. **Revised verdict:**
-MobileNetV3-Small still shows genuinely low zero-finetune pruning redundancy (now with a plateau-then-
-cliff signature around 15-20% rather than a uniformly smooth decline), consistent with — not contradicted
-by — a converged baseline. The "no cliff anywhere" phrasing from the original Task A report should be
-treated as superseded.
+| Sparsity | 15% | 16% | 17% | 18% | 19% | 20% |
+|---|---|---|---|---|---|---|
+| Accuracy | 59.83% | 56.18% | 56.17% | 51.57% | 31.09% | 30.21% |
+| Step Δ from previous | — | -3.65 | -0.01 | -4.60 | **-20.48** | -0.88 |
+
+**Not a sampling artifact — there is a genuine, sharply localized cliff, and it's at 18%→19%
+specifically**, not spread evenly across 15-20%. Every other 1%-step in this range costs ≤4.6pt; this
+one step costs 20.48pt, over four times the next-largest step.
+
+**But it's also not a single structurally critical block.** Diffed every Conv2d/Linear's output-channel
+count between the 18% and 19% pruned models (`channel_snapshot()`, added to the probe script) to check
+whether one specific layer — a candidate would be an SE gate or the last depthwise stage before the
+classifier — gets disproportionately cut at this exact step. It doesn't: **every one of the ~40
+affected layers loses only 1-10 channels, a 1-8% relative cut each**, roughly proportional to each
+layer's own size (consistent with `torch-pruning`'s global-ratio channel selection, which spreads a
+target reduction fairly evenly rather than concentrating it). No layer drops to a near-zero channel
+count at 19% that wasn't already small at 18%. A dependency-graph bug would be expected to show as one
+disproportionately-cut layer; this shows none.
+
+**Revised verdict:** the earlier "smooth curve" framing was wrong (there is a real, sharp, single-
+percentage-point threshold, not a gradient) — but so would "one critical block explains it" have been,
+had that been assumed without checking. The actual mechanism looks like a **cumulative nonlinear
+effect**: dozens of layers each losing a small, individually-survivable number of channels
+simultaneously, where the *combination* crosses a capacity threshold for the network's composed
+function that no single layer's cut would predict on its own. This is consistent with — arguably
+stronger evidence for — genuine architectural fragility (MobileNetV3-Small's channels are collectively
+thin enough that many simultaneous marginal cuts combine nonlinearly) and still inconsistent with a
+`torch-pruning` graph bug (which would show as one outlier layer, not a broadly distributed pattern).
+The "smooth curve, no cliff anywhere" phrasing from the original Task A report is superseded by this
+more precise characterization, not by a reversal of the underlying verdict.
 
 **Task 4 decision, resolved (not TBD):** after seeing ResNet-18's 70% zero-finetune result collapse to
 10.35% vs. 84.24% with a 3-epoch brief-recovery variant (see `results_stage2/task4_decision_checkpoint.json`),
