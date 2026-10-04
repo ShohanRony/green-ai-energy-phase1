@@ -157,6 +157,11 @@ def csv_write(path, rows):
 def main():
     p=argparse.ArgumentParser()
     p.add_argument('--device',choices=['cpu','cuda'],required=True)
+    p.add_argument('--arch',choices=['resnet18','mobilenet_v3_small','efficientnet_b0'],default='resnet18',
+                    help='Architecture to build when --checkpoint is a plain state_dict, or when no '
+                         '--checkpoint is given (random-weights timing-only mode). Ignored when '
+                         '--checkpoint is a self-contained TorchScript module (FP16/pruned/INT8 '
+                         'checkpoints from Stage 2 are saved this way and carry their own architecture).')
     p.add_argument('--data',default='data'); p.add_argument('--download',action='store_true')
     p.add_argument('--out',required=True); p.add_argument('--sizes',type=int,nargs='+',default=[32,64,128,224])
     p.add_argument('--batches',type=int,nargs='+',default=[1,16,64,128,256])
@@ -202,9 +207,15 @@ def main():
         torch.manual_seed(2026); random.seed(2026); torch.set_num_threads(a.threads)
         torch.backends.cudnn.benchmark=False
         torch.backends.cuda.matmul.allow_tf32=False; torch.backends.cudnn.allow_tf32=False
-        model=torchvision.models.resnet18(weights=None,num_classes=10)
-        model.conv1=torch.nn.Conv2d(3,64,3,1,1,bias=False); model.maxpool=torch.nn.Identity()
-        if a.checkpoint: model.load_state_dict(torch.load(a.checkpoint,map_location='cpu',weights_only=True))
+        from train_baseline import build_model
+        if a.checkpoint:
+            try:
+                model=torch.jit.load(a.checkpoint,map_location='cpu')  # self-contained: FP16/pruned/INT8 Stage 2 checkpoints
+            except RuntimeError:
+                model=build_model(a.arch)  # plain state_dict: needs the matching architecture rebuilt first
+                model.load_state_dict(torch.load(a.checkpoint,map_location='cpu',weights_only=True))
+        else:
+            model=build_model(a.arch)
         model=model.eval().to(a.device)
         ds=torchvision.datasets.CIFAR10(a.data,train=False,download=a.download,transform=transforms.ToTensor())
         raw=torch.stack([ds[i][0] for i in range(max(a.batches))])
@@ -225,7 +236,9 @@ def main():
                     try:
                         x=torch.nn.functional.interpolate(raw[:batch],size=(size,size),mode='bilinear',align_corners=False)
                         x=(x-torch.tensor([.4914,.4822,.4465])[None,:,None,None])/torch.tensor([.247,.243,.261])[None,:,None,None]
-                        x=x.to(a.device)
+                        try: target_dtype=next(model.parameters()).dtype  # FP16 checkpoints need the input cast to match
+                        except StopIteration: target_dtype=x.dtype  # quantized models hold no plain nn.Parameter; input stays float
+                        x=x.to(a.device).to(target_dtype)
                         work=lambda:model(x)
                         for phase in ['idle_before','a1','a2','idle_after']:
                             if phase.startswith('a'):

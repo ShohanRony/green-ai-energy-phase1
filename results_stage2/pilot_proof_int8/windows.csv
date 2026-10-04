@@ -1,0 +1,5 @@
+above_idle_fraction,above_idle_j,backend,batch,batches,changed_reads,device,duration_s,energy_j,estimated_idle_j,gross_j_per_image,max_sample_gap_s,phase,plausibility_flag,repeat,requested_s,size
+,,RAPL package energy counters,16,0,40,cpu,2.0009456024999963,94.74615799997991,,,0.05119504249887541,idle_before,False,0,2.0,32
+0.6583991792540318,187.73177298887867,RAPL package energy counters,16,96,40,cpu,2.008873788498022,285.1336679999804,97.40189501110171,0.18563389843748723,0.05045970949868206,a1,False,0,2.0,32
+0.6609512458320305,190.2219589044162,RAPL package energy counters,16,96,40,cpu,2.0125126684979477,287.80028799999855,97.57832909558235,0.18736997916666573,0.050589633494382724,a2,False,0,2.0,32
+,,RAPL package energy counters,16,0,40,cpu,2.001024040997436,99.29271500000323,,,0.05085804399641347,idle_after,False,0,2.0,32
