@@ -1,8 +1,8 @@
 {
   "arch": "mobilenet_v3_small",
-  "fp32_ms": 5.495931819968973,
-  "fp16_ms": 2.811144000006607,
-  "speedup": 1.9550516871266848,
+  "fp32_ms": 5.129501219998929,
+  "fp16_ms": 2.88216196000576,
+  "speedup": 1.7797407956868174,
   "dtype_confirmed": true,
   "batch_size": 128,
   "reps": 50

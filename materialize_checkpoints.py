@@ -4,7 +4,7 @@ use (no architecture reconstruction needed to reload -- torch.jit.load alone
 is enough). Deterministic from the existing FP32 checkpoints (seed 2026), same
 pruning calls as prune_full_grid.py.
 """
-import copy
+import argparse, copy
 
 import torch, torch_pruning as tp
 from train_baseline import build_model
@@ -24,11 +24,16 @@ def trace_and_save(model, example_input, path):
 
 
 def main():
+    p = argparse.ArgumentParser()
+    p.add_argument('--archs', nargs='+', default=['resnet18', 'mobilenet_v3_small', 'efficientnet_b0'],
+                    choices=['resnet18', 'mobilenet_v3_small', 'efficientnet_b0'])
+    a = p.parse_args()
+
     device = 'cuda'
     torch.manual_seed(2026)
     example_inputs = torch.randn(1, 3, 32, 32, device=device)
 
-    for arch in ['resnet18', 'mobilenet_v3_small', 'efficientnet_b0']:
+    for arch in a.archs:
         base = build_model(arch)
         base.load_state_dict(torch.load(f'checkpoints/{arch}_fp32.pt', map_location='cpu', weights_only=True))
         base = base.to(device).eval()

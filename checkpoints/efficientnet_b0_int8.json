@@ -1,9 +1,9 @@
 {
   "arch": "efficientnet_b0",
   "verdict": "pass",
-  "fp32_acc": 0.8361,
-  "adaround_weights_still_float_acc": 0.8315,
-  "int8_acc": 0.7837,
+  "fp32_acc": 0.8891,
+  "adaround_weights_still_float_acc": 0.8822,
+  "int8_acc": 0.8687,
   "kernel_dtype_check": "torch.ao.nn.quantized modules found",
   "backend": "fbgemm (CPU)",
   "pipeline": "FX graph-mode fuse+observe+convert, AdaRound (layer-wise, disclosed simplification) + bias correction applied pre-convert, cross-layer equalization skipped (fbgemm already does per-channel weight quant -- CLE redundant, see module docstring)",

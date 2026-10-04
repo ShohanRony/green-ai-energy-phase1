@@ -1,3 +1,9 @@
+> **Superseded for MobileNetV3-Small and EfficientNet-B0 (2026-10-04):** this report's numbers for
+> these two models are from the original 30-epoch baselines, later flagged as not plateaued
+> (`stage2_closeout_report.md` Task B) and retrained to 60 epochs. Current numbers are in
+> `stage2_retrain_report.md` and `stage2_deliverable.md`. ResNet-18's numbers are unaffected and still
+> current.
+
 # Stage 2 Task Report — Compression Artifacts
 
 Energy-Aware Efficiency of Lightweight Vision Models Under Post-Training Compression.

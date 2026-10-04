@@ -1,9 +1,9 @@
 {
   "arch": "mobilenet_v3_small",
   "verdict": "pass",
-  "fp32_acc": 0.8499,
-  "adaround_weights_still_float_acc": 0.8497,
-  "int8_acc": 0.842,
+  "fp32_acc": 0.8647,
+  "adaround_weights_still_float_acc": 0.8633,
+  "int8_acc": 0.84,
   "kernel_dtype_check": "torch.ao.nn.quantized modules found",
   "backend": "fbgemm (CPU)",
   "pipeline": "FX graph-mode fuse+observe+convert, AdaRound (layer-wise, disclosed simplification) + bias correction applied pre-convert, cross-layer equalization skipped (fbgemm already does per-channel weight quant -- CLE redundant, see module docstring)",

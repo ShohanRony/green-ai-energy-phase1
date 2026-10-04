@@ -3,7 +3,8 @@
 checkpoint (results_stage2/task4_decision_checkpoint.json): zero-finetune
 uniformly, report collapse where it happens, do not silently switch to recovery.
 """
-import copy, json, time
+import argparse, copy, json, time
+from pathlib import Path
 
 import torch, torch_pruning as tp
 import torchvision
@@ -45,6 +46,11 @@ def measure_latency(model, x, reps=50, warmup=10):
 
 
 def main():
+    p = argparse.ArgumentParser()
+    p.add_argument('--archs', nargs='+', default=['resnet18', 'mobilenet_v3_small', 'efficientnet_b0'],
+                    choices=['resnet18', 'mobilenet_v3_small', 'efficientnet_b0'])
+    a = p.parse_args()
+
     device = 'cuda'
     torch.manual_seed(2026)
     data_dir = '/home/shohan/green-ai-research/data'
@@ -54,8 +60,9 @@ def main():
     example_inputs = torch.randn(1, 3, 32, 32, device=device)
     bench_input = torch.randn(128, 3, 32, 32, device=device)
 
-    results = {}
-    for arch in ['resnet18', 'mobilenet_v3_small', 'efficientnet_b0']:
+    out_file = Path('results_stage2/task4_full_grid.json')
+    results = json.loads(out_file.read_text()) if out_file.exists() else {}
+    for arch in a.archs:
         base = build_model(arch)
         base.load_state_dict(torch.load(f'checkpoints/{arch}_fp32.pt', map_location='cpu', weights_only=True))
         base = base.to(device).eval()
@@ -85,9 +92,8 @@ def main():
             print(f'{arch} @ {int(ratio*100)}%: acc={acc:.4f} macs_reduction={1-macs/base_macs:.3f} '
                   f'speedup={base_latency/latency:.2f}x{" -- COLLAPSED" if collapsed else ""}')
 
-    with open('results_stage2/task4_full_grid.json', 'w') as f:
-        json.dump(results, f, indent=2)
-    print('\nSaved results_stage2/task4_full_grid.json')
+    out_file.write_text(json.dumps(results, indent=2))
+    print(f'\nSaved {out_file}')
 
 
 if __name__ == '__main__':

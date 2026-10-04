@@ -1,11 +1,11 @@
 {
   "baseline": {
-    "acc": 0.8499,
+    "acc": 0.8646,
     "macs": 5801890.0,
     "params": 1528106
   },
   "prune_5": {
-    "acc": 0.8196,
+    "acc": 0.7984,
     "macs": 5251297.0,
     "params": 1377637,
     "nominal_sparsity": 0.05,
@@ -13,7 +13,7 @@
     "realized_params_reduction": 0.09846764556909016
   },
   "prune_10": {
-    "acc": 0.5913,
+    "acc": 0.6358,
     "macs": 4767923.0,
     "params": 1240101,
     "nominal_sparsity": 0.1,
@@ -21,7 +21,7 @@
     "realized_params_reduction": 0.1884718730245153
   },
   "prune_15": {
-    "acc": 0.3031,
+    "acc": 0.5983,
     "macs": 4299358.0,
     "params": 1109583,
     "nominal_sparsity": 0.15,
@@ -29,7 +29,7 @@
     "realized_params_reduction": 0.27388348714029
   },
   "prune_20": {
-    "acc": 0.2118,
+    "acc": 0.3021,
     "macs": 3860890.0,
     "params": 986506,
     "nominal_sparsity": 0.2,

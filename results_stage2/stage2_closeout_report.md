@@ -1,3 +1,10 @@
+> **Task A and Task B superseded (2026-10-04):** Task B's flag below (MobileNetV3-Small/EfficientNet-B0
+> not plateaued at 30 epochs) led to a retrain to 60 epochs. Task A's probe and verdict were rerun
+> against the new baseline — the curve shape changed (a real cliff appears at 15%→20% that wasn't
+> visible before), though the overall "genuine architectural fragility" conclusion still holds. See
+> `stage2_retrain_report.md` for the full before/after comparison. Task C/D's git and checkpoint work
+> below is unaffected by this note and still accurate for what it describes.
+
 # Stage 2 Closeout Report — Tasks A–D
 
 Follow-up to `stage2_deliverable.md` / `stage2_task_report.md`, run 2026-10-04. Four items required
