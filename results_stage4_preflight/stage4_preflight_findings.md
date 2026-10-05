@@ -2,8 +2,12 @@
 
 Run 2026-10-05, following the Stage 3 report's flagged batch-size-vs-speedup question. Three tasks from
 the pre-flight instruction: Task 1 (batch=1 pilot), Task 2 (lock batch-size policy), Task 3 (sudoers
-rule). Task 2 escalated into a more fundamental finding than originally scoped — documented in full
-below, with a decision point at the end, not a unilateral policy choice.
+rule). Task 2 escalated into a deeper investigation than originally scoped — a GPU power-regime split
+not explained by batch size, state, or CPU governor. **Mechanism investigation closed 2026-10-05**
+(boot-identity hypothesis falsified by a deliberate reboot test; uptime-duration is the surviving,
+unconfirmed candidate) — see "Deliberate reboot test" below. Resolved by building two harness guards
+into `pilot.py` instead of waiting on the mechanism: automatic power-regime flagging and an enforced
+fresh-boot check. Full detail below.
 
 A power loss interrupted this session partway through (machine rebooted, confirmed via `uptime`). **No
 data was lost or corrupted** — every run directory from before the outage shows `pairs=9` (complete).
@@ -178,20 +182,60 @@ via `echo performance | sudo tee ...` the whole time, and that worked correctly 
 This leaves the pre-reboot/post-reboot split (6/18 dip vs. 0/27 dip, governor held constant throughout)
 as the only variable collected so far that actually co-varies with regime.
 
-## Decision needed before Stage 4 proceeds
+## Deliberate reboot test (closing the mechanism investigation)
 
-**Updated after the diagnostic sweep.** The leading candidate is now boot-session-level state, not
-per-invocation randomness: 27/27 post-reboot measurements pinned, all observed dips pre-reboot. That's
-more tractable than true stochasticity, but it's a timing correlation from one reboot, not a confirmed
-mechanism — it hasn't been deliberately tested (e.g. by rebooting again and checking whether dips
-reappear). Options, not a recommendation from this report alone:
+Scoped to exactly the 2 combos that had flipped: Pruned70@b32, FP16@b64. Before rebooting: checked
+persistence mode (`Disabled`, unchanged throughout this entire investigation — never varied, so it
+can't be the explanation either) and reran both combos once more in the *same* long-running boot
+session, to separate "boot identity" from "thermal/driver state accumulated over this session's
+uptime" before spending an actual reboot cycle. Then rebooted for real and reran both.
 
-1. **Test the boot-session hypothesis directly**: reboot once more (deliberately, not from another
-   power loss) and rerun a couple of the previously-dipping combos to see if the dip reappears. Cheap,
-   directly answers the open question, but means another full reboot cycle.
-2. **Design around it empirically regardless of mechanism**: require N ≥ 2-3 independent repeat
-   invocations per (model, state, batch) in Stage 4, explicitly report regime bimodality if it recurs.
-   Doesn't require resolving the mechanism first.
-3. **Treat it as within-hardware noise** Stage 4's ≥30-rep-per-condition design already budgets for,
-   accepting wider variance bands rather than resolving the mechanism.
-4. Something else — this is flagged for a decision, not resolved here.
+| Combo | Original (long-uptime session) | After 1st reboot (accidental) | Same session, hours later | After 2nd reboot (deliberate) |
+|---|---|---|---|---|
+| Pruned70@b32 | **dip** (~35W) | pinned | pinned (59.9W) | **pinned** (59.9W) |
+| FP16@b64 | **dip** (~38W) | pinned | pinned (60.0W) | **pinned** (60.0W) |
+
+**Verdict: the dip did not reappear. Boot-session *identity* is falsified as the mechanism** — if each
+boot got its own fixed-but-arbitrary assignment, a second fresh reboot should have had a real chance of
+landing on dip again for at least one of the two combos. It landed pinned both times, extending the
+pinned streak to 30+ consecutive post-reboot/post-control measurements with zero dips since the
+original session.
+
+**What survives:** dips have *only* ever been observed in that one original session, which — unlike
+every session measured since — had an unknown, likely much longer uptime before it was tested. The
+more precise surviving hypothesis is **uptime-duration-since-boot, not boot identity**: something
+degrades over a long session and resets on any reboot, rather than each boot independently rolling a
+regime. This is not confirmed (would need a session deliberately run for many hours post-reboot without
+rebooting again, to see if dip reappears as uptime grows) — flagged as the leading candidate, not
+asserted as fact. **Mechanism investigation stopped here per the 2026-10-05 decision** — not chased
+further; the harness changes below are designed to be correct regardless of whether this hypothesis
+turns out to be right.
+
+## Harness changes landed for Stage 4 (not waiting on the mechanism)
+
+Two additions to `pilot.py`, independent of whether the uptime hypothesis is ever confirmed:
+
+1. **Automatic power-regime flagging.** Every active window is classified `pinned`/`dip`
+   (`classify_power_regime()`: cuda-only, `implied_w >= 0.9 * power_cap_w`, threshold chosen with a
+   clean margin against the two empirically observed clusters — pinned always ≥98.8% of cap, dip
+   always ≤88.5%). `window()`'s return dict carries this per-window (`raw.jsonl`/`windows.csv`); summary
+   rows carry a `power_regime` field that is `pinned`, `dip`, or `mixed` if a config's reps disagreed —
+   `mixed` is the one that needs a human to look, since it hasn't happened in any run collected so far
+   (every run's reps, even the longer 10-rep ones, have agreed with each other throughout).
+2. **Fresh-boot guard, enforced not documented.** `check_fresh_boot()` reads `/proc/uptime` and refuses
+   to start (same raise-or-warn-behind-an-override pattern as every other pre-flight guard in this file)
+   if uptime exceeds `--max-uptime-min` (default 30, explicitly disclosed as a conservative placeholder
+   — not a measured decay boundary, since that boundary isn't known yet). Override: `--allow-stale-boot`,
+   logs a warning, matches the existing `--override-fast-interval` style. `uptime_s` is now logged in
+   every run's `environment.json` regardless, so future Stage 4 data carries this variable even if the
+   guard is overridden.
+
+Both verified end-to-end (not just unit-tested): a real run logged `power_regime: pinned` correctly in
+its summary; the fresh-boot guard raised by default at a forced-low threshold and the `--allow-stale-boot`
+override correctly downgraded it to a warning. 34/34 tests pass (6 new: 3 for the regime classifier, 3
+for the fresh-boot guard).
+
+**What this buys Stage 4:** the full factorial will self-report which regime every single run landed
+in (no more silently averaging across both without knowing), and will refuse to start unattended after
+a long idle/uptime period without an explicit override — converting an unresolved hardware mechanism
+into a controlled, disclosed variable rather than hidden noise.

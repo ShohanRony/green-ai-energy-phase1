@@ -73,6 +73,32 @@ def flag_implausible_power(device, implied_w, power_cap_w):
     this RTX 3050's current enforced limit is 60.00W (default; max settable 95.00W)."""
     return device == 'cuda' and implied_w > power_cap_w
 
+def classify_power_regime(device, implied_w, power_cap_w):
+    """Stage 4 pre-flight (2026-10-05, results_stage4_preflight/stage4_preflight_findings.md)
+    found this GPU lands in one of two distinct power states for the same config: pinned at
+    its enforced cap, or an unsaturated ~55-90% of it -- never observed in between. Flag which
+    one every run landed in instead of silently averaging across both; a 'dip' run is not an
+    error, but a 'mixed' run (see summarize()) means reps disagreed and needs attention.
+    0.9 threshold: clean margin against observed clusters (pinned >=98.8% of cap, dip <=88.5%)."""
+    if device != 'cuda' or power_cap_w is None: return None
+    return 'pinned' if implied_w >= 0.9 * power_cap_w else 'dip'
+
+def check_fresh_boot(max_uptime_s, override, flag_name):
+    """Stage 4 pre-flight's leading (not confirmed) hypothesis for the pin/dip split is uptime-
+    since-boot, not per-invocation randomness: every dip seen so far was in a long-uptime
+    session; two separate fresh reboots both measured pinned. This guard is a conservative,
+    disclosed placeholder -- not a precisely measured decay boundary -- requiring a recent
+    reboot before a run starts, so Stage 4's matrix doesn't silently mix regimes across a long
+    session. Raises (or warns-and-allows, behind the override) if uptime exceeds the threshold."""
+    uptime_s = float(Path('/proc/uptime').read_text().split()[0])
+    if uptime_s <= max_uptime_s: return uptime_s
+    reason = (f'System uptime is {uptime_s/60:.0f} min, over the {max_uptime_s/60:.0f}-min fresh-boot '
+              f'threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a '
+              f'long-uptime session; reboot before starting a real matrix run).')
+    if not override: raise RuntimeError(f'{reason} Pass {flag_name} to force it anyway.')
+    print(f'WARNING: {reason}', file=sys.stderr)
+    return uptime_s
+
 def integrate(trace, ranges):
     energy = 0.
     for (t0, x0), (t1, x1) in zip(trace, trace[1:]):
@@ -114,7 +140,8 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
                 max_sample_gap_s=max(b[0]-a[0] for a,b in zip(trace,trace[1:])),
                 changed_reads=sum(a[1]!=b[1] for a,b in zip(trace,trace[1:])),
                 trace=trace,backend=sensor.backend,
-                plausibility_flag=flag_implausible_power(sensor.device, energy/duration, sensor.power_cap_w))
+                plausibility_flag=flag_implausible_power(sensor.device, energy/duration, sensor.power_cap_w),
+                power_regime=classify_power_regime(sensor.device, energy/duration, sensor.power_cap_w))
 
 def summarize(rows):
     # Independently paired A/A differences estimate the noise relevant to a future A/B comparison.
@@ -122,7 +149,7 @@ def summarize(rows):
     keys=sorted({(r['device'],r['size'],r['batch'],r['requested_s']) for r in rows})
     for key in keys:
         group=[r for r in rows if (r['device'],r['size'],r['batch'],r['requested_s'])==key]
-        ids=sorted({r['repeat'] for r in group}); pairs=[]; active=[]; idle=[]; net=[]; fractions=[]; diffs=[]
+        ids=sorted({r['repeat'] for r in group}); pairs=[]; active=[]; idle=[]; net=[]; fractions=[]; diffs=[]; regimes=[]
         for rep in ids:
             d={r['phase']:r for r in group if r['repeat']==rep}
             if set(d) != {'idle_before','a1','a2','idle_after'}: continue
@@ -137,7 +164,9 @@ def summarize(rows):
                 r['estimated_idle_j']=idlepower*r['duration_s']; r['above_idle_j']=above
                 r['above_idle_fraction']=above/gross if gross else None
                 r['gross_j_per_image']=per[-1]
-                if not cold: active.append(gross); net.append(above); fractions.append(above/gross if gross else float('nan'))
+                if not cold:
+                    active.append(gross); net.append(above); fractions.append(above/gross if gross else float('nan'))
+                    if r['power_regime'] is not None: regimes.append(r['power_regime'])
             if cold: continue
             # Match both idle readings to the planned window to avoid timing overshoot bias.
             idle.extend(d[p]['energy_j']/d[p]['duration_s']*key[3] for p in ['idle_before','idle_after'])
@@ -146,6 +175,7 @@ def summarize(rows):
         n=len(pairs); mean=statistics.mean(pairs); sd=statistics.stdev(diffs)
         mde=2.80*sd/math.sqrt(n) # normal approximation: two-sided alpha .05, power .80
         bias=abs(statistics.mean(diffs)); limit=bias+mde
+        regime_set=set(regimes)
         out.append(dict(device=key[0],size=key[1],batch=key[2],window_s=key[3],pairs=n,
                         idle_j_mean=statistics.mean(idle),idle_j_sd=statistics.stdev(idle),
                         total_j_mean=statistics.mean(active),total_j_sd=statistics.stdev(active),
@@ -153,7 +183,8 @@ def summarize(rows):
                         gross_j_per_image_mean=mean,paired_difference_sd=sd,
                         paired_order_bias=statistics.mean(diffs),approx_mde_j_per_image=mde,
                         conservative_screen_fraction=limit/mean if mean>0 else None,
-                        candidate_for_confirmation=bool(n>=30 and mean>0 and limit<=.05*mean)))
+                        candidate_for_confirmation=bool(n>=30 and mean>0 and limit<=.05*mean),
+                        power_regime=(regime_set.pop() if len(regime_set)==1 else ('mixed' if regime_set else None))))
     return out
 
 def csv_write(path, rows):
@@ -188,6 +219,12 @@ def main():
                          'nvmlDeviceGetPowerUsage. Confirmed 2026-10-03 to over-report active-phase power '
                          'by ~30%% on this GPU (results/active_power_baseline_investigation.md). Only for '
                          'reproducing/citing pre-correction numbers. Logs a warning.')
+    p.add_argument('--max-uptime-min',type=float,default=30,
+                    help='Refuse to start if system uptime exceeds this (minutes) -- Stage 4 pre-flight '
+                         'found every observed power-regime dip in a long-uptime session. Conservative, '
+                         'disclosed placeholder, not a precisely measured boundary.')
+    p.add_argument('--allow-stale-boot',action='store_true',
+                    help='Allow a run past --max-uptime-min. Logs a warning.')
     p.add_argument('--threads',type=int,default=4); p.add_argument('--warmup',type=float,default=3)
     p.add_argument('--codecarbon',action='store_true',help='Run CodeCarbon concurrently with the RAPL/NVML reads on each active window.')
     p.add_argument('--codecarbon-country',default='CZE',help='ISO code for CodeCarbon offline grid-intensity lookup (energy figure itself is country-independent).')
@@ -217,6 +254,7 @@ def main():
         check_interval_floor(a.device=='cpu', a.interval, 0.01, a.override_fast_rapl_interval, '--override-fast-rapl-interval',
             f'--interval {a.interval}s exceeds the RAPL/perf-events sampling ceiling (100Hz / 0.01s, plan checklist item 4).')
         platform_profile=check_platform_profile()
+        uptime_s=check_fresh_boot(a.max_uptime_min*60, a.allow_stale_boot, '--allow-stale-boot')
         if a.device=='cuda' and a.legacy_cumulative_counter:
             print('WARNING: --legacy-cumulative-counter selected; nvmlDeviceGetTotalEnergyConsumption is '
                   'known to over-report active-phase power by ~30% on this GPU (see '
@@ -247,7 +285,7 @@ def main():
                    nvidia_driver_version=sensor.nv.nvmlSystemGetDriverVersion() if a.device=='cuda' else None,
                    gpu_power_cap_w=sensor.power_cap_w,
                    cpu_governors=sorted({Path(p).read_text().strip() for p in gov_paths}) if gov_paths else None,
-                   platform_profile=platform_profile,
+                   platform_profile=platform_profile,uptime_s=uptime_s,
                    weights='checkpoint' if a.checkpoint else 'seeded random weights: timing pilot only')
         (out/'environment.json').write_text(json.dumps(env,indent=2))
         with torch.inference_mode():
