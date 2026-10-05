@@ -92,8 +92,9 @@ collects). Out of scope to chase further here without direction.
 
 ## Task 3 — Sudoers rule for CPU governor
 
-`scripts/setup_governor_sudoers.sh` written and reviewed, not yet run as of this report (power loss
-interrupted before the user got to it). Still pending.
+**Done.** `scripts/setup_governor_sudoers.sh` run successfully; hit and fixed a real bug in
+`set_cpu_governor.sh` along the way (see the diagnostic-sweep section above). Verified:
+`sudo -n /usr/local/sbin/set_cpu_governor.sh performance` exits 0 with no password prompt.
 
 ## Power-loss recovery (mid-session interruption)
 
@@ -112,17 +113,63 @@ explain the pin/dip split, but it's one data point and wasn't treated as evidenc
 
 ---
 
+## Follow-up diagnostic sweep (2026-10-05 decision: option 1, bounded)
+
+Scoped per the decision: Task 3's sudoers rule first (hit and fixed a real bug along the way, see
+below), then launch-time telemetry (GPU temp, persistence mode, SM clock, AC state, idle-gap-since-
+last-invocation) logged for N=8 independent invocations each of exactly 3 combos — Pruned70@b16
+(previously deterministic), Pruned70@b32 and FP16@b64 (previously flipped). Not expanded further.
+`diagnostic_power_regime_sweep.py`, full log in `results_stage4_preflight/diagnostic_sweep/launch_log.jsonl`.
+
+**Result: 24/24 pinned. Zero dips, including both combos that flipped earlier.**
+
+| Combo | Invocations | Pinned | Dip |
+|---|---|---|---|
+| Pruned70 @ b16 | 8 | 8 | 0 |
+| Pruned70 @ b32 | 8 | 8 | 0 |
+| FP16 @ b64 | 8 | 8 | 0 |
+
+Temp held steady (41°C warming to 54-55°C then flat), SM clock constant at 1492MHz (boost) throughout,
+persistence mode `Disabled` throughout (didn't vary — no pre-reboot baseline to compare against),
+`idle_gap_s` ≈0.00 for every invocation after the first (they were launched back-to-back by design) and
+AC online throughout.
+
+**The real signal is in the timing, not the telemetry table:** every post-reboot measurement taken
+today — these 24 invocations plus the 3 determinism-check reruns before them (27 total) — landed
+pinned. **Every single dip observed in this entire investigation happened pre-reboot** (the original
+Task 1 batch=1 pilot and the 12-run batch scan). That's a cleaner, more falsifiable candidate
+explanation than per-invocation randomness: something about the reboot put the GPU into a stable
+"always pinned" state for this boot session, rather than the regime being re-rolled on each invocation.
+
+**What this sweep can't tell us, disclosed rather than glossed over:** because every invocation was
+launched back-to-back, `idle_gap_s` never varied (always ≈0), and neither did `regime` (always
+`pinned`) — with zero variation in either variable, this design cannot confirm or rule out idle-gap (or
+persistence mode, held constant throughout) as a contributing factor. It can only speak to the
+boot-session pattern, which is the strongest lead so far but itself untested directly (would require
+another reboot to see if dips reappear, not done here — out of the bounded scope).
+
+**Governor script bug caught and fixed along the way:** Task 3's `set_cpu_governor.sh` initially failed
+every invocation with `Refusing unknown governor: performance}` — reproduced in the user's own terminal
+(not a sandbox artifact) and confirmed the sudoers file itself was byte-clean (`cat -A`, no hidden
+characters). Root cause suspected: `${1:?usage: ...{performance|powersave|...}}` embeds a second,
+unescaped `{...}` pair inside the `:?` error-message word, which can confuse bash's own matching for the
+outer `${...}`'s terminator. Rewrote without any brace characters in the script at all; verified working
+(exit 0, no password prompt) after reinstall.
+
 ## Decision needed before Stage 4 proceeds
 
-This is no longer just "which batch size." The power-regime non-determinism affects *any* batch size,
-and arguably affects the validity of energy comparisons already made in Stage 2/3. Options, not a
-recommendation from this report alone:
+**Updated after the diagnostic sweep.** The leading candidate is now boot-session-level state, not
+per-invocation randomness: 27/27 post-reboot measurements pinned, all observed dips pre-reboot. That's
+more tractable than true stochasticity, but it's a timing correlation from one reboot, not a confirmed
+mechanism — it hasn't been deliberately tested (e.g. by rebooting again and checking whether dips
+reappear). Options, not a recommendation from this report alone:
 
-1. **Investigate the mechanism further** (e.g., direct `nvidia-smi dmon`/clock-state logging during a
-   run to see if the regime is visible/predictable from clock state at warmup time).
-2. **Design around it empirically**: require N ≥ 2-3 independent repeat invocations per (model, state,
-   batch) in Stage 4, explicitly report regime bimodality if it recurs, rather than trusting a single
-   invocation's reps.
+1. **Test the boot-session hypothesis directly**: reboot once more (deliberately, not from another
+   power loss) and rerun a couple of the previously-dipping combos to see if the dip reappears. Cheap,
+   directly answers the open question, but means another full reboot cycle.
+2. **Design around it empirically regardless of mechanism**: require N ≥ 2-3 independent repeat
+   invocations per (model, state, batch) in Stage 4, explicitly report regime bimodality if it recurs.
+   Doesn't require resolving the mechanism first.
 3. **Treat it as within-hardware noise** Stage 4's ≥30-rep-per-condition design already budgets for,
    accepting wider variance bands rather than resolving the mechanism.
 4. Something else — this is flagged for a decision, not resolved here.
