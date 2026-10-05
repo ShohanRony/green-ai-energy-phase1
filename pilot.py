@@ -1,6 +1,14 @@
-"""Local Linux energy pilot. No generated measurements or silent sensor fallback."""
+"""Local Linux energy pilot. No generated measurements or silent sensor fallback.
+
+Power-loss resilience: checks power_state.stop_requested() between reps (never mid-rep).
+If set, records how many reps are done in resume_state.json and exits cleanly. Resume with
+--resume <out dir> -- all other flags (device, checkpoint, sizes, etc.) are restored from
+that run's own environment.json, not re-specified.
+"""
 import argparse, csv, glob, json, math, os, platform, random, statistics, sys, threading, time, traceback
 from pathlib import Path
+
+import power_state
 
 class Sensor:
     def __init__(self, device, legacy_cumulative=False):
@@ -156,14 +164,16 @@ def csv_write(path, rows):
 
 def main():
     p=argparse.ArgumentParser()
-    p.add_argument('--device',choices=['cpu','cuda'],required=True)
+    p.add_argument('--resume',help='Path to an existing --out directory from an interrupted run. '
+                                    'All other flags are restored from its environment.json, not re-specified.')
+    p.add_argument('--device',choices=['cpu','cuda'])
     p.add_argument('--arch',choices=['resnet18','mobilenet_v3_small','efficientnet_b0'],default='resnet18',
                     help='Architecture to build when --checkpoint is a plain state_dict, or when no '
                          '--checkpoint is given (random-weights timing-only mode). Ignored when '
                          '--checkpoint is a self-contained TorchScript module (FP16/pruned/INT8 '
                          'checkpoints from Stage 2 are saved this way and carry their own architecture).')
     p.add_argument('--data',default='data'); p.add_argument('--download',action='store_true')
-    p.add_argument('--out',required=True); p.add_argument('--sizes',type=int,nargs='+',default=[32,64,128,224])
+    p.add_argument('--out'); p.add_argument('--sizes',type=int,nargs='+',default=[32,64,128,224])
     p.add_argument('--batches',type=int,nargs='+',default=[1,16,64,128,256])
     p.add_argument('--windows',type=float,nargs='+',default=[5])
     p.add_argument('--repeats',type=int,default=6); p.add_argument('--interval',type=float,default=.4)
@@ -182,12 +192,23 @@ def main():
     p.add_argument('--codecarbon',action='store_true',help='Run CodeCarbon concurrently with the RAPL/NVML reads on each active window.')
     p.add_argument('--codecarbon-country',default='CZE',help='ISO code for CodeCarbon offline grid-intensity lookup (energy figure itself is country-independent).')
     p.add_argument('--checkpoint'); a=p.parse_args()
-    out=Path(a.out); out.mkdir(parents=True,exist_ok=False)
+    start_rep=0; rows=[]
+    if a.resume:
+        out=Path(a.resume)
+        saved_args=json.loads((out/'environment.json').read_text())['arguments']
+        resume_val=a.resume; a=argparse.Namespace(**saved_args); a.resume=resume_val  # restore everything except --resume itself
+        with (out/'raw.jsonl').open() as f:
+            rows=[json.loads(line) for line in f]
+        resume_state=json.loads((out/'resume_state.json').read_text())
+        start_rep=resume_state['next_rep']
+        print(f'Resuming {out} from rep {start_rep}/{a.repeats}',file=sys.stderr)
+    else:
+        if not a.device or not a.out: p.error('--device and --out are required unless --resume is given')
+        out=Path(a.out); out.mkdir(parents=True,exist_ok=False)
     env=dict(platform=platform.platform(),cpu=platform.processor(),arguments=vars(a),
              timestamp_utc=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),
              cpuinfo=Path('/proc/cpuinfo').read_text() if Path('/proc/cpuinfo').exists() else '')
     (out/'environment.json').write_text(json.dumps(env,indent=2))
-    rows=[]
     try:
         if min(a.windows)<=0 or min(a.batches)<=0 or a.interval<=0: raise ValueError('Positive durations/batches required')
         check_interval_floor(a.device=='cuda', a.interval, 0.3, a.override_fast_interval, '--override-fast-interval',
@@ -230,7 +251,7 @@ def main():
                    weights='checkpoint' if a.checkpoint else 'seeded random weights: timing pilot only')
         (out/'environment.json').write_text(json.dumps(env,indent=2))
         with torch.inference_mode():
-            for rep in range(a.repeats):
+            for rep in range(start_rep,a.repeats):
                 grid=[(s,b,w) for s in a.sizes for b in a.batches for w in a.windows]; random.shuffle(grid)
                 for size,batch,seconds in grid:
                     try:
@@ -265,6 +286,13 @@ def main():
                         torch.cuda.empty_cache()
                     finally:
                         summary=summarize(rows); csv_write(out/'summary.csv',summary); csv_write(out/'windows.csv',rows)
+                (out/'resume_state.json').write_text(json.dumps(dict(next_rep=rep+1)))
+                if power_state.stop_requested():
+                    resume_cmd=f'python3 pilot.py --resume {out}'
+                    power_state.write_resume_hint(resume_cmd)
+                    print(f'Power-loss stop requested after rep {rep+1}/{a.repeats}. Resume with: {resume_cmd}',file=sys.stderr)
+                    return
+            power_state.clear_resume_hint()
     except Exception:
         (out/'failure.txt').write_text(traceback.format_exc()); raise
 

@@ -1,6 +1,11 @@
 """Train an FP32 CIFAR-10 baseline checkpoint for Stage 2 (fresh training, not pretrained).
 
 Usage: python3 train_baseline.py --arch resnet18 --epochs 30 --out checkpoints/resnet18_fp32.pt
+
+Power-loss resilience: checks power_state.stop_requested() at the end of every epoch (never
+mid-epoch). If set, saves a resume checkpoint (model/optimizer/scheduler/RNG state) to
+<out>_interrupted.pt and exits cleanly. Resume with --resume <that file> -- arch/epochs/lr/
+batch-size/out are restored from the checkpoint, not re-specified.
 """
 import argparse, json, time, random
 from pathlib import Path
@@ -8,6 +13,8 @@ from pathlib import Path
 import torch, torchvision
 from torch import nn
 from torchvision import transforms
+
+import power_state
 
 CIFAR_MEAN = (0.4914, 0.4822, 0.4465)
 CIFAR_STD = (0.2470, 0.2435, 0.2616)
@@ -35,19 +42,44 @@ def build_model(arch: str) -> nn.Module:
     return model
 
 
+def interrupted_path(out: str) -> Path:
+    p = Path(out)
+    return p.with_name(p.stem + '_interrupted.pt')
+
+
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--arch', required=True, choices=sorted(ARCHES))
+    p.add_argument('--arch', choices=sorted(ARCHES))
     p.add_argument('--data', default='data')
     p.add_argument('--epochs', type=int, default=30)
     p.add_argument('--batch-size', type=int, default=128)
     p.add_argument('--lr', type=float, default=0.1)
-    p.add_argument('--out', required=True)
+    p.add_argument('--out')
+    p.add_argument('--resume', help='Path to an <out>_interrupted.pt checkpoint saved after a '
+                                     'power-loss stop. arch/epochs/lr/batch-size/out are restored '
+                                     'from it, not re-specified.')
     a = p.parse_args()
 
     torch.manual_seed(2026)
     random.seed(2026)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    resume_ckpt = None
+    if a.resume:
+        # map_location must be 'cpu', not the training device: RNG-state tensors are always
+        # CPU ByteTensors regardless of which device's generator they represent, and
+        # torch.set_rng_state() rejects a CUDA tensor. model/optimizer state_dicts still load
+        # fine onto the GPU afterward -- load_state_dict copies across devices automatically.
+        resume_ckpt = torch.load(a.resume, map_location='cpu', weights_only=False)
+        a.arch, a.epochs, a.lr, a.batch_size, a.out, a.data = (
+            resume_ckpt['arch'], resume_ckpt['epochs'], resume_ckpt['lr'],
+            resume_ckpt['batch_size'], resume_ckpt['out'], resume_ckpt['data'])
+        torch.set_rng_state(resume_ckpt['torch_rng_state'])
+        if resume_ckpt['torch_cuda_rng_state'] is not None and torch.cuda.is_available():
+            torch.cuda.set_rng_state_all(resume_ckpt['torch_cuda_rng_state'])
+        random.setstate(resume_ckpt['random_state'])
+    elif not a.arch or not a.out:
+        p.error('--arch and --out are required unless --resume is given')
 
     train_tf = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -69,9 +101,18 @@ def main():
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=a.epochs)
     crit = nn.CrossEntropyLoss()
 
-    log = []
-    t0 = time.time()
-    for epoch in range(a.epochs):
+    start_epoch, log, wall_clock_before = 0, [], 0.0
+    if resume_ckpt is not None:
+        model.load_state_dict(resume_ckpt['model_state'])
+        opt.load_state_dict(resume_ckpt['optimizer_state'])
+        sched.load_state_dict(resume_ckpt['scheduler_state'])
+        start_epoch, log = resume_ckpt['epoch'], resume_ckpt['log']
+        wall_clock_before = resume_ckpt['wall_clock_s_so_far']
+        print(f'Resuming {a.arch} from epoch {start_epoch+1}/{a.epochs} '
+              f'({wall_clock_before:.0f}s already spent)', flush=True)
+
+    t0 = time.time() - wall_clock_before
+    for epoch in range(start_epoch, a.epochs):
         model.train()
         running_loss, correct, n = 0.0, 0, 0
         for x, y in train_dl:
@@ -89,6 +130,22 @@ def main():
         epoch_time = time.time() - t0
         print(f'epoch {epoch+1}/{a.epochs} loss={running_loss/n:.4f} train_acc={train_acc:.4f} elapsed={epoch_time:.0f}s', flush=True)
         log.append(dict(epoch=epoch + 1, loss=running_loss / n, train_acc=train_acc))
+
+        if power_state.stop_requested():
+            ck_path = interrupted_path(a.out)
+            torch.save(dict(
+                epoch=epoch + 1, arch=a.arch, epochs=a.epochs, lr=a.lr, batch_size=a.batch_size,
+                out=a.out, data=a.data, log=log, wall_clock_s_so_far=time.time() - t0,
+                model_state=model.state_dict(), optimizer_state=opt.state_dict(),
+                scheduler_state=sched.state_dict(), torch_rng_state=torch.get_rng_state(),
+                torch_cuda_rng_state=torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+                random_state=random.getstate(),
+            ), ck_path)
+            resume_cmd = f'python3 train_baseline.py --resume {ck_path}'
+            power_state.write_resume_hint(resume_cmd)
+            print(f'Power-loss stop requested; checkpointed after epoch {epoch+1}/{a.epochs} to '
+                  f'{ck_path}. Resume with: {resume_cmd}', flush=True)
+            return
 
     model.eval()
     correct, n = 0, 0
@@ -110,6 +167,9 @@ def main():
                 wall_clock_s=time.time() - t0, provenance='trained-here-fresh')
     out_path.with_suffix('.json').write_text(json.dumps(meta, indent=2))
     print(f'Saved {out_path} and {out_path.with_suffix(".json")}')
+
+    interrupted_path(a.out).unlink(missing_ok=True)  # job actually finished; stale resume state would be misleading
+    power_state.clear_resume_hint()
 
 
 if __name__ == '__main__':

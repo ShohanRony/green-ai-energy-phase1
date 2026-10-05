@@ -2,6 +2,11 @@
 3 models, via torch-pruning. Policy confirmed after the single-model decision
 checkpoint (results_stage2/task4_decision_checkpoint.json): zero-finetune
 uniformly, report collapse where it happens, do not silently switch to recovery.
+
+Power-loss resilience: results are saved after every (arch, ratio) combo (not just
+at the end), and each combo is skipped on a later run if its key is already in the
+output file -- so interrupting and resuming is just "run the same command again,
+restricted to --archs that aren't fully done yet," no separate checkpoint format.
 """
 import argparse, copy, json, time
 from pathlib import Path
@@ -10,6 +15,8 @@ import torch, torch_pruning as tp
 import torchvision
 from torchvision import transforms
 from train_baseline import build_model
+
+import power_state
 
 CIFAR_MEAN = (0.4914, 0.4822, 0.4465)
 CIFAR_STD = (0.2470, 0.2435, 0.2616)
@@ -62,16 +69,20 @@ def main():
 
     out_file = Path('results_stage2/task4_full_grid.json')
     results = json.loads(out_file.read_text()) if out_file.exists() else {}
-    for arch in a.archs:
+    for i, arch in enumerate(a.archs):
         base = build_model(arch)
         base.load_state_dict(torch.load(f'checkpoints/{arch}_fp32.pt', map_location='cpu', weights_only=True))
         base = base.to(device).eval()
         base_macs, base_params = tp.utils.count_ops_and_params(copy.deepcopy(base), example_inputs)
         base_acc = evaluate(base, test_dl, device)
         base_latency = measure_latency(base, bench_input)
-        results[arch] = {'baseline': dict(acc=base_acc, macs=base_macs, params=base_params, latency_ms=base_latency)}
+        results.setdefault(arch, {})['baseline'] = dict(acc=base_acc, macs=base_macs, params=base_params, latency_ms=base_latency)
 
         for ratio in RATIOS:
+            key = f'prune_{int(ratio*100)}'
+            if key in results[arch]:
+                print(f'{arch} @ {int(ratio*100)}%: already done, skipping (resume)')
+                continue
             model = copy.deepcopy(base)
             imp = tp.importance.MagnitudeImportance(p=2)
             pruner = tp.pruner.MagnitudePruner(
@@ -82,7 +93,6 @@ def main():
             acc = evaluate(model, test_dl, device)
             latency = measure_latency(model, bench_input)
             collapsed = acc <= 0.15  # near chance-level for CIFAR-10 (10 classes)
-            key = f'prune_{int(ratio*100)}'
             results[arch][key] = dict(
                 acc=acc, macs=macs, params=params, latency_ms=latency,
                 nominal_sparsity=ratio, realized_macs_reduction=1 - macs / base_macs,
@@ -91,8 +101,17 @@ def main():
                 flagged_collapse=collapsed, policy='zero-finetune')
             print(f'{arch} @ {int(ratio*100)}%: acc={acc:.4f} macs_reduction={1-macs/base_macs:.3f} '
                   f'speedup={base_latency/latency:.2f}x{" -- COLLAPSED" if collapsed else ""}')
+            out_file.write_text(json.dumps(results, indent=2))  # save after every combo, not just at the end
+
+            if power_state.stop_requested():
+                remaining = a.archs[i:]  # this arch (may have more ratios left) + any not yet started
+                resume_cmd = f'python3 prune_full_grid.py --archs {" ".join(remaining)}'
+                power_state.write_resume_hint(resume_cmd)
+                print(f'Power-loss stop requested after {arch}@{int(ratio*100)}%. Resume with: {resume_cmd}')
+                return
 
     out_file.write_text(json.dumps(results, indent=2))
+    power_state.clear_resume_hint()
     print(f'\nSaved {out_file}')
 
 
