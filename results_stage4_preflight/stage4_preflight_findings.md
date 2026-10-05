@@ -156,6 +156,28 @@ unescaped `{...}` pair inside the `:?` error-message word, which can confuse bas
 outer `${...}`'s terminator. Rewrote without any brace characters in the script at all; verified working
 (exit 0, no password prompt) after reinstall.
 
+## Governor ruled out as a confound (checked, not assumed)
+
+Before trusting the boot-session hypothesis, checked whether the CPU governor itself — not the Task 3
+wrapper-script bug, the actual `/sys`-level value `pilot.py` logs into every run's `environment.json` —
+could explain the pattern, since the wrapper script's bug and the reboot happened close together in time.
+
+| Phase | Runs | Governor logged | Pinned | Dip |
+|---|---|---|---|---|
+| Pre-reboot finer scan | 18 | `performance`, every run | 12 | 6 |
+| Determinism check, contaminated rerun | 1 | `powersave` | 1 | 0 |
+| Determinism check, clean reruns | 3 | `performance` | 3 | 0 |
+| Diagnostic sweep | 24 | `performance`, every run | 24 | 0 |
+
+**Ruled out:** all 6 dips occurred with governor correctly logged as `performance` — the governor was
+never wrong during a dip. The one run that genuinely ran under `powersave` still landed pinned, not
+dip. Governor has no variation that correlates with regime in either direction. (The wrapper-script bug
+itself was moot for this question too — it wasn't in use pre-reboot at all; governor was set manually
+via `echo performance | sudo tee ...` the whole time, and that worked correctly per every logged value.)
+
+This leaves the pre-reboot/post-reboot split (6/18 dip vs. 0/27 dip, governor held constant throughout)
+as the only variable collected so far that actually co-varies with regime.
+
 ## Decision needed before Stage 4 proceeds
 
 **Updated after the diagnostic sweep.** The leading candidate is now boot-session-level state, not
