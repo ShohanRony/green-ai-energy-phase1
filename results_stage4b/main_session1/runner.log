@@ -1,0 +1,1489 @@
++ echo ========================================================================
+========================================================================
+++ date -u +%Y-%m-%dT%H:%M:%SZ
++ echo 'Starting Stage 4b Runner: kind=main session=1 at 2026-10-06T20:22:33Z'
+Starting Stage 4b Runner: kind=main session=1 at 2026-10-06T20:22:33Z
++ echo 'Output directory: /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1'
+Output directory: /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1
++ echo ========================================================================
+========================================================================
++ echo '[Preflight] Checking tracked files git status...'
+[Preflight] Checking tracked files git status...
++ git diff --quiet HEAD
++ echo '[Preflight] Ensuring CPU governor is performance...'
+[Preflight] Ensuring CPU governor is performance...
++ [[ -x /usr/local/sbin/set_cpu_governor.sh ]]
++ sudo /usr/local/sbin/set_cpu_governor.sh performance
+++ sort -u
+++ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor /sys/devices/system/cpu/cpu10/cpufreq/scaling_governor /sys/devices/system/cpu/cpu11/cpufreq/scaling_governor /sys/devices/system/cpu/cpu12/cpufreq/scaling_governor /sys/devices/system/cpu/cpu13/cpufreq/scaling_governor /sys/devices/system/cpu/cpu14/cpufreq/scaling_governor /sys/devices/system/cpu/cpu15/cpufreq/scaling_governor /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor /sys/devices/system/cpu/cpu5/cpufreq/scaling_governor /sys/devices/system/cpu/cpu6/cpufreq/scaling_governor /sys/devices/system/cpu/cpu7/cpufreq/scaling_governor /sys/devices/system/cpu/cpu8/cpufreq/scaling_governor /sys/devices/system/cpu/cpu9/cpufreq/scaling_governor
++ GOVS=performance
++ [[ performance != \p\e\r\f\o\r\m\a\n\c\e ]]
++ echo '[Preflight] Checking platform profile...'
+[Preflight] Checking platform profile...
++ [[ -f /sys/firmware/acpi/platform_profile ]]
+++ cat /sys/firmware/acpi/platform_profile
++ PROF=performance
++ [[ performance != \p\e\r\f\o\r\m\a\n\c\e ]]
++ echo '[Preflight] Checking AC online...'
+[Preflight] Checking AC online...
++ [[ -f /sys/class/power_supply/ACAD/online ]]
+++ cat /sys/class/power_supply/ACAD/online
++ AC=1
++ [[ 1 != \1 ]]
++ echo '[Preflight] Checking foreign GPU processes...'
+[Preflight] Checking foreign GPU processes...
+++ nvidia-smi --query-compute-apps=pid,process_name --format=csv,noheader
+++ wc -l
++ GPU_PROCS=0
++ [[ 0 -gt 0 ]]
++ echo '[Preflight] Checking power_watchdog...'
+[Preflight] Checking power_watchdog...
++ pgrep -fa power_watchdog
++ echo 'Starting power_watchdog in background...'
+Starting power_watchdog in background...
++ sleep 1
++ nohup python3 power_watchdog.py
+++ cat /proc/uptime
+++ awk '{print $1}'
++ UPTIME=1474.60
++ echo '[Preflight] System uptime: 1474.60s'
+[Preflight] System uptime: 1474.60s
++ ORDER_FILE=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/order.txt
++ [[ ! -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/order.txt ]]
++ echo 'Generating presentation order for main session 1...'
+Generating presentation order for main session 1...
++ /home/shohan/green-ai-research/measurement_env/bin/python -
+Generated order with seed 1001: 30 conditions.
++ REPEATS=7
++ BATCH_ARG=(--batches 1)
++ EXTRA_KIND_FLAGS=()
++ [[ main == \r\q\1 ]]
++ [[ main == \b\1\6 ]]
++ [[ -n '' ]]
+++ date -u +%Y-%m-%dT%H:%M:%SZ
++ START_TIME=2026-10-06T20:22:34Z
++ declare -A COND_UPTIMES
++ INTERRUPTIONS=()
++ FAILED_CONDITIONS=()
++ mapfile -t CONDITIONS
++ [[ -n '' ]]
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_pruned30_bnrecal ]]
++ run_condition mobilenet_v3_small_pruned30_bnrecal
++ local cond=mobilenet_v3_small_pruned30_bnrecal
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30_bnrecal
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30_bnrecal
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30_bnrecal/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=1474.64
++ COND_UPTIMES["$cond"]=1474.64
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_pruned30_bnrecal] Starting at uptime 1474.64s...'
+[mobilenet_v3_small_pruned30_bnrecal] Starting at uptime 1474.64s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_pruned30_bnrecal
+++ local cond=mobilenet_v3_small_pruned30_bnrecal
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_pruned30_bnrecal =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_pruned30_bnrecal =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=pruned30_bnrecal
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned30_bnrecal.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned30_bnrecal.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_pruned30_bnrecal' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30_bnrecal' '--device' 'cuda' '--checkpoint' 'checkpoints/mobilenet_v3_small_pruned30_bnrecal.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30_bnrecal/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_pruned30_bnrecal --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30_bnrecal --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned30_bnrecal.pt --concurrent-cpu-package
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30_bnrecal/summary.csv ]]
++ echo '[mobilenet_v3_small_pruned30_bnrecal] Successfully finished.'
+[mobilenet_v3_small_pruned30_bnrecal] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_fp16 ]]
++ run_condition efficientnet_b0_fp16
++ local cond=efficientnet_b0_fp16
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp16
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp16
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp16/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=1701.06
++ COND_UPTIMES["$cond"]=1701.06
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_fp16] Starting at uptime 1701.06s...'
+[efficientnet_b0_fp16] Starting at uptime 1701.06s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_fp16
+++ local cond=efficientnet_b0_fp16
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_fp16 =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_fp16 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_fp16 =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=fp16
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_fp16.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/efficientnet_b0_fp16.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/efficientnet_b0_fp16.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_fp16' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp16' '--device' 'cuda' '--checkpoint' 'checkpoints/efficientnet_b0_fp16.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp16/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_fp16 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp16 --device cuda --checkpoint checkpoints/efficientnet_b0_fp16.pt --concurrent-cpu-package
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp16/summary.csv ]]
++ echo '[efficientnet_b0_fp16] Successfully finished.'
+[efficientnet_b0_fp16] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_fp32 ]]
++ run_condition mobilenet_v3_small_fp32
++ local cond=mobilenet_v3_small_fp32
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=1927.43
++ COND_UPTIMES["$cond"]=1927.43
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_fp32] Starting at uptime 1927.43s...'
+[mobilenet_v3_small_fp32] Starting at uptime 1927.43s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_fp32
+++ local cond=mobilenet_v3_small_fp32
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_fp32 =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_fp32 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=fp32
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --arch "$arch" --checkpoint "checkpoints/${arch}_fp32.pt" --concurrent-cpu-package)
+++ echo --device cuda --arch mobilenet_v3_small --checkpoint checkpoints/mobilenet_v3_small_fp32.pt --concurrent-cpu-package
++ cond_args='--device cuda --arch mobilenet_v3_small --checkpoint checkpoints/mobilenet_v3_small_fp32.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_fp32' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32' '--device' 'cuda' '--arch' 'mobilenet_v3_small' '--checkpoint' 'checkpoints/mobilenet_v3_small_fp32.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_fp32 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32 --device cuda --arch mobilenet_v3_small --checkpoint checkpoints/mobilenet_v3_small_fp32.pt --concurrent-cpu-package
+WARNING: System uptime is 32 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32/summary.csv ]]
++ echo '[mobilenet_v3_small_fp32] Successfully finished.'
+[mobilenet_v3_small_fp32] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_int8 ]]
++ run_condition resnet18_int8
++ local cond=resnet18_int8
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_int8
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_int8
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_int8/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=2153.76
++ COND_UPTIMES["$cond"]=2153.76
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_int8] Starting at uptime 2153.76s...'
+[resnet18_int8] Starting at uptime 2153.76s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_int8
+++ local cond=resnet18_int8
+++ local arch=
+++ local state=
+++ [[ resnet18_int8 =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=int8
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cpu --checkpoint "checkpoints/${arch}_int8.pt" --cpu-affinity pcores)
+++ echo --device cpu --checkpoint checkpoints/resnet18_int8.pt --cpu-affinity pcores
++ cond_args='--device cpu --checkpoint checkpoints/resnet18_int8.pt --cpu-affinity pcores'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_int8' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_int8' '--device' 'cpu' '--checkpoint' 'checkpoints/resnet18_int8.pt' '--cpu-affinity' 'pcores')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_int8/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_int8 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_int8 --device cpu --checkpoint checkpoints/resnet18_int8.pt --cpu-affinity pcores
+WARNING: System uptime is 36 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_int8/summary.csv ]]
++ echo '[resnet18_int8] Successfully finished.'
+[resnet18_int8] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_pruned50_bnrecal ]]
++ run_condition mobilenet_v3_small_pruned50_bnrecal
++ local cond=mobilenet_v3_small_pruned50_bnrecal
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50_bnrecal
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50_bnrecal
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50_bnrecal/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=2379.80
++ COND_UPTIMES["$cond"]=2379.80
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_pruned50_bnrecal] Starting at uptime 2379.80s...'
+[mobilenet_v3_small_pruned50_bnrecal] Starting at uptime 2379.80s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_pruned50_bnrecal
+++ local cond=mobilenet_v3_small_pruned50_bnrecal
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_pruned50_bnrecal =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_pruned50_bnrecal =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=pruned50_bnrecal
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned50_bnrecal.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned50_bnrecal.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_pruned50_bnrecal' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50_bnrecal' '--device' 'cuda' '--checkpoint' 'checkpoints/mobilenet_v3_small_pruned50_bnrecal.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50_bnrecal/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_pruned50_bnrecal --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50_bnrecal --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned50_bnrecal.pt --concurrent-cpu-package
+WARNING: System uptime is 40 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50_bnrecal/summary.csv ]]
++ echo '[mobilenet_v3_small_pruned50_bnrecal] Successfully finished.'
+[mobilenet_v3_small_pruned50_bnrecal] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_pruned70 ]]
++ run_condition resnet18_pruned70
++ local cond=resnet18_pruned70
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=2606.18
++ COND_UPTIMES["$cond"]=2606.18
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_pruned70] Starting at uptime 2606.18s...'
+[resnet18_pruned70] Starting at uptime 2606.18s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_pruned70
+++ local cond=resnet18_pruned70
+++ local arch=
+++ local state=
+++ [[ resnet18_pruned70 =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=pruned70
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/resnet18_pruned70.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/resnet18_pruned70.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_pruned70' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70' '--device' 'cuda' '--checkpoint' 'checkpoints/resnet18_pruned70.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_pruned70 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70 --device cuda --checkpoint checkpoints/resnet18_pruned70.pt --concurrent-cpu-package
+WARNING: System uptime is 43 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70/summary.csv ]]
++ echo '[resnet18_pruned70] Successfully finished.'
+[resnet18_pruned70] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_pruned70 ]]
++ run_condition mobilenet_v3_small_pruned70
++ local cond=mobilenet_v3_small_pruned70
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=2832.42
++ COND_UPTIMES["$cond"]=2832.42
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_pruned70] Starting at uptime 2832.42s...'
+[mobilenet_v3_small_pruned70] Starting at uptime 2832.42s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_pruned70
+++ local cond=mobilenet_v3_small_pruned70
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_pruned70 =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_pruned70 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=pruned70
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned70.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned70.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_pruned70' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70' '--device' 'cuda' '--checkpoint' 'checkpoints/mobilenet_v3_small_pruned70.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_pruned70 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70 --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned70.pt --concurrent-cpu-package
+WARNING: System uptime is 47 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70/summary.csv ]]
++ echo '[mobilenet_v3_small_pruned70] Successfully finished.'
+[mobilenet_v3_small_pruned70] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_pruned50_bnrecal ]]
++ run_condition efficientnet_b0_pruned50_bnrecal
++ local cond=efficientnet_b0_pruned50_bnrecal
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50_bnrecal
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50_bnrecal
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50_bnrecal/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=3058.74
++ COND_UPTIMES["$cond"]=3058.74
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_pruned50_bnrecal] Starting at uptime 3058.74s...'
+[efficientnet_b0_pruned50_bnrecal] Starting at uptime 3058.74s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_pruned50_bnrecal
+++ local cond=efficientnet_b0_pruned50_bnrecal
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_pruned50_bnrecal =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_pruned50_bnrecal =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_pruned50_bnrecal =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=pruned50_bnrecal
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/efficientnet_b0_pruned50_bnrecal.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/efficientnet_b0_pruned50_bnrecal.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_pruned50_bnrecal' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50_bnrecal' '--device' 'cuda' '--checkpoint' 'checkpoints/efficientnet_b0_pruned50_bnrecal.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50_bnrecal/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_pruned50_bnrecal --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50_bnrecal --device cuda --checkpoint checkpoints/efficientnet_b0_pruned50_bnrecal.pt --concurrent-cpu-package
+WARNING: System uptime is 51 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50_bnrecal/summary.csv ]]
++ echo '[efficientnet_b0_pruned50_bnrecal] Successfully finished.'
+[efficientnet_b0_pruned50_bnrecal] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_pruned50 ]]
++ run_condition resnet18_pruned50
++ local cond=resnet18_pruned50
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=3285.11
++ COND_UPTIMES["$cond"]=3285.11
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_pruned50] Starting at uptime 3285.11s...'
+[resnet18_pruned50] Starting at uptime 3285.11s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_pruned50
+++ local cond=resnet18_pruned50
+++ local arch=
+++ local state=
+++ [[ resnet18_pruned50 =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=pruned50
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/resnet18_pruned50.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/resnet18_pruned50.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_pruned50' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50' '--device' 'cuda' '--checkpoint' 'checkpoints/resnet18_pruned50.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_pruned50 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50 --device cuda --checkpoint checkpoints/resnet18_pruned50.pt --concurrent-cpu-package
+WARNING: System uptime is 55 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50/summary.csv ]]
++ echo '[resnet18_pruned50] Successfully finished.'
+[resnet18_pruned50] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_fp32_cpu ]]
++ run_condition resnet18_fp32_cpu
++ local cond=resnet18_fp32_cpu
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32_cpu
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32_cpu
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32_cpu/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=3511.34
++ COND_UPTIMES["$cond"]=3511.34
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_fp32_cpu] Starting at uptime 3511.34s...'
+[resnet18_fp32_cpu] Starting at uptime 3511.34s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_fp32_cpu
+++ local cond=resnet18_fp32_cpu
+++ local arch=
+++ local state=
+++ [[ resnet18_fp32_cpu =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=fp32_cpu
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cpu --arch "$arch" --checkpoint "checkpoints/${arch}_fp32.pt" --cpu-affinity pcores)
+++ echo --device cpu --arch resnet18 --checkpoint checkpoints/resnet18_fp32.pt --cpu-affinity pcores
++ cond_args='--device cpu --arch resnet18 --checkpoint checkpoints/resnet18_fp32.pt --cpu-affinity pcores'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_fp32_cpu' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32_cpu' '--device' 'cpu' '--arch' 'resnet18' '--checkpoint' 'checkpoints/resnet18_fp32.pt' '--cpu-affinity' 'pcores')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32_cpu/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_fp32_cpu --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32_cpu --device cpu --arch resnet18 --checkpoint checkpoints/resnet18_fp32.pt --cpu-affinity pcores
+WARNING: System uptime is 59 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32_cpu/summary.csv ]]
++ echo '[resnet18_fp32_cpu] Successfully finished.'
+[resnet18_fp32_cpu] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_pruned70_bnrecal ]]
++ run_condition resnet18_pruned70_bnrecal
++ local cond=resnet18_pruned70_bnrecal
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70_bnrecal
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70_bnrecal
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70_bnrecal/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=3737.45
++ COND_UPTIMES["$cond"]=3737.45
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_pruned70_bnrecal] Starting at uptime 3737.45s...'
+[resnet18_pruned70_bnrecal] Starting at uptime 3737.45s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_pruned70_bnrecal
+++ local cond=resnet18_pruned70_bnrecal
+++ local arch=
+++ local state=
+++ [[ resnet18_pruned70_bnrecal =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=pruned70_bnrecal
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/resnet18_pruned70_bnrecal.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/resnet18_pruned70_bnrecal.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_pruned70_bnrecal' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70_bnrecal' '--device' 'cuda' '--checkpoint' 'checkpoints/resnet18_pruned70_bnrecal.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70_bnrecal/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_pruned70_bnrecal --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70_bnrecal --device cuda --checkpoint checkpoints/resnet18_pruned70_bnrecal.pt --concurrent-cpu-package
+WARNING: System uptime is 62 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned70_bnrecal/summary.csv ]]
++ echo '[resnet18_pruned70_bnrecal] Successfully finished.'
+[resnet18_pruned70_bnrecal] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_pruned50 ]]
++ run_condition efficientnet_b0_pruned50
++ local cond=efficientnet_b0_pruned50
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=3963.76
++ COND_UPTIMES["$cond"]=3963.76
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_pruned50] Starting at uptime 3963.76s...'
+[efficientnet_b0_pruned50] Starting at uptime 3963.76s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_pruned50
+++ local cond=efficientnet_b0_pruned50
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_pruned50 =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_pruned50 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_pruned50 =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=pruned50
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/efficientnet_b0_pruned50.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/efficientnet_b0_pruned50.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_pruned50' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50' '--device' 'cuda' '--checkpoint' 'checkpoints/efficientnet_b0_pruned50.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_pruned50 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50 --device cuda --checkpoint checkpoints/efficientnet_b0_pruned50.pt --concurrent-cpu-package
+WARNING: System uptime is 66 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned50/summary.csv ]]
++ echo '[efficientnet_b0_pruned50] Successfully finished.'
+[efficientnet_b0_pruned50] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_fp32 ]]
++ run_condition efficientnet_b0_fp32
++ local cond=efficientnet_b0_fp32
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=4190.14
++ COND_UPTIMES["$cond"]=4190.14
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_fp32] Starting at uptime 4190.14s...'
+[efficientnet_b0_fp32] Starting at uptime 4190.14s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_fp32
+++ local cond=efficientnet_b0_fp32
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_fp32 =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_fp32 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_fp32 =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=fp32
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --arch "$arch" --checkpoint "checkpoints/${arch}_fp32.pt" --concurrent-cpu-package)
+++ echo --device cuda --arch efficientnet_b0 --checkpoint checkpoints/efficientnet_b0_fp32.pt --concurrent-cpu-package
++ cond_args='--device cuda --arch efficientnet_b0 --checkpoint checkpoints/efficientnet_b0_fp32.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_fp32' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32' '--device' 'cuda' '--arch' 'efficientnet_b0' '--checkpoint' 'checkpoints/efficientnet_b0_fp32.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_fp32 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32 --device cuda --arch efficientnet_b0 --checkpoint checkpoints/efficientnet_b0_fp32.pt --concurrent-cpu-package
+WARNING: System uptime is 70 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32/summary.csv ]]
++ echo '[efficientnet_b0_fp32] Successfully finished.'
+[efficientnet_b0_fp32] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_fp32_cpu ]]
++ run_condition mobilenet_v3_small_fp32_cpu
++ local cond=mobilenet_v3_small_fp32_cpu
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32_cpu
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32_cpu
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32_cpu/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=4416.45
++ COND_UPTIMES["$cond"]=4416.45
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_fp32_cpu] Starting at uptime 4416.45s...'
+[mobilenet_v3_small_fp32_cpu] Starting at uptime 4416.45s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_fp32_cpu
+++ local cond=mobilenet_v3_small_fp32_cpu
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_fp32_cpu =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_fp32_cpu =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=fp32_cpu
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cpu --arch "$arch" --checkpoint "checkpoints/${arch}_fp32.pt" --cpu-affinity pcores)
+++ echo --device cpu --arch mobilenet_v3_small --checkpoint checkpoints/mobilenet_v3_small_fp32.pt --cpu-affinity pcores
++ cond_args='--device cpu --arch mobilenet_v3_small --checkpoint checkpoints/mobilenet_v3_small_fp32.pt --cpu-affinity pcores'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_fp32_cpu' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32_cpu' '--device' 'cpu' '--arch' 'mobilenet_v3_small' '--checkpoint' 'checkpoints/mobilenet_v3_small_fp32.pt' '--cpu-affinity' 'pcores')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32_cpu/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_fp32_cpu --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32_cpu --device cpu --arch mobilenet_v3_small --checkpoint checkpoints/mobilenet_v3_small_fp32.pt --cpu-affinity pcores
+WARNING: System uptime is 74 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp32_cpu/summary.csv ]]
++ echo '[mobilenet_v3_small_fp32_cpu] Successfully finished.'
+[mobilenet_v3_small_fp32_cpu] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_fp32 ]]
++ run_condition resnet18_fp32
++ local cond=resnet18_fp32
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=4642.47
++ COND_UPTIMES["$cond"]=4642.47
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_fp32] Starting at uptime 4642.47s...'
+[resnet18_fp32] Starting at uptime 4642.47s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_fp32
+++ local cond=resnet18_fp32
+++ local arch=
+++ local state=
+++ [[ resnet18_fp32 =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=fp32
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --arch "$arch" --checkpoint "checkpoints/${arch}_fp32.pt" --concurrent-cpu-package)
+++ echo --device cuda --arch resnet18 --checkpoint checkpoints/resnet18_fp32.pt --concurrent-cpu-package
++ cond_args='--device cuda --arch resnet18 --checkpoint checkpoints/resnet18_fp32.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_fp32' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32' '--device' 'cuda' '--arch' 'resnet18' '--checkpoint' 'checkpoints/resnet18_fp32.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_fp32 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32 --device cuda --arch resnet18 --checkpoint checkpoints/resnet18_fp32.pt --concurrent-cpu-package
+WARNING: System uptime is 77 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp32/summary.csv ]]
++ echo '[resnet18_fp32] Successfully finished.'
+[resnet18_fp32] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_int8 ]]
++ run_condition efficientnet_b0_int8
++ local cond=efficientnet_b0_int8
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_int8
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_int8
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_int8/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=4868.89
++ COND_UPTIMES["$cond"]=4868.89
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_int8] Starting at uptime 4868.89s...'
+[efficientnet_b0_int8] Starting at uptime 4868.89s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_int8
+++ local cond=efficientnet_b0_int8
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_int8 =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_int8 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_int8 =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=int8
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cpu --checkpoint "checkpoints/${arch}_int8.pt" --cpu-affinity pcores)
+++ echo --device cpu --checkpoint checkpoints/efficientnet_b0_int8.pt --cpu-affinity pcores
++ cond_args='--device cpu --checkpoint checkpoints/efficientnet_b0_int8.pt --cpu-affinity pcores'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_int8' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_int8' '--device' 'cpu' '--checkpoint' 'checkpoints/efficientnet_b0_int8.pt' '--cpu-affinity' 'pcores')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_int8/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_int8 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_int8 --device cpu --checkpoint checkpoints/efficientnet_b0_int8.pt --cpu-affinity pcores
+WARNING: System uptime is 81 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_int8/summary.csv ]]
++ echo '[efficientnet_b0_int8] Successfully finished.'
+[efficientnet_b0_int8] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_fp32_cpu ]]
++ run_condition efficientnet_b0_fp32_cpu
++ local cond=efficientnet_b0_fp32_cpu
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32_cpu
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32_cpu
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32_cpu/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=5095.04
++ COND_UPTIMES["$cond"]=5095.04
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_fp32_cpu] Starting at uptime 5095.04s...'
+[efficientnet_b0_fp32_cpu] Starting at uptime 5095.04s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_fp32_cpu
+++ local cond=efficientnet_b0_fp32_cpu
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_fp32_cpu =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_fp32_cpu =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_fp32_cpu =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=fp32_cpu
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cpu --arch "$arch" --checkpoint "checkpoints/${arch}_fp32.pt" --cpu-affinity pcores)
+++ echo --device cpu --arch efficientnet_b0 --checkpoint checkpoints/efficientnet_b0_fp32.pt --cpu-affinity pcores
++ cond_args='--device cpu --arch efficientnet_b0 --checkpoint checkpoints/efficientnet_b0_fp32.pt --cpu-affinity pcores'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_fp32_cpu' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32_cpu' '--device' 'cpu' '--arch' 'efficientnet_b0' '--checkpoint' 'checkpoints/efficientnet_b0_fp32.pt' '--cpu-affinity' 'pcores')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32_cpu/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_fp32_cpu --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32_cpu --device cpu --arch efficientnet_b0 --checkpoint checkpoints/efficientnet_b0_fp32.pt --cpu-affinity pcores
+WARNING: System uptime is 85 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_fp32_cpu/summary.csv ]]
++ echo '[efficientnet_b0_fp32_cpu] Successfully finished.'
+[efficientnet_b0_fp32_cpu] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_pruned30 ]]
++ run_condition efficientnet_b0_pruned30
++ local cond=efficientnet_b0_pruned30
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=5321.09
++ COND_UPTIMES["$cond"]=5321.09
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_pruned30] Starting at uptime 5321.09s...'
+[efficientnet_b0_pruned30] Starting at uptime 5321.09s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_pruned30
+++ local cond=efficientnet_b0_pruned30
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_pruned30 =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_pruned30 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_pruned30 =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=pruned30
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/efficientnet_b0_pruned30.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/efficientnet_b0_pruned30.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_pruned30' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30' '--device' 'cuda' '--checkpoint' 'checkpoints/efficientnet_b0_pruned30.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_pruned30 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30 --device cuda --checkpoint checkpoints/efficientnet_b0_pruned30.pt --concurrent-cpu-package
+WARNING: System uptime is 89 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30/summary.csv ]]
++ echo '[efficientnet_b0_pruned30] Successfully finished.'
+[efficientnet_b0_pruned30] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_int8 ]]
++ run_condition mobilenet_v3_small_int8
++ local cond=mobilenet_v3_small_int8
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_int8
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_int8
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_int8/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=5547.52
++ COND_UPTIMES["$cond"]=5547.52
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_int8] Starting at uptime 5547.52s...'
+[mobilenet_v3_small_int8] Starting at uptime 5547.52s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_int8
+++ local cond=mobilenet_v3_small_int8
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_int8 =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_int8 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=int8
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cpu --checkpoint "checkpoints/${arch}_int8.pt" --cpu-affinity pcores)
+++ echo --device cpu --checkpoint checkpoints/mobilenet_v3_small_int8.pt --cpu-affinity pcores
++ cond_args='--device cpu --checkpoint checkpoints/mobilenet_v3_small_int8.pt --cpu-affinity pcores'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_int8' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_int8' '--device' 'cpu' '--checkpoint' 'checkpoints/mobilenet_v3_small_int8.pt' '--cpu-affinity' 'pcores')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_int8/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_int8 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_int8 --device cpu --checkpoint checkpoints/mobilenet_v3_small_int8.pt --cpu-affinity pcores
+WARNING: System uptime is 92 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_int8/summary.csv ]]
++ echo '[mobilenet_v3_small_int8] Successfully finished.'
+[mobilenet_v3_small_int8] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_fp16 ]]
++ run_condition mobilenet_v3_small_fp16
++ local cond=mobilenet_v3_small_fp16
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp16
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp16
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp16/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=5773.56
++ COND_UPTIMES["$cond"]=5773.56
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_fp16] Starting at uptime 5773.56s...'
+[mobilenet_v3_small_fp16] Starting at uptime 5773.56s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_fp16
+++ local cond=mobilenet_v3_small_fp16
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_fp16 =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_fp16 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=fp16
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_fp16.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/mobilenet_v3_small_fp16.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/mobilenet_v3_small_fp16.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_fp16' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp16' '--device' 'cuda' '--checkpoint' 'checkpoints/mobilenet_v3_small_fp16.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp16/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_fp16 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp16 --device cuda --checkpoint checkpoints/mobilenet_v3_small_fp16.pt --concurrent-cpu-package
+WARNING: System uptime is 96 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_fp16/summary.csv ]]
++ echo '[mobilenet_v3_small_fp16] Successfully finished.'
+[mobilenet_v3_small_fp16] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_pruned50 ]]
++ run_condition mobilenet_v3_small_pruned50
++ local cond=mobilenet_v3_small_pruned50
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=5999.96
++ COND_UPTIMES["$cond"]=5999.96
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_pruned50] Starting at uptime 5999.96s...'
+[mobilenet_v3_small_pruned50] Starting at uptime 5999.96s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_pruned50
+++ local cond=mobilenet_v3_small_pruned50
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_pruned50 =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_pruned50 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=pruned50
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned50.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned50.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_pruned50' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50' '--device' 'cuda' '--checkpoint' 'checkpoints/mobilenet_v3_small_pruned50.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_pruned50 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50 --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned50.pt --concurrent-cpu-package
+WARNING: System uptime is 100 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned50/summary.csv ]]
++ echo '[mobilenet_v3_small_pruned50] Successfully finished.'
+[mobilenet_v3_small_pruned50] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_pruned30_bnrecal ]]
++ run_condition resnet18_pruned30_bnrecal
++ local cond=resnet18_pruned30_bnrecal
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30_bnrecal
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30_bnrecal
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30_bnrecal/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=6226.25
++ COND_UPTIMES["$cond"]=6226.25
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_pruned30_bnrecal] Starting at uptime 6226.25s...'
+[resnet18_pruned30_bnrecal] Starting at uptime 6226.25s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_pruned30_bnrecal
+++ local cond=resnet18_pruned30_bnrecal
+++ local arch=
+++ local state=
+++ [[ resnet18_pruned30_bnrecal =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=pruned30_bnrecal
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/resnet18_pruned30_bnrecal.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/resnet18_pruned30_bnrecal.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_pruned30_bnrecal' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30_bnrecal' '--device' 'cuda' '--checkpoint' 'checkpoints/resnet18_pruned30_bnrecal.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30_bnrecal/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_pruned30_bnrecal --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30_bnrecal --device cuda --checkpoint checkpoints/resnet18_pruned30_bnrecal.pt --concurrent-cpu-package
+WARNING: System uptime is 104 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30_bnrecal/summary.csv ]]
++ echo '[resnet18_pruned30_bnrecal] Successfully finished.'
+[resnet18_pruned30_bnrecal] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_pruned30 ]]
++ run_condition mobilenet_v3_small_pruned30
++ local cond=mobilenet_v3_small_pruned30
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=6452.49
++ COND_UPTIMES["$cond"]=6452.49
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_pruned30] Starting at uptime 6452.49s...'
+[mobilenet_v3_small_pruned30] Starting at uptime 6452.49s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_pruned30
+++ local cond=mobilenet_v3_small_pruned30
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_pruned30 =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_pruned30 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=pruned30
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned30.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned30.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_pruned30' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30' '--device' 'cuda' '--checkpoint' 'checkpoints/mobilenet_v3_small_pruned30.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_pruned30 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30 --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned30.pt --concurrent-cpu-package
+WARNING: System uptime is 108 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned30/summary.csv ]]
++ echo '[mobilenet_v3_small_pruned30] Successfully finished.'
+[mobilenet_v3_small_pruned30] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z mobilenet_v3_small_pruned70_bnrecal ]]
++ run_condition mobilenet_v3_small_pruned70_bnrecal
++ local cond=mobilenet_v3_small_pruned70_bnrecal
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70_bnrecal
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70_bnrecal
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70_bnrecal/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=6678.78
++ COND_UPTIMES["$cond"]=6678.78
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[mobilenet_v3_small_pruned70_bnrecal] Starting at uptime 6678.78s...'
+[mobilenet_v3_small_pruned70_bnrecal] Starting at uptime 6678.78s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args mobilenet_v3_small_pruned70_bnrecal
+++ local cond=mobilenet_v3_small_pruned70_bnrecal
+++ local arch=
+++ local state=
+++ [[ mobilenet_v3_small_pruned70_bnrecal =~ ^resnet18_(.*)$ ]]
+++ [[ mobilenet_v3_small_pruned70_bnrecal =~ ^mobilenet_v3_small_(.*)$ ]]
+++ arch=mobilenet_v3_small
+++ state=pruned70_bnrecal
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned70_bnrecal.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned70_bnrecal.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'mobilenet_v3_small_pruned70_bnrecal' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70_bnrecal' '--device' 'cuda' '--checkpoint' 'checkpoints/mobilenet_v3_small_pruned70_bnrecal.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70_bnrecal/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label mobilenet_v3_small_pruned70_bnrecal --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70_bnrecal --device cuda --checkpoint checkpoints/mobilenet_v3_small_pruned70_bnrecal.pt --concurrent-cpu-package
+WARNING: System uptime is 111 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/mobilenet_v3_small_pruned70_bnrecal/summary.csv ]]
++ echo '[mobilenet_v3_small_pruned70_bnrecal] Successfully finished.'
+[mobilenet_v3_small_pruned70_bnrecal] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_pruned30 ]]
++ run_condition resnet18_pruned30
++ local cond=resnet18_pruned30
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=6905.12
++ COND_UPTIMES["$cond"]=6905.12
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_pruned30] Starting at uptime 6905.12s...'
+[resnet18_pruned30] Starting at uptime 6905.12s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_pruned30
+++ local cond=resnet18_pruned30
+++ local arch=
+++ local state=
+++ [[ resnet18_pruned30 =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=pruned30
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/resnet18_pruned30.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/resnet18_pruned30.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_pruned30' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30' '--device' 'cuda' '--checkpoint' 'checkpoints/resnet18_pruned30.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_pruned30 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30 --device cuda --checkpoint checkpoints/resnet18_pruned30.pt --concurrent-cpu-package
+WARNING: System uptime is 115 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned30/summary.csv ]]
++ echo '[resnet18_pruned30] Successfully finished.'
+[resnet18_pruned30] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_pruned50_bnrecal ]]
++ run_condition resnet18_pruned50_bnrecal
++ local cond=resnet18_pruned50_bnrecal
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50_bnrecal
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50_bnrecal
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50_bnrecal/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=7131.37
++ COND_UPTIMES["$cond"]=7131.37
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_pruned50_bnrecal] Starting at uptime 7131.37s...'
+[resnet18_pruned50_bnrecal] Starting at uptime 7131.37s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_pruned50_bnrecal
+++ local cond=resnet18_pruned50_bnrecal
+++ local arch=
+++ local state=
+++ [[ resnet18_pruned50_bnrecal =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=pruned50_bnrecal
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/resnet18_pruned50_bnrecal.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/resnet18_pruned50_bnrecal.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_pruned50_bnrecal' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50_bnrecal' '--device' 'cuda' '--checkpoint' 'checkpoints/resnet18_pruned50_bnrecal.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50_bnrecal/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_pruned50_bnrecal --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50_bnrecal --device cuda --checkpoint checkpoints/resnet18_pruned50_bnrecal.pt --concurrent-cpu-package
+WARNING: System uptime is 119 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_pruned50_bnrecal/summary.csv ]]
++ echo '[resnet18_pruned50_bnrecal] Successfully finished.'
+[resnet18_pruned50_bnrecal] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_pruned70_bnrecal ]]
++ run_condition efficientnet_b0_pruned70_bnrecal
++ local cond=efficientnet_b0_pruned70_bnrecal
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70_bnrecal
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70_bnrecal
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70_bnrecal/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=7357.62
++ COND_UPTIMES["$cond"]=7357.62
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_pruned70_bnrecal] Starting at uptime 7357.62s...'
+[efficientnet_b0_pruned70_bnrecal] Starting at uptime 7357.62s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_pruned70_bnrecal
+++ local cond=efficientnet_b0_pruned70_bnrecal
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_pruned70_bnrecal =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_pruned70_bnrecal =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_pruned70_bnrecal =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=pruned70_bnrecal
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/efficientnet_b0_pruned70_bnrecal.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/efficientnet_b0_pruned70_bnrecal.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_pruned70_bnrecal' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70_bnrecal' '--device' 'cuda' '--checkpoint' 'checkpoints/efficientnet_b0_pruned70_bnrecal.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70_bnrecal/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_pruned70_bnrecal --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70_bnrecal --device cuda --checkpoint checkpoints/efficientnet_b0_pruned70_bnrecal.pt --concurrent-cpu-package
+WARNING: System uptime is 123 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70_bnrecal/summary.csv ]]
++ echo '[efficientnet_b0_pruned70_bnrecal] Successfully finished.'
+[efficientnet_b0_pruned70_bnrecal] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_pruned70 ]]
++ run_condition efficientnet_b0_pruned70
++ local cond=efficientnet_b0_pruned70
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=7584.00
++ COND_UPTIMES["$cond"]=7584.00
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_pruned70] Starting at uptime 7584.00s...'
+[efficientnet_b0_pruned70] Starting at uptime 7584.00s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_pruned70
+++ local cond=efficientnet_b0_pruned70
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_pruned70 =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_pruned70 =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_pruned70 =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=pruned70
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/efficientnet_b0_pruned70.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/efficientnet_b0_pruned70.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_pruned70' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70' '--device' 'cuda' '--checkpoint' 'checkpoints/efficientnet_b0_pruned70.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_pruned70 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70 --device cuda --checkpoint checkpoints/efficientnet_b0_pruned70.pt --concurrent-cpu-package
+WARNING: System uptime is 126 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned70/summary.csv ]]
++ echo '[efficientnet_b0_pruned70] Successfully finished.'
+[efficientnet_b0_pruned70] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z resnet18_fp16 ]]
++ run_condition resnet18_fp16
++ local cond=resnet18_fp16
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp16
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp16
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp16/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=7810.34
++ COND_UPTIMES["$cond"]=7810.34
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[resnet18_fp16] Starting at uptime 7810.34s...'
+[resnet18_fp16] Starting at uptime 7810.34s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args resnet18_fp16
+++ local cond=resnet18_fp16
+++ local arch=
+++ local state=
+++ [[ resnet18_fp16 =~ ^resnet18_(.*)$ ]]
+++ arch=resnet18
+++ state=fp16
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_fp16.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/resnet18_fp16.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/resnet18_fp16.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'resnet18_fp16' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp16' '--device' 'cuda' '--checkpoint' 'checkpoints/resnet18_fp16.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp16/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label resnet18_fp16 --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp16 --device cuda --checkpoint checkpoints/resnet18_fp16.pt --concurrent-cpu-package
+WARNING: System uptime is 130 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/resnet18_fp16/summary.csv ]]
++ echo '[resnet18_fp16] Successfully finished.'
+[resnet18_fp16] Successfully finished.
++ return 0
++ for cond in "${CONDITIONS[@]}"
++ [[ -z efficientnet_b0_pruned30_bnrecal ]]
++ run_condition efficientnet_b0_pruned30_bnrecal
++ local cond=efficientnet_b0_pruned30_bnrecal
++ local cond_dir=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30_bnrecal
++ mkdir -p /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30_bnrecal
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30_bnrecal/summary.csv ]]
++ local cond_uptime
+++ cat /proc/uptime
+++ awk '{print $1}'
++ cond_uptime=8036.64
++ COND_UPTIMES["$cond"]=8036.64
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ echo '[efficientnet_b0_pruned30_bnrecal] Starting at uptime 8036.64s...'
+[efficientnet_b0_pruned30_bnrecal] Starting at uptime 8036.64s...
++ echo ------------------------------------------------------------------------
+------------------------------------------------------------------------
++ local cond_args
+++ get_condition_args efficientnet_b0_pruned30_bnrecal
+++ local cond=efficientnet_b0_pruned30_bnrecal
+++ local arch=
+++ local state=
+++ [[ efficientnet_b0_pruned30_bnrecal =~ ^resnet18_(.*)$ ]]
+++ [[ efficientnet_b0_pruned30_bnrecal =~ ^mobilenet_v3_small_(.*)$ ]]
+++ [[ efficientnet_b0_pruned30_bnrecal =~ ^efficientnet_b0_(.*)$ ]]
+++ arch=efficientnet_b0
+++ state=pruned30_bnrecal
+++ extra_flags=()
+++ local extra_flags
+++ case "$state" in
+++ extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
+++ echo --device cuda --checkpoint checkpoints/efficientnet_b0_pruned30_bnrecal.pt --concurrent-cpu-package
++ cond_args='--device cuda --checkpoint checkpoints/efficientnet_b0_pruned30_bnrecal.pt --concurrent-cpu-package'
++ cmd=('/home/shohan/green-ai-research/measurement_env/bin/python' 'pilot.py' '--data' '/home/shohan/green-ai-research/data' '--sizes' '32' '--batches' '1' '--windows' '5' '--interval' '0.4' '--warmup' '3' '--threads' '4' '--repeats' '7' '--allow-stale-boot' '--session-id' 'main_session1' '--condition-label' 'efficientnet_b0_pruned30_bnrecal' '--out' '/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30_bnrecal' '--device' 'cuda' '--checkpoint' 'checkpoints/efficientnet_b0_pruned30_bnrecal.pt' '--concurrent-cpu-package')
++ local cmd
++ [[ -f /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30_bnrecal/resume_state.json ]]
++ local status=0
++ /home/shohan/green-ai-research/measurement_env/bin/python pilot.py --data /home/shohan/green-ai-research/data --sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --repeats 7 --allow-stale-boot --session-id main_session1 --condition-label efficientnet_b0_pruned30_bnrecal --out /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30_bnrecal --device cuda --checkpoint checkpoints/efficientnet_b0_pruned30_bnrecal.pt --concurrent-cpu-package
+WARNING: System uptime is 134 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
++ [[ 0 -ne 0 ]]
++ [[ 0 -ne 0 ]]
++ [[ ! -s /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/efficientnet_b0_pruned30_bnrecal/summary.csv ]]
++ echo '[efficientnet_b0_pruned30_bnrecal] Successfully finished.'
+[efficientnet_b0_pruned30_bnrecal] Successfully finished.
++ return 0
++ [[ 0 -gt 0 ]]
+++ date -u +%Y-%m-%dT%H:%M:%SZ
++ END_TIME=2026-10-06T22:15:43Z
++ LOG_MD=/home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/session_log.md
++ echo 'Writing session log to /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/session_log.md...'
+Writing session log to /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1/session_log.md...
++ /home/shohan/green-ai-research/measurement_env/bin/python -
+session_log.md created.
++ [[ -z '' ]]
++ echo 'Committing session results to git...'
+Committing session results to git...
++ git add /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session1
