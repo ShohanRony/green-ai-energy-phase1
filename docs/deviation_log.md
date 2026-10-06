@@ -201,7 +201,10 @@ in these records, it is marked `TODO — not found in records` rather than guess
   under `powersave` still landed pinned — zero correlation either direction
   (`results_stage4_preflight/stage4_preflight_findings.md`). (2) Thermal soak alone — reran two combos
   in the same long-running boot session (not a fresh reboot) and both stayed pinned, including one
-  measured ~3 hours into that session. (3) Boot-identity hypothesis — falsified directly: two separate
+  measured ~3 hours into that session (**checked against real `timestamp_utc` values 2026-10-06: the
+  actual gaps were 3:57:15 for `pruned70_b32` and 4:19:00 for `fp16_b64`, i.e. closer to 4 hours than
+  3 — "~3 hours" undercounted by roughly an hour; corrected here, original wording left visible rather
+  than silently fixed**). (3) Boot-identity hypothesis — falsified directly: two separate
   deliberate reboots, same two combos, both landed pinned both times (not a fresh dip on either reboot).
 - **Unconfirmed, stopped for cost reasons:** cumulative-load/uptime-duration hypothesis (something
   degrading over a long session, resetting on any reboot) remained the leading but untested candidate
@@ -352,6 +355,89 @@ Full accounting, checked directly against logs rather than recalled:
 - **Could this change the conclusions?** Improves RQ1/RQ2 answerability for INT8 specifically, by
   providing a same-instrument baseline; does not change any already-collected GPU-measured data.
 - **Status:** planned as Part B work, not yet executed as of this log's writing.
+
+## D14. Stage 5 statistics: proposal's own tests restored as primary, Mann-Whitney U substituted for signed-rank
+
+- **Planned:** proposal §3 specifies Wilcoxon signed-rank tests for paired compression-state
+  comparisons, Spearman rank correlation for RQ2, Kendall's tau for RQ3.
+- **Intermediate deviation (2026-10-06, same day):** `stage5_analysis_plan.md` was first registered
+  with Welch's t-test, bootstrap 95% CIs, and Holm-Bonferroni correction as the primary methods
+  instead — at the researcher's explicit instruction at the time of drafting — with the proposal's
+  tests demoted to a status note.
+- **Actual, resolved same day (2026-10-06), at the researcher's explicit instruction:** reversed back.
+  The proposal's tests are primary: **Mann-Whitney U (Wilcoxon rank-sum), not the signed-rank test**,
+  for compressed-vs-baseline comparisons — substituted because Stage 4's reps are independent repeated
+  measurements of a static configuration, not paired observations; the signed-rank test requires a
+  real pairing between the two samples (matched units or the same unit under two conditions), which
+  does not exist between a compressed-state rep and a baseline rep. Applying the signed-rank test here
+  would misrepresent the data's structure, not just be a weaker choice. Spearman (RQ2) and Kendall's
+  tau (RQ3) are retained as specified, with an explicit caveat attached: both pool across a model's 6
+  compression states, which are not independent draws (same checkpoint, related transformations), and
+  n=6 per model gives low power regardless — both are reported as descriptive signals, not
+  confirmatory tests. Welch's t-test/bootstrap CI/Holm-Bonferroni are kept as supplementary,
+  triangulating rather than replacing the primary tests.
+- **Trigger:** the researcher's direct review of the divergence after it was first logged, resolving
+  which method set should be read as confirmatory.
+- **Timing:** AFTER — both the original Welch's-primary registration and this correction back to the
+  proposal's tests happened after `stage5_analysis_plan.md` was first drafted, same day, before any
+  actual Stage 5 statistics were run on real data (none have been, pending §6's accuracy threshold).
+- **Could this change the conclusions?** Not on data collected so far — no Stage 5 statistics have
+  been run under either method set yet. It determines which test family will be read as confirmatory
+  once they are.
+- **Mitigation:** `stage5_analysis_plan.md` §4 and its top status note both updated to reflect this
+  resolution; the original Welch's-primary text is not silently erased from this log's history, only
+  from the live plan (which per its own §12 rule amends rather than edits in place — this D14 entry
+  and the status-note update together serve as that amendment record).
+
+## D15. CodeCarbon never enabled in any Stage 4 run
+
+- **Planned:** proposal §3 requires CodeCarbon to run concurrently with hardware measurement on
+  *every* run, stated as what makes the RQ1 instrument-agreement comparison a within-run paired
+  comparison.
+- **Actual:** confirmed directly against logged `arguments.codecarbon` in every one of the 21 primary
+  Stage 4 `environment.json` files (18 compression-state conditions + 3 D13 FP32-CPU baselines):
+  `False` in all 21, zero exceptions. `pilot.py`'s `--codecarbon` flag (`action='store_true'`, default
+  `False`) was implemented back in Stage 1 (commit `ea89ad1`, "Wrap CodeCarbon to run concurrently with
+  RAPL/NVML reads") but the flag was never passed in any Stage 4 command — `stage4-implementation-brief.md`'s
+  Task 1 command template (§Task 1) has no `--codecarbon` in it, and no Stage 4 commit message
+  (`d0bfb70` through the matrix) mentions enabling it.
+- **Consequence:** no paired CodeCarbon readings exist anywhere in the Stage 4 dataset. RQ1 (software
+  estimator vs. hardware agreement) cannot be answered from the x86 data collected so far.
+- **Trigger:** direct audit requested by the researcher (2026-10-06, Part B item 3 of the 7-item
+  audit), checked against the brief, the harness default, the command template, and git history
+  rather than assumed.
+- **Feasibility check run same day:** 3 conditions (`resnet18_fp32`, `mobilenet_v3_small_fp32` on GPU;
+  `resnet18_int8` on CPU), batch=1, 6 reps each, `--codecarbon` enabled, in
+  `results_stage4/codecarbon_check/`. Findings:
+  - CodeCarbon's own `codecarbon_energy_j` diverges sharply from the hardware counter and not in a
+    fixed direction: ResNet-18 FP32 (GPU) ≈1.95x hardware; MobileNetV3-Small FP32 (GPU) ≈3.22x
+    hardware; ResNet-18 INT8 (CPU) ≈0.83x hardware. Consistent with CodeCarbon estimating whole-system
+    (CPU+GPU+RAM) energy by its own internal model rather than reading the same single-device counter
+    `pilot.py` reads (NVML GPU-only for the GPU runs; RAPL package for the CPU run) — not a simple
+    calibration offset.
+  - CodeCarbon's own reading is also far noisier than the hardware counter: CV 3.0-15.3% across the
+    three conditions' `codecarbon_energy_j`, vs. 0.6-4.7% for the paired `energy_j` hardware readings
+    over the same windows.
+  - Running CodeCarbon concurrently does **not** measurably perturb the hardware counter itself:
+    `total_j_mean` with CodeCarbon on vs. the primary (no-CodeCarbon) Stage 4 run for the same 3
+    conditions differs by −0.02 J (−0.01%), +1.10 J (+0.85%), +6.14 J (+0.89%) respectively — all
+    within (well under, for 2 of 3) one SD of the primary run's own repeat-to-repeat variation.
+    Wall-clock per repeat is also unaffected: 32.7 s/rep with CodeCarbon on, matching the 32.1-33.9
+    s/rep implied by the primary matrix's own per-condition timing.
+- **Could this change the conclusions?** Directly blocks RQ1 as currently specified — no instrument-
+  agreement claim can be made from Stage 4 data without CodeCarbon-paired runs. Does not affect RQ2 or
+  RQ3, which don't depend on CodeCarbon.
+- **Proposed, not executed:** an 18-condition, batch=1, CodeCarbon-on pass across the full x86 matrix
+  (31 reps/condition, same protocol as the primary Stage 4 matrix), kept as a separate result set
+  (e.g. `results_stage4_codecarbon/`) rather than mixed into the primary matrix — since the feasibility
+  check found no measurable hardware-reading or wall-time overhead from enabling CodeCarbon, this pass
+  is expected to reproduce the primary matrix's energy numbers while adding the paired CodeCarbon
+  column RQ1 requires. **Wall-time estimate:** feasibility-check repeats ran 32.7 s/rep with CodeCarbon
+  on, matching the primary matrix's own 32.1-33.9 s/rep (16.6-17.5 min/condition at 31 reps) — no
+  overhead detected, so 18 × ~16.6-17.5 min ≈ **5.0-5.3 hours total**, in line with D11's original
+  ~4.5-5h estimate for the no-CodeCarbon matrix. Awaiting approval before execution.
+- **Mitigation:** gap disclosed here and in `stage5_analysis_plan.md` §3 rather than silently worked
+  around; RQ1 reported as unanswerable from current data until the proposed pass runs.
 
 ---
 

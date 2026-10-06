@@ -4,15 +4,13 @@
 Per-condition summary values were viewed during collection for quality control only (checking
 `pairs`, `power_regime`, and plausibility — never a hypothesis test). M1 data not yet collected.
 
-**Note on §4's statistical methods vs. the proposal's own §3:** the proposal specifies Wilcoxon
-signed-rank tests for paired compression-state comparisons, Spearman rank correlation for RQ2, and
-Kendall's tau for RQ3 cross-platform rank agreement. This plan instead registers Welch's t-test with
-bootstrap confidence intervals and Holm-Bonferroni correction (§4), at the researcher's explicit
-instruction when this plan was drafted (2026-10-06). This is itself a deviation from the proposal,
-logged as such — see `deviation_log.md`, which should be updated with a dedicated entry if this
-divergence isn't already captured there. Spearman correlation is retained for the core-thesis
-descriptive check (§5); Kendall's tau is not currently registered for RQ3 and should be added or
-explicitly superseded before any cross-platform analysis runs.
+**Note on §4's statistical methods vs. the proposal's own §3 — RESOLVED 2026-10-06:** this plan
+originally registered Welch's t-test with bootstrap CIs and Holm-Bonferroni correction as the primary
+methods, diverging from the proposal's own §3 (Wilcoxon signed-rank, Spearman, Kendall's tau). Per
+the researcher's explicit instruction, this is now reversed: §4 registers the proposal's tests as
+primary (Mann-Whitney U substituted for Wilcoxon signed-rank, with Spearman/Kendall's tau caveated
+for pooling non-independence and low power), and the Welch's/bootstrap/Holm-Bonferroni family as
+supplementary. Logged as `deviation_log.md` D14.
 
 ---
 
@@ -79,16 +77,47 @@ wording.
 
 ## 4. Comparisons and statistics
 
-- Each compressed state vs. its own model's **same-instrument** baseline: x86 GPU states vs. FP32-GPU;
-  INT8 vs. FP32-CPU (D13); M1 states vs. M1 FP32.
-- Per condition: mean, SD, 95% bootstrap CI (10,000 resamples, percentile method).
-- Tests: Welch's t-test on per-rep energy; effect size = energy ratio (compressed / baseline) with
-  bootstrap 95% CI.
-- Multiple comparisons: Holm-Bonferroni across the full family of compressed-vs-baseline tests, per
-  platform.
-- **See the status note at the top of this document** — these methods differ from the proposal's own
-  §3 (Wilcoxon signed-rank, Spearman, Kendall's tau); registered here as the methods actually used, with
-  the divergence logged.
+**Resolved 2026-10-06 (`deviation_log.md` D14): the proposal's own tests are primary.** Each
+compressed state vs. its own model's **same-instrument** baseline: x86 GPU states vs. FP32-GPU; INT8
+vs. FP32-CPU (D13); M1 states vs. M1 FP32.
+
+**Primary (proposal-specified):**
+- **Mann-Whitney U (Wilcoxon rank-sum), substituted for the proposal's Wilcoxon signed-rank test.**
+  The signed-rank test requires paired observations (e.g., the same unit measured twice, or
+  deliberately matched pairs); Stage 4's reps within a condition are independent repeated
+  measurements of the same static configuration, not pairs matched to anything in the baseline
+  condition — there is no natural 1:1 pairing between compressed-state rep *i* and baseline rep *i*,
+  they're just two independent samples of 30 (pairs=30 after the cold-start discard) draws each.
+  Applying the signed-rank test to unpaired data would assume a pairing structure that doesn't exist
+  and would be invalid. Mann-Whitney U is the correct rank-based test for two independent samples and
+  is the closest proposal-faithful substitute — same family (distribution-free, rank-based), same
+  comparison target (compressed vs. baseline), different (correct) assumption about independence.
+- **Spearman rank correlation (RQ2)** and **Kendall's tau (RQ3)**, as specified in the proposal.
+  **Caveat, stated here because it affects how much weight these results can carry:** both are
+  computed by pooling across a model's 6 compression states, but those 6 states are not independent
+  draws — they're the same underlying checkpoint's weights measured under different, deliberately
+  related post-training transformations (pruning ratios are nested, quantization/precision states
+  share the same architecture). Treating 6 non-independent points as if they were 6 independent
+  samples overstates the effective degrees of freedom. Separately, n=6 per model gives low
+  statistical power regardless of independence — a non-significant result here is as likely to
+  reflect insufficient n as a true null. Both correlations are reported, but as descriptive signals
+  bounded by these two caveats, not as confirmatory hypothesis tests.
+
+**Supplementary (this plan's original registration, kept for triangulation):**
+- Welch's t-test on per-rep energy; effect size = energy ratio (compressed / baseline) with bootstrap
+  95% CI (10,000 resamples, percentile method); Holm-Bonferroni correction across the full family of
+  compressed-vs-baseline tests, per platform.
+- Per condition: mean, SD, 95% bootstrap CI, reported regardless of which test family is read as
+  primary.
+
+**Did the proposal intend the signed-rank test, and would it be valid here? Intended: yes — proposal
+§3 names it explicitly for paired compression-state comparisons. Valid for this data: no.** The
+signed-rank test's validity rests on a real pairing between the two samples being compared (matched
+units, or the same unit under two conditions). Stage 4's design produces two independent batches of
+reps per comparison, with no shared identity between a compressed-state rep and a baseline rep beyond
+both being draws from the same measurement protocol. Running the signed-rank test on this data would
+not just be a weaker choice than Mann-Whitney U — it would misrepresent the data's actual structure.
+This is why Mann-Whitney U, not the signed-rank test, is registered as primary above.
 
 ## 5. Core thesis test (FLOPs vs. energy)
 
