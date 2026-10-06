@@ -1,0 +1,2 @@
+above_idle_fraction_mean,above_idle_j_mean,approx_mde_j_per_image,batch,candidate_for_confirmation,conservative_screen_fraction,device,gross_j_per_image_mean,idle_j_mean,idle_j_sd,paired_difference_sd,paired_order_bias,pairs,power_regime,size,total_j_mean,total_j_sd,window_s
+0.8051846505070829,241.2149264085136,0.0005979287684433381,1,True,0.007348000470319954,cuda,0.08862800011566768,58.344656165248374,1.9829770164596505,0.001169639550920355,-5.330981809010492e-05,30,pinned,32,299.5769635400286,0.1372147920814656,5.0

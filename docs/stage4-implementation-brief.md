@@ -78,12 +78,29 @@ not a timer:
 3. **After every run, check its summary row's `power_regime` field.** If it's `pinned`: accept and move
    to the next condition. If it's `dip` or `mixed`: **stop, reboot, and rerun that exact condition**
    before doing anything else — do not accept a dip/mixed result as valid Stage 4 data, and do not
-   continue to the next condition on top of an unresolved flag.
-4. **Log every reboot-and-rerun event** (condition, regime observed, timestamp) in the eventual
-   deliverable's provenance notes — a condition that needed a rerun is not a hidden detail.
-5. If dip/mixed recurs *frequently* within a short session (e.g., more than once or twice across the
-   full 18-condition matrix), that is new evidence against the uptime-duration hypothesis and should
-   come back for a fresh look, not be pattern-matched into "just reboot again" forever.
+   continue to the next condition on top of an unresolved flag. **Unless the carve-out in point 3a
+   applies.**
+3a. **Carve-out: configs already known to be genuinely sub-saturating at batch=1 are exempt from the
+   reboot-and-rerun trigger.** Stage 4 pre-flight's own Task 1 (`stage4_preflight_findings.md`) already
+   measured and physically explained this: at batch=1, pruned50/70 are fast enough that the GPU idles
+   between launches instead of staying boosted — confirmed directly from per-window traces, not a
+   guess. This is a *different* phenomenon from the pre-flight pin/dip mystery (which was about
+   FP32/FP16/pruned70 at larger batches landing in different regimes *unexpectedly*). A `dip` on a
+   config already known from Task 1 to sub-saturate — pruned50 and pruned70 at batch=1, confirmed
+   again below for ResNet-18 — is **expected, not an escalation trigger**: log it as `dip (expected —
+   sub-saturation at batch=1)` in the deliverable and move on. The reboot-and-rerun rule in point 3
+   still applies in full to any config expected to saturate the GPU: FP32, FP16, pruned30 (confirmed
+   pinned at batch=1 for ResNet-18 in Task 1's original data — not a borderline case), and anything at
+   batch≥4. **For MobileNetV3-Small and EfficientNet-B0's pruned states, Task 1 never collected
+   batch=1 data** (ResNet-18 only) — treat pruned30/50/70 for those two models as *unknown* regime
+   expectation, not automatically exempt, until their own data says otherwise.
+4. **Log every reboot-and-rerun event, and every carve-out invocation** (condition, regime observed,
+   timestamp, which rule applied) in the eventual deliverable's provenance notes — neither a rerun nor
+   an exemption is a hidden detail.
+5. If dip/mixed recurs on a config that is *not* covered by the 3a carve-out — i.e., a config expected
+   to saturate the GPU still lands dip/mixed after a reboot — that is new evidence against the
+   uptime-duration hypothesis and should come back for a fresh look, not be pattern-matched into "just
+   reboot again" forever.
 
 ## 6. Tasks
 
