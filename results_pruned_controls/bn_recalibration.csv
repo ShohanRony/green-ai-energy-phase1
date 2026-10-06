@@ -1,0 +1,10 @@
+model,state,verify_max_diff,acc_before_recal,acc_after_bn_recal,delta_pt
+resnet18,pruned30,0.0,0.6482,0.8656,21.740000000000002
+resnet18,pruned50,0.0,0.1761,0.7102,53.410000000000004
+resnet18,pruned70,0.0,0.1035,0.1712,6.77
+mobilenet_v3_small,pruned30,0.0,0.1716,0.1893,1.7699999999999994
+mobilenet_v3_small,pruned50,0.0,0.1,0.1,0.0
+mobilenet_v3_small,pruned70,0.0,0.1,0.1,0.0
+efficientnet_b0,pruned30,0.0,0.6029,0.7813,17.84
+efficientnet_b0,pruned50,0.0,0.1335,0.4617,32.82
+efficientnet_b0,pruned70,0.0,0.1,0.1012,0.11999999999999927

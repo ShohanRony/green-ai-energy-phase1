@@ -1,0 +1,10 @@
+model,state,class_0,class_1,class_2,class_3,class_4,class_5,class_6,class_7,class_8,class_9
+resnet18,pruned30,1169,886,910,3615,338,416,165,868,707,926
+resnet18,pruned50,1,0,1605,7750,0,73,9,559,0,3
+resnet18,pruned70,0,0,9850,148,0,0,0,2,0,0
+mobilenet_v3_small,pruned30,313,0,1436,7516,53,0,60,68,33,521
+mobilenet_v3_small,pruned50,0,0,0,10000,0,0,0,0,0,0
+mobilenet_v3_small,pruned70,0,0,0,10000,0,0,0,0,0,0
+efficientnet_b0,pruned30,2002,467,557,2058,1259,82,1316,339,1267,653
+efficientnet_b0,pruned50,1159,0,22,8810,0,0,0,0,9,0
+efficientnet_b0,pruned70,0,0,0,10000,0,0,0,0,0,0
