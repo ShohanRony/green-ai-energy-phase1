@@ -254,11 +254,24 @@ in these records, it is marked `TODO — not found in records` rather than guess
   dip/mixed is no longer a stop-and-ask trigger at all for the remainder of Stage 4; Task 2's
   plausibility pass (checking energy-per-image ordering and magnitude against each model's own FP32
   baseline) is the real backstop instead.
-- **Mechanism basis:** inferred from the wattage pattern across three models' baselines (a consistent,
-  monotonic-with-compute-cost relationship), not independently verified against a direct measure of GPU
-  saturation (e.g., `nvidia-smi dmon` utilization/clock logging during the actual dip windows). The
-  physical story (model fast enough that the GPU idles between launches) is plausible and consistent
-  with the wattage data, but was not confirmed by a second, independent signal.
+- **Mechanism basis, CORRECTED 2026-10-06 against real `nvidia-smi dmon` data.** At the time this was
+  written, the mechanism was inferred from the wattage pattern alone (a consistent, monotonic-with-
+  compute-cost relationship), not independently verified against a direct measure of GPU saturation.
+  The physical story offered then — "model fast enough that the GPU idles between launches" — turns
+  out **not to be what the dmon data shows**, now that it exists (`results_stage4/dip_stability_check/
+  {resnet18_pruned70,mbv3_fp32}_dmon.log`, `-s uc -d 1`, collected as this entry's own planned
+  mitigation): during active windows, SM occupancy is continuously elevated the whole time — 89-96%
+  for `resnet18_pruned70`, 57-58% for `mobilenet_v3_small_fp32` — with clock boosted to 1965-1972MHz
+  throughout, not dipping to 0% or idling between individual batch=1 dispatches at any point within an
+  active window. The 0%-utilization stretches visible in the log line up exactly with the harness's
+  own `idle_before`/`idle_after` phases and inter-rep warmup (each ~11-14s, matching `warmup`+idle
+  `window()` durations) — they are the measurement protocol's deliberate idle phases, not evidence of
+  the GPU idling mid-computation. **The corrected mechanism: a lighter model/state achieves lower SM
+  occupancy (a smaller fraction of the SM array doing work per cycle) while continuously active and
+  fully clock-boosted — not zero occupancy, and not a duty-cycle of idle/active gaps. Lower occupancy
+  at full clock draws less instantaneous power, which is what produces the "dip."** This is a workload-
+  intensity effect, not a dispatch-rate/idling effect. The wattage-based compute-cost correlation (D7's
+  headline finding) is unaffected and still holds; only the *mechanism* description changes.
 - **Only one condition (`resnet18_pruned50`) was reproduced across a reboot** under the full rule before
   it was relaxed — the MobileNetV3-Small and EfficientNet-B0 baseline dips that drove the later
   generalizations were each observed once, not reboot-tested.
@@ -470,8 +483,9 @@ Full accounting, checked directly against logs rather than recalled:
   i.e. **package-only** — which is almost certainly why its `cpu_energy_j` (266.40 J) is so much lower
   than `pilot.py`'s combined package+psys reading (736.02 J) for the same `resnet18_int8` run, rather
   than the two being expected to agree. **Logged separately as D16 — this affects every CPU-measured
-  condition in the project (all 3 INT8 states + all 3 D13 FP32-CPU baselines, 6 conditions total), not
-  just this feasibility check, and is not yet remediated.**
+  condition in the project (all 3 INT8 states + all 3 D13 FP32-CPU baselines, plus Stage 1-3/pre-flight
+  CPU pilot runs, 10 directories total), not just this feasibility check. Status update (2026-10-06):
+  remediated via offline recompute + harness patch (see D16 itself) — not an open gap anymore.**
 - **4(a) — CodeCarbon's internal sampling cadence, confirmed from source:** `pilot.py` sets
   `measure_power_secs=max(a.interval,1)` = 1 second (since `a.interval=0.4`). Confirmed from
   `emissions_tracker.py`: `.start()` takes one immediate sample, then a `PeriodicScheduler` fires the
@@ -601,6 +615,39 @@ no rerun of already-collected data.**
   its own commit.
 - **Mitigation:** see the recompute script's commit and the `pilot.py` patch commit, both following
   this entry.
+
+## D17. Between-session drift, found by comparing the dip-stability reruns against the primary matrix
+
+- **What was compared:** the 12 `dip_stability_check` reruns (`e2df9c1`, one rep-set per condition,
+  separate fresh-boot session) against the primary Stage 4 matrix's own numbers for the same 12
+  conditions, on `gross_j_per_image_mean`.
+- **Result: differences range from -12.20% to +3.70%**, both ends on EfficientNet-B0's pruned states
+  (pruned70: primary 0.031493 J/image vs. stability-check 0.027653 J/image, -12.20%; pruned30: primary
+  0.038148 vs. 0.039559, +3.70%). Most differences are negative (stability-check lower than primary):
+  9 of 12 conditions. ResNet-18's two conditions barely moved (-0.24%, -0.03%); MobileNetV3-Small and
+  EfficientNet-B0 moved more, up to the two figures above.
+- **This matters because these differences are not small next to the project's own repeatability
+  numbers.** Several of them exceed the `approx_mde_j_per_image`/`conservative_screen_fraction` margins
+  this project uses to flag a condition as `candidate_for_confirmation` within one session (D9's
+  own screening logic) — i.e., a difference this large would normally be read as a real effect if it
+  showed up *within* a session's own reps, not dismissed as noise.
+- **Order confound: this is not a controlled comparison, and the result can't be split from it.** The
+  12 stability-check reruns happened in **one fixed order**
+  (`resnet18_pruned50→pruned70→mbv3_fp32→fp16→pruned30→pruned50→pruned70→eff_fp32→fp16→pruned30→
+  pruned50→pruned70`, matching the `dip_stability_check.sh` script's hardcoded sequence — the same
+  order every time, not randomized), and this entire rerun happened strictly *after* the full primary
+  matrix, in a separate later session. Any monotonic drift with time-since-boot, time-since-project-
+  start, or cumulative wear/calibration state is perfectly confounded with "ran in the stability
+  check, not the primary matrix" — there is no way, from this data alone, to tell genuine between-
+  session variability apart from an order/practice effect specific to this one rerun.
+- **Could this change the conclusions?** Directly relevant to how much the project can currently trust
+  that a single-session energy number (the entire primary Stage 4 matrix is one kind of session) would
+  reproduce in a different session. -12% to +4% is large enough to matter for any energy-ratio claim
+  with a tighter bound than that. This is exactly the gap `stage4b-design.md` (drafted alongside this
+  entry) is designed to close with multiple randomized-order sessions, not assumed away here.
+- **Mitigation:** none yet beyond disclosure — `stage4b-design.md` proposes the actual multi-session,
+  randomized-order design needed to separate real between-session variability from this order confound.
+  Not executed.
 
 ---
 

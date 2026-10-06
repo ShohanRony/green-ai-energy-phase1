@@ -17,7 +17,7 @@ checkpoints this needs already exist (Stage 2); no new training or compression w
 
 | In scope | Out of scope (explicitly, not an oversight) |
 |---|---|
-| ResNet-18, MobileNetV3-Small, EfficientNet-B0 — all 6 states each (18 conditions) | ARM/M1 — carried-forward gap since Stage 1, still no access to the MacBook Air. Stage 4 runs x86-only; flag this as a real gap in the deliverable, don't call the matrix "complete" without noting it. |
+| ResNet-18, MobileNetV3-Small, EfficientNet-B0 — all 6 states each (18 conditions) | ARM/M1 — Stage 4 itself still ran x86-only. **Updated 2026-10-06 (`deviation_log.md` D5): M1 access is available** (the "no access" framing used when this brief was first written is corrected there, not asserted as having been true the whole time); x86-only was this stage's sequencing choice, not a hardware blocker. Flag the matrix as x86-only, not as blocked-pending-hardware. |
 | Batch size = 1, locked (see §3) | Sweeping batch size as a factor — considered during pre-flight, not adopted. |
 | ≥30 reps/condition (`--repeats 31`, giving 30 pairs after the single cold-discard) | Statistical analysis (Stage 5's job). |
 
@@ -65,7 +65,9 @@ This is the actual safety net for Stage 4, not the proactive uptime timer. Pre-f
 observed power-regime dip happened in a long-uptime session, (b) a fresh reboot reliably produces
 `pinned` (confirmed 30+ consecutive times across two separate reboots), and (c) staying pinned for
 several hours *into* a session without rebooting again is also already confirmed safe (the thermal-soak
-control ran ~3 hours into a boot session and was still pinned) — so the 30-minute default guard is
+control ran ~4 hours into a boot session — corrected 2026-10-06 from the original "~3 hours," checked
+against real `timestamp_utc` values: 3:57-4:19, see `deviation_log.md` D7 — and was still pinned) — so
+the 30-minute default guard is
 **overly conservative for actual multi-hour Stage 4 sessions**, and the real governing rule is reactive,
 not a timer:
 
@@ -156,3 +158,12 @@ isn't true once a model (or a sufficiently compressed state of one) stops satura
 wattage numbers above are the evidence; carry them into Results/Discussion with the real figures, not a
 methods-appendix footnote — this belongs with the rest of the paper's hypothesis-relevant findings,
 documented in §5 as it accumulated in real time.
+
+**Mechanism precision, added 2026-10-06 from `nvidia-smi dmon` data (`deviation_log.md` D8's
+correction):** "never reaches the power cap" is correct and is the citable claim; "idles between
+launches" (an earlier, uncorroborated gloss on *why*) is not — the dmon log shows continuous, elevated
+SM occupancy throughout every active window (89-96% for `resnet18_pruned70`, 57-58% for
+`mobilenet_v3_small_fp32`), clock boosted to near-max the whole time, no idling between individual
+batch=1 dispatches. The correct mechanism for the citable finding: a lighter model/state sustains
+lower SM occupancy while continuously active, not zero occupancy — lower occupancy at full clock draws
+less power. State it this way in the manuscript, not as a dispatch-idling story.

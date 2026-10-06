@@ -1,7 +1,8 @@
 import os, subprocess, sys, tempfile, time, types, unittest
 from pathlib import Path
+from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from pilot import Sensor, integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile, flag_implausible_power, classify_power_regime, check_fresh_boot
+from pilot import Sensor, integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile, flag_implausible_power, classify_power_regime, check_fresh_boot, find_rapl_domain, p_core_set
 
 class MathTests(unittest.TestCase):
     def test_wrap(self):
@@ -125,5 +126,47 @@ class PlatformProfileGuardTests(unittest.TestCase):
         with self.assertRaises(RuntimeError): check_platform_profile(self._path('balanced'))
     def test_missing_path_rejected(self):
         with self.assertRaises(RuntimeError): check_platform_profile(Path('/nonexistent/platform_profile'))
+
+class RaplDomainSplitTests(unittest.TestCase):
+    """D16: integrate()'s names= mode must sum each RAPL domain separately, not merge them,
+    and must still handle counter wraparound correctly per domain."""
+    RANGE = 1000.0
+    def test_split_mode_sums_domains_separately(self):
+        trace = [(0.0, [10.0, 40.0]), (1.0, [30.0, 90.0])]  # package-0 delta 20, psys delta 50
+        out = integrate(trace, [self.RANGE, self.RANGE], ['package-0', 'psys'])
+        self.assertEqual(out, {'package-0': 20.0, 'psys': 50.0})
+        self.assertNotEqual(out['package-0'], out['package-0'] + out['psys'])  # the D16 bug merged these
+    def test_split_mode_wraparound_per_domain(self):
+        trace = [(0.0, [990.0, 500.0]), (1.0, [5.0, 600.0])]  # package wraps, psys doesn't
+        out = integrate(trace, [self.RANGE, self.RANGE], ['package-0', 'psys'])
+        self.assertEqual(out['package-0'], 5.0 + (self.RANGE - 990.0))
+        self.assertEqual(out['psys'], 100.0)
+
+class RaplDomainLookupTests(unittest.TestCase):
+    """find_rapl_domain() must locate a domain by its sysfs name (item 3's concurrent-RAPL-on-GPU
+    patch), never a blind glob -- that's the D16 bug it exists to avoid repeating."""
+    def test_matches_package_0_on_this_machine(self):
+        path, rng = find_rapl_domain('package-0')
+        self.assertIsNotNone(path)
+        self.assertEqual(Path(path).parent.name, 'intel-rapl:0')
+        self.assertGreater(rng, 0)
+    def test_missing_name_returns_none(self):
+        path, rng = find_rapl_domain('definitely-not-a-real-domain')
+        self.assertIsNone(path); self.assertIsNone(rng)
+
+class PCoreAffinityTests(unittest.TestCase):
+    """p_core_set() -- item 3's --cpu-affinity flag. Mocked sysfs so this doesn't depend on
+    running on a hybrid P-core/E-core CPU specifically."""
+    class _FakePath:
+        def __init__(self, exists, text=''): self._exists=exists; self._text=text
+        def __call__(self, *a, **k): return self
+        def exists(self): return self._exists
+        def read_text(self): return self._text
+    def test_parses_ranges_and_singles(self):
+        with patch('pilot.Path', self._FakePath(True, '0-5,8,10-11\n')):
+            self.assertEqual(p_core_set(), {0,1,2,3,4,5,8,10,11})
+    def test_raises_without_hybrid_sysfs(self):
+        with patch('pilot.Path', self._FakePath(False)):
+            with self.assertRaises(RuntimeError): p_core_set()
 
 if __name__=='__main__': unittest.main()

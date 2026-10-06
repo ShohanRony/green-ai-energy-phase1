@@ -21,7 +21,15 @@ deferred to Stage 4.
 | Pruned 30% | cuda | NVML sampled power | 0.01791 | 11.75 ± 0.42 | 59.94 | Yes |
 | Pruned 50% | cuda | NVML sampled power | 0.00659 | 11.82 ± 0.45 | 59.92 | Yes |
 | Pruned 70% | cuda | NVML sampled power | 0.00540 | 11.86 ± 0.51 | 59.93 | Yes |
-| INT8 | **cpu** | RAPL package energy | 0.18395 | 38.50 ± 4.06 | 140.94 | n/a — no GPU execution |
+| INT8 | **cpu** | RAPL package+psys (label corrected 2026-10-06, D16) | 0.18395 | 38.50 ± 4.06 | 140.94 | n/a — no GPU execution |
+
+**Label correction, 2026-10-06:** this row originally said "RAPL package energy," matching this
+project's documented intent at the time but not what `pilot.py` actually read — the harness summed
+`package-0` and `psys` for every CPU run, not `package-0` alone (`deviation_log.md` D16). This is
+Stage 3 pilot data, already pilot-only and excluded from confirmatory analysis (D12), so the 0.18395
+J/image figure above is not corrected here (no `summary_package.csv` was generated for Stage 3's
+pilot directories); the label is fixed so the table doesn't claim an instrument boundary that wasn't
+actually used.
 
 Idle/active power columns derived from `idle_j_mean`/`total_j_mean` ÷ 5s window. Full per-state
 `summary.csv`/`windows.csv`/`raw.jsonl` in `results_stage3/resnet18_{state}/`.

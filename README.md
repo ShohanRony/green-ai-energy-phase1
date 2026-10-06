@@ -86,8 +86,10 @@ Enforced in `pilot.py`'s `check_interval_floor()`, called from `main()`.
 
 ## RAPL sampling-rate ceiling
 
-Checklist item 4's other half: RAPL/CPU reads via perf-events must never sample
-faster than 100Hz (interval < 0.01s). Enforced the same way, same function:
+Checklist item 4's other half: RAPL/CPU reads (via sysfs, `/sys/class/powercap/
+intel-rapl:*/energy_uj` — corrected 2026-10-06; this previously said "perf-
+events," which `pilot.py` has never used) must never sample faster than 100Hz
+(interval < 0.01s). Enforced the same way, same function:
 `pilot.py`'s `check_interval_floor()`, called a second time from `main()` for
 `--device cpu`. Default rejects; `--override-fast-rapl-interval` allows it and
 logs a warning.
@@ -120,7 +122,13 @@ run, alongside the NVIDIA driver version and CPU governor.
 - `tests/test_pilot.py` — unit tests: the original 4 (counter wrap, power
   integration, counter-reset rejection, idle-duration/detection) plus the
   interval-floor, concurrent-GPU-guard, and platform-profile-guard tests added
-  2026-10-03.
+  2026-10-03, plus the D16/item-3 tests added 2026-10-06 (RAPL domain-split
+  correctness, `find_rapl_domain()`, `--cpu-affinity`'s `p_core_set()`) — 40
+  tests total, all passing via `python -m unittest discover -s tests`.
+- `scripts/` — `recompute_cpu_package_energy.py` (D16 offline recompute),
+  `eval_artifacts.py` (full-test-set accuracy via `pilot.py`'s own loading
+  path), `pruned_controls.py` (pruned-state class histograms + BN-stats-only
+  recalibration).
 - `docs/` — the Phase 1 execution plan and Stage 1 implementation brief this repo
   is built against.
 

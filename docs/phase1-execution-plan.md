@@ -27,7 +27,15 @@ Status: **not starting from zero.** A 2026-09-14→09-21 validation sprint on th
 **x86 platform — Lenovo LOQ 15IRX9**
 Intel Core i5-13450HX, RTX 3050 6GB (GA107), 24GB DDR5-4800, Linux Mint 22.3 XFCE (dual-boot with Windows).
 
-- CPU energy: RAPL via `perf-events`, per Raffin & Trystram (2024) — their preferred access path (fastest, lowest idle-inflation). The psys-vs-package question and the root/capability question are addressed empirically in §1.5 — a udev rule already exists making RAPL sysfs world-readable, no sudo needed. **Still unconfirmed:** whether that rule exposes `psys` specifically or only `package` — needs a one-line check (`ls /sys/class/powercap/intel-rapl/intel-rapl:*/name`) before Stage 1 is marked complete.
+- CPU energy: RAPL, read directly via sysfs (`/sys/class/powercap/intel-rapl:*/energy_uj`), **not**
+  the Linux `perf_event_open` subsystem — corrected 2026-10-06; this line previously said
+  "RAPL via `perf-events`," which `pilot.py` never implemented (it has always read the sysfs files
+  directly). A udev rule already exists making RAPL sysfs world-readable, no sudo needed.
+  **The psys-vs-package question flagged here as "a one-line check remaining" was never actually
+  closed before Stage 1 was marked complete.** It sat open through Stages 1-4: the udev rule exposes
+  *both* `package-0` and `psys`, and `pilot.py`'s glob matched both and summed them — exactly the
+  risk this line predicted, now confirmed as a real bug and logged as `deviation_log.md` D16
+  (root-caused and remediated 2026-10-06, offline recompute + harness patch).
 - GPU energy: NVML via `nvidia-smi` / `pynvml`. §1.5 already found the critical fact here: **don't trust a sampling rate faster than ~0.3–0.5s on this specific GPU** — it's not a tuning choice, it's a measured counter artifact.
 - **Critical pre-check, now answered (and it's bad news) — see §1.6:** PyTorch INT8 on this GPU does not run; it segfaults. The GA107 kernel-dispatch question from the previous version of this plan is resolved, just not the way the proposal assumed.
 
@@ -95,7 +103,8 @@ INT8 is also narrower than the proposal assumed: works only via `torchvision.mod
 ## 3. Stage-by-stage execution plan
 
 ### Stage 1 — Harness & instrumentation build
-- ~~RAPL access~~ — **done**; confirm psys-vs-package naming only.
+- ~~RAPL access~~ — **done**; psys-vs-package naming confirmed, **but not acted on until 2026-10-06**
+  (D16) — the harness read both domains and summed them for the entire project until that fix.
 - ~~NVML reads~~ — **done**, safe sampling interval known.
 - Set up `powermetrics` on the M1 with a scoped sudo rule — **not started.**
 - Port `research/energy-pilot` into this proposal's own harness repo (see §1.7 — don't tangle with the other proposal's repo).
@@ -144,7 +153,9 @@ INT8 is also narrower than the proposal assumed: works only via `torchvision.mod
 
 ## 5. Open technical items
 
-- psys vs package RAPL domain — one-line check remaining.
+- ~~psys vs package RAPL domain~~ — **closed 2026-10-06**, the hard way: this "one-line check
+  remaining" was never actually done, and the harness summed both domains for the whole project
+  until the D16 audit caught it (see §1 and §3's Stage 1 entry above, and `deviation_log.md` D16).
 - ~~INT8 GPU dispatch~~ — resolved: segfaults, CPU/fbgemm only. §1.6.
 - ~~INT4 feasibility~~ — resolved: infeasible, FP16 substituted. §1.6.
 - Pruning fine-tuning policy (zero-finetune vs brief recovery) at 70% — still not pinned down; decide in Stage 2.

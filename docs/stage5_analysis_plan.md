@@ -212,6 +212,30 @@ realized counterpart). If the energy ratio's 95% CI excludes the FLOPs ratio, co
 not proportional to FLOPs reduction" for that state. Across states, report Spearman correlation
 descriptively only — small n, no strong inference drawn from it.
 
+**Relabeling, added 2026-10-06: "Pruned30/50/70" names a channel ratio, not a sparsity or FLOPs
+figure.** The number passed to `torch_pruning.pruner.MagnitudePruner` as `pruning_ratio` is a
+fraction of output channels removed per prunable layer — calling it "30% pruning" without
+qualification invites reading it as 30% of FLOPs, params, or weights removed, none of which is true.
+The realised MACs/params reduction (from Stage 2's dependency-graph report, `stage2_deliverable.md`
+§4) is always larger than the nominal channel ratio, because removing one layer's output channels
+cascades to remove the corresponding input channels of every downstream layer it feeds:
+
+| Model | Channel ratio | Realised MACs reduction | Realised params reduction |
+|---|---|---|---|
+| ResNet-18 | 30% | 51.6% | 51.1% |
+| ResNet-18 | 50% | 74.8% | 75.0% |
+| ResNet-18 | 70% | 91.0% | 91.1% |
+| MobileNetV3-Small | 30% | 46.7% | 50.1% |
+| MobileNetV3-Small | 50% | 69.1% | 73.6% |
+| MobileNetV3-Small | 70% | 86.8% | 90.0% |
+| EfficientNet-B0 | 30% | 48.4% | 50.0% |
+| EfficientNet-B0 | 50% | 71.2% | 73.5% |
+| EfficientNet-B0 | 70% | 88.1% | 89.8% |
+
+"Pruned30/50/70" is kept as the checkpoint/condition name (matches `checkpoints/*.pt` filenames and
+every prior stage's own naming) but is reported alongside its realised MACs figure wherever accuracy
+or energy is discussed, not alone.
+
 **What "FLOPs ratio" means for FP16/INT8, fixed before any analysis (added 2026-10-06):** the
 `torch-pruning` dependency-graph report counts MACs, which are identical for FP16/INT8 states and
 their FP32 baseline — same architecture, same layer shapes, only the numeric representation changes.
@@ -291,20 +315,89 @@ training runs. **Consequence:** the Wilson CI and McNemar test in (d) capture te
 variability only; they say nothing about training-run-to-run variability, which was never measured and
 cannot be recovered from the data as collected.
 
+**Three further disclosures, added 2026-10-06, all affecting how comparable the 18 accuracy numbers
+above actually are to each other:**
+- **INT8 pipeline differs by model.** ResNet-18's INT8 uses torchvision's official quantized path;
+  MobileNetV3-Small's and EfficientNet-B0's use a manual FX graph-mode PTQ pipeline with cross-layer
+  equalisation deliberately skipped (full detail: `deviation_log.md` D3). The three models' INT8
+  accuracy-cost numbers are not from a uniform procedure.
+- **30 vs. 60 training epochs.** ResNet-18's FP32 baseline (and everything derived from it) was
+  trained for 30 epochs and never retrained — it was "already plateaued" (loss 0.0288) when checked.
+  MobileNetV3-Small's and EfficientNet-B0's baselines were retrained to 60 epochs after the original
+  30-epoch versions were found not plateaued (`stage2_retrain_report.md`). Any comparison of accuracy
+  behaviour *across* the three models (not within one model's own states) compares models trained to
+  different convergence depths, not a controlled variable.
+- **No validation split.** Training uses only a train/test split (`train_baseline.py`); `test_acc` is
+  computed exactly once, after the last epoch, never used inside the per-epoch loop (early stopping
+  and the LR schedule use only `train_acc`/loss). There is no held-out validation set distinct from
+  the test set. This means: (1) there's no guard against the single reported `test_acc` being a
+  favourable-or-unfavourable draw from one specific epoch rather than a selected best-epoch checkpoint;
+  (2) the 60-epoch retrain decision itself was made by inspecting the training-accuracy trend
+  (`stage2_deliverable.md`: "+1.97pt and +2.05pt over their last 5 epochs"), not test accuracy, so this
+  specific decision did not use the test set — but the structural absence of a validation split means
+  no decision in this pipeline ever could, without touching the test set directly.
+
 **(g) Final.** This rule is final once (a)'s 99% primary threshold is explicitly confirmed by Shohan.
 Any later change is a dated amendment under §12, not an in-place edit — see A1.
 
-The collapsed 70% pruning state (and, for MobileNetV3-Small and — under the retrained 60-epoch
-baseline — EfficientNet-B0, the 50% state too; see `deviation_log.md` D4) is expected to fail (a) by a
-wide margin once this rule is confirmed and run, given its near-chance accuracy.
+**Projected outcome using item 1's measured full-test-set accuracies (`results_accuracy/summary.csv`,
+2026-10-06) — a preview, not a ruling: (a)'s 99% threshold is still pending Shohan's confirmation, and
+none of this is final until it is.**
+
+| Model | State | Accuracy | Ratio to own FP32 | 99% tier | 99.9% tier |
+|---|---|---|---|---|---|
+| ResNet-18 | INT8 | 93.12% | 100.03% | PASS | PASS |
+| ResNet-18 | FP16 | 93.08% | 99.99% | PASS | PASS |
+| ResNet-18 | Pruned30 | 64.82% | 69.63% | **FAIL** | **FAIL** |
+| ResNet-18 | Pruned50 | 17.61% | 18.92% | **FAIL** | **FAIL** |
+| ResNet-18 | Pruned70 | 10.35% | 11.12% | **FAIL** | **FAIL** |
+| MobileNetV3-Small | INT8 | 83.89% | 97.04% | **FAIL** | **FAIL** |
+| MobileNetV3-Small | FP16 | 86.47% | 100.02% | PASS | PASS |
+| MobileNetV3-Small | Pruned30 | 17.16% | 19.85% | **FAIL** | **FAIL** |
+| MobileNetV3-Small | Pruned50 | 10.00% | 11.57% | **FAIL** | **FAIL** |
+| MobileNetV3-Small | Pruned70 | 10.00% | 11.57% | **FAIL** | **FAIL** |
+| EfficientNet-B0 | INT8 | 87.18% | 98.10% | **FAIL** | **FAIL** |
+| EfficientNet-B0 | FP16 | 88.84% | 99.97% | PASS | PASS |
+| EfficientNet-B0 | Pruned30 | 60.29% | 67.84% | **FAIL** | **FAIL** |
+| EfficientNet-B0 | Pruned50 | 13.35% | 15.02% | **FAIL** | **FAIL** |
+| EfficientNet-B0 | Pruned70 | 10.00% | 11.25% | **FAIL** | **FAIL** |
+
+**The consequence worth flagging explicitly: under this convention, every pruned state fails,
+including Pruned30 for all three models** — not just the previously-identified "collapsed" (≤15%
+accuracy) states from D4. D4's old ad-hoc collapse threshold was far more permissive than the MLPerf
+convention; Pruned30 was never flagged as collapsed (64.82%/17.16%/60.29% are nowhere near chance) but
+still fails a 99%-of-FP32 bar badly. Only the three FP16 states and ResNet-18's INT8 pass either tier;
+MobileNetV3-Small's and EfficientNet-B0's INT8 both fail the 99% tier (97.04%, 98.10%) despite not
+looking obviously degraded in absolute terms.
+**Pruned-state caveat (`results_pruned_controls/bn_recalibration.csv`, 2026-10-06):** several of
+these pruned-state failures are, at least in part, a BatchNorm-statistics artifact, not a pure
+capacity limit — BN-stats-only recalibration (no weight updates, forward passes on 2000 train images)
+recovers ResNet-18 Pruned50 from 17.61%→71.02% and EfficientNet-B0 Pruned50 from 13.35%→46.17%, while
+MobileNetV3-Small's Pruned50/70 and EfficientNet-B0's Pruned70 show zero recovery (true collapse: the
+model predicts one class for all 10,000 test images, before and after recalibration). **This plan's
+accuracy rule evaluates the checkpoints as measured by `pilot.py` (zero-finetune, no BN recalibration)
+— the control data above is reported so the deployability table doesn't read as "pruning this much
+necessarily destroys the model," when for some states it's a fixable statistics mismatch, not a
+capacity limit. Whether BN recalibration counts as still "post-training only" (and so whether a
+recalibrated number should ever be used instead of the as-measured one) is Shohan's call, not resolved
+here.**
 
 ## 7. Power-regime handling (x86)
 
 - Every condition reports its regime (`power_regime`: `pinned`/`dip`/`mixed`, logged automatically by
   `pilot.py` since the Stage 4 pre-flight guard was added — `deviation_log.md` D7).
-- A `dip` condition is included in the primary analysis only if it passes the stability check: same
-  regime in a separate fresh session, and steady low utilisation in an `nvidia-smi dmon` log (Part B
-  item 3 — not yet executed as of this plan's registration).
+- **Executed 2026-10-06 (`e2df9c1`): all 12 `dip` conditions reproduced their exact original regime
+  in a separate fresh session (12/12 match, zero flips)** — the stability-check gate below is
+  satisfied for every `dip` condition in the primary matrix.
+- **`nvidia-smi dmon` finding, corrected 2026-10-06 (see `deviation_log.md` D7's mechanism
+  correction): "steady low utilisation" is not what the log shows.** During active windows, SM
+  occupancy is continuously elevated (57-58% for `mobilenet_v3_small_fp32`'s dip; 89-96% for
+  `resnet18_pruned70`'s dip) with clock boosted to near-max the entire time — not low, and not
+  idling between dispatches. The 0%-utilization stretches in the log correspond entirely to the
+  harness's own `idle_before`/`idle_after` phases and inter-rep warmup, not to gaps within active
+  compute. The gating rule below is kept (fresh-session reproducibility is still required), but is
+  no longer read as confirming "steady low utilisation" — it confirms regime stability, which is a
+  different and still-valid thing to check.
 - Any condition that is `mixed`, or unstable across sessions: rerun once; if still unstable, report it
   separately and exclude it from the confirmatory tests.
 - **RTX 3050 regime findings are not assumed to transfer to M1** — M1 gets its own stability check
@@ -395,3 +488,48 @@ one. Changes made this date:
 **Tagging:** once Shohan confirms §6(a)'s threshold, this plan is tagged in git (e.g.
 `stage5-plan-v1`) as the frozen, final version analysis actually runs against — not done yet, since
 confirmation hasn't happened.
+
+**A2 — 2026-10-06.** Same process note as A1: made as in-place edits, not appended-only, at explicit
+instruction; this entry discloses that rather than hiding it. Covers every in-place edit made after
+A1, across two supervisor-review rounds the same day:
+- **§3:** CPU boundary corrected a second time — D16's root cause (package+psys summed, not
+  package-0 alone) confirmed, then marked resolved once the offline recompute + harness patch landed;
+  component-wise (GPU-vs-NVML, CPU-vs-RAPL-package) comparison made primary for the RQ1 instrument-
+  agreement check, total-vs-total demoted to secondary; documented that CodeCarbon's `ram_energy` is a
+  fixed-wattage heuristic, not a measurement, and that it tracks all detected hardware (idle GPU
+  included) regardless of the measured workload's actual device.
+- **§5:** added the "channel ratio, not sparsity/FLOPs" relabeling for Pruned30/50/70, with the
+  realised-MACs table alongside.
+- **§6:** citation TODO filled (Tschand et al., 2025 IEEE HPCA, MLPerf Power — provenance later
+  corrected to supervisor-verified against the project-library PDF, p.1 and §V-D); added the MLPerf
+  Tiny absolute-target (not relative-to-FP32) caveat and the single-seed-near-threshold-variance gap;
+  added the full 18-state projected pass/fail table against the 99%/99.9% tiers using item 1's
+  measured accuracies (still a preview, (a)'s threshold still unconfirmed); added the pruned-state
+  BN-recalibration caveat (several "failures" are a statistics artifact, not a pure capacity limit,
+  per `results_pruned_controls/`); added the INT8-pipeline-differs-by-model, 30-vs-60-epoch, and
+  no-validation-split disclosures.
+- **§7:** marked the dip-stability check executed (12/12 reproduced); corrected "steady low
+  utilisation" — the real `dmon` finding is continuously elevated (not low) occupancy during active
+  windows, with the 0%-utilization stretches matching the harness's own idle phases exactly, not GPU
+  idling mid-computation (`deviation_log.md` D7, D8).
+- **`deviation_log.md`:** D7 and D8 both corrected with the `dmon`-confirmed mechanism (occupancy
+  scales with workload size while continuously active and fully clock-boosted; not a dispatch-idling
+  effect); D9's note already closed stands; D15's stale "not yet remediated" line for D16 fixed; D16
+  completed (offline recompute executed, harness patched, both committed) and reclassified from
+  "likely inflated" to root-cause-confirmed with three independent lines of evidence; D17 added
+  (between-session drift, -12.20% to +3.70% on the 12 dip-stability conditions vs. the primary
+  matrix, confounded with run order — not yet separable from a genuine between-session effect).
+- **`stage4-implementation-brief.md`:** §2's M1-access line corrected to match D5; §5's "~3 hours"
+  corrected to "~4 hours" (same real-timestamp correction as D7); §9's citable finding given the same
+  `dmon`-confirmed mechanism correction as D7/D8.
+- **`phase1-execution-plan.md`:** the three psys-vs-package "check remaining" lines (§1, §3 Stage 1,
+  §5) all closed, noting the check was flagged from the start but never acted on until D16.
+- **`results_stage3/stage3_deliverable.md`:** INT8's instrument label corrected from "RAPL package
+  energy" to "RAPL package+psys," matching D16, with a note that the underlying 0.18395 J/image figure
+  itself is not recomputed (Stage 3 is pilot-only, D12; no `summary_package.csv` generated for it).
+- **`README.md`:** "perf-events" corrected to "sysfs" (RAPL access was always sysfs-direct);
+  `requirements.txt` versions corrected to match what's actually installed (every pinned version was
+  stale except `codecarbon`), `torch-pruning` added (was missing despite being a real dependency since
+  Stage 2); the stray root-level `test_pilot.py` this session created was merged into the existing
+  `tests/test_pilot.py` (duplicate filename, wrong location — the project's real test suite has always
+  lived under `tests/`) and the root copy deleted.
