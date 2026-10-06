@@ -490,10 +490,40 @@ Full accounting, checked directly against logs rather than recalled:
   as slightly higher **gross J/image** (this project's primary energy unit, energy ÷ images processed)
   under CodeCarbon, not in the window's raw energy total, which integrates power over fixed wall time
   and is insensitive to how many images that time produced.
+- **Two separate check runs exist (v1, v2) — logged explicitly, not silently merged or treated as one
+  replacing the other.** Both ran the identical 3-condition protocol, in the same uninterrupted boot
+  session, ~1h45m apart:
+
+  | | resnet18_fp32 hw | mobilenet_v3_small_fp32 hw | resnet18_int8 hw | resnet18_fp32 CC | mobilenet CC | resnet18_int8 CC |
+  |---|---|---|---|---|---|---|
+  | v1 | 297.04 | 129.92 | 694.81 | 580.09 | 418.43 | 573.69 |
+  | v2 | 296.63 | 137.99 | 736.02 | 590.00 | 441.82 | 471.95 |
+
+  **v1's raw data was overwritten by v2's rerun** (the recompute script's predecessor used `rm -rf`
+  before rewriting each directory to add the per-component CodeCarbon fields) — a lapse against this
+  project's own standing checklist item 12 (preserve raw data; don't overwrite without a determinism
+  check first), not caught before the overwrite happened. **Both runs were stale-boot**: v1 at uptime
+  85-89 min, v2 at uptime 186-193 min, same session throughout, both past the 30-min fresh-boot
+  threshold. **v2 is not labelled as superseding v1** — both are feasibility-check-grade data from a
+  stale-boot session, neither confirmatory.
+  **Between-run vs. within-run variability, stated plainly because it matters:** the two conditions
+  that moved between v1 and v2 (mobilenet hardware: 129.92→137.99, +6.2%; resnet18_int8 hardware:
+  694.81→736.02, +5.9%) shifted by more than those conditions' own within-run CV (1.15% and 0.56%
+  respectively, measured within v2) — i.e. the between-session difference is **larger than the
+  within-session noise it would need to be explained by chance alone**. resnet18_fp32's hardware
+  barely moved (+0.14%), smaller than its own 3.03% within-run CV. CodeCarbon's totals moved more:
+  +1.7%, +5.6%, and **−17.7%** respectively, the last comparable to that condition's own 15.26%
+  within-run CV. **This means between-session variability for this harness has not been measured and
+  is not yet known to be small — it needs its own dedicated check (e.g. repeated short runs across
+  several uptime points in one session, and across separate sessions), not assumed negligible because
+  within-run CVs look tight.** Not yet done; flagged here as an open gap, not closed.
 - **Could this change the conclusions?** Directly blocks RQ1 as currently specified — no instrument-
   agreement claim can be made from Stage 4 data without CodeCarbon-paired runs. Does not affect RQ2 or
   RQ3, which don't depend on CodeCarbon. D16 (RAPL double-counting) is the more consequential finding
-  and could affect every reported CPU-side energy number pending its remediation.
+  and could affect every reported CPU-side energy number pending its remediation. The v1/v2
+  between-session gap is a separate, still-open question about how stable this harness's readings are
+  across time within one long session — relevant to interpreting any single-session measurement in
+  this project, not just the CodeCarbon checks.
 - **4(e), proposed, not executed:** revised to **21 conditions** (18 compression states + the 3 D13
   FP32-CPU baselines, all of which need the same paired instrument-agreement check), batch=1,
   CodeCarbon on, kept as a separate result set (e.g. `results_stage4_codecarbon/`), **with a
@@ -562,6 +592,13 @@ no rerun of already-collected data.**
   directories from their existing `raw.jsonl`, writing `summary_package.csv` alongside the untouched
   originals; (2) `pilot.py` is patched going forward to log `package`/`psys` as separate columns, with
   package as primary, for all future CPU runs — not applied retroactively to existing `raw.jsonl`.
+- **Part (1) executed 2026-10-06 (`8367662`).** 9/10 directories produced `summary_package.csv`
+  (`pilot_proof_int8` has only 1 rep, below `summarize()`'s n≥3 floor — correctly produced no summary
+  rather than a misleading one). Every directory's package+psys recompute reproduced the original
+  recorded `energy_j` to <1e-4 relative error before the package-only split was trusted.
+  `summary_package.csv` is now the corrected primary CPU energy figure everywhere it exists;
+  `summary.csv`'s combined figure and `psys` are secondary. Part (2) (the harness patch) follows in
+  its own commit.
 - **Mitigation:** see the recompute script's commit and the `pilot.py` patch commit, both following
   this entry.
 

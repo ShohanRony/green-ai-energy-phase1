@@ -13,6 +13,24 @@
 > measurements** — kept for the evidence trail only (each affected
 > `results/*/` directory has its own `DEPRECATED.md`). Full explanation:
 > `results/active_power_baseline_investigation.md`.
+>
+> **⚠️ Superseded-data notice (2026-10-06, D16):** every CPU energy number in
+> this project's `energy_j`/`summary.csv` (`total_j_mean` etc.) — all 3 INT8
+> states, all 3 D13 FP32-CPU baselines, and the Stage 1-3/pre-flight CPU pilot
+> runs — sums **two** RAPL domains, `package-0` and `psys`, not `package-0`
+> alone, contradicting this file's own "RAPL domain in use" section below
+> (written as if the code already did the right thing; it didn't). `psys` is
+> a superset platform-power domain, confirmed empirically to report more than
+> `package-0` at both idle and under CPU load — summing both inflates reported
+> CPU energy by roughly 2.8x for the one condition checked in detail. **Use
+> `summary_package.csv` (package-0 only, recomputed offline from each
+> directory's own `raw.jsonl` by `scripts/recompute_cpu_package_energy.py`,
+> which never modifies `raw.jsonl` or `summary.csv`) as the corrected primary
+> CPU energy figure; `summary.csv`'s combined figure and `psys` are secondary.**
+> The original INT8/FP32-CPU values in `summary.csv` were viewed during
+> collection for QC only (pairs/regime/plausibility checks, never a hypothesis
+> test) — this fix was made before any Stage 5 statistics ran on CPU data, not
+> after. See `docs/deviation_log.md` D16.
 
 RAPL+NVML paired energy-measurement harness for the Masaryk Green AI proposal's
 Phase 1 (see `docs/phase1-execution-plan.md`, `docs/stage1-implementation-brief.md`).
@@ -30,10 +48,18 @@ intel-rapl:1 -> psys
 ```
 
 Both are world-readable without sudo via `/etc/udev/rules.d/51-rapl-permissions.rules`
-(`chmod -R a+r /sys%p` on powercap add). The harness reads `package-0` (CPU package
-energy), not `psys` (whole-system). This is a stated deviation, not a bug: package
-energy excludes DRAM/VRM/peripheral rails that `psys` would include, so reported
-CPU-side energy is a lower bound on true system energy for that component.
+(`chmod -R a+r /sys%p` on powercap add). **Intent vs. actual (corrected 2026-10-06, D16):**
+this section previously claimed the harness reads `package-0` only, "not `psys`
+(whole-system)," as a deliberate, disclosed choice. That was wrong — the glob matching
+`intel-rapl:*` one colon deep caught both `package-0` and `psys`, and both were summed into
+every `energy_j` this harness ever logged for a CPU run. The intent stated here (package-0
+only, because `psys` is a superset including DRAM/VRM/peripheral rails, not an independent
+rail to add on top) was correct; the code didn't implement it. Fixed offline (not by
+rerunning) via `scripts/recompute_cpu_package_energy.py`, which recomputes package-0-only
+energy from each affected run's existing trace data and writes `summary_package.csv`
+alongside the original, untouched `summary.csv`. `pilot.py` itself is patched going forward
+(see the harness-patch commit) to log `package`/`psys` as separate columns for any new CPU
+run, with package-0 as primary.
 
 ## NVML energy backend (corrected 2026-10-03) and sampling interval
 

@@ -85,10 +85,18 @@ wording.
   plus Stage 2/3/pre-flight CPU pilot runs) used the summed package+psys value, confirmed roughly
   2.8x the package-only figure for `resnet18_int8`'s feasibility-check windows** (pilot.py combined:
   736.02 J; pilot.py package-only recomputed from the same raw trace: 266.21 J — which matches
-  CodeCarbon's own independent package-only RAPL read, 266.40 J, to within 0.1%). **D16 is BLOCKING
-  for any CPU-side analysis (INT8 vs. FP32-CPU, or any comparison involving either) until resolved —
-  not yet remediated, researcher's decision pending between offline recompute, patch-and-rerun, or
-  relabel.**
+  CodeCarbon's own independent package-only RAPL read, 266.40 J, to within 0.1%).
+  **Resolved 2026-10-06: offline recompute + harness patch, no rerun.**
+  `scripts/recompute_cpu_package_energy.py` recomputed package-0-only energy from each affected
+  directory's own `raw.jsonl` trace (never modified) and wrote `summary_package.csv` alongside the
+  original, untouched `summary.csv`, for all 10 affected directories (9 produced a summary; the
+  10th, `pilot_proof_int8`, has only 1 rep). **`summary_package.csv`'s figures are now the corrected
+  primary CPU energy for every affected condition; `summary.csv`'s combined (package+psys) figure
+  and the `psys`-only component are both secondary.** The original `summary.csv` INT8/FP32-CPU values
+  were viewed during Stage 4 collection for QC only (pairs/regime/plausibility checks, never a
+  hypothesis test, per this document's own opening status note) — this correction was made before
+  any Stage 5 statistics ran on CPU data, not after. CPU-side analysis (INT8 vs. FP32-CPU, or any
+  comparison involving either) is unblocked using `summary_package.csv`.
 - **Secondary:** net-of-idle energy, latency, accuracy (from Stage 2), realised FLOPs/params reduction
   (from Stage 2's `torch-pruning` dependency-graph report, not nominal sparsity), power regime.
 - **RQ1 instrument-agreement check — component-wise comparison is PRIMARY, total-vs-total is
@@ -232,12 +240,11 @@ explicitly confirms (a)'s 99% primary threshold.**
 
 **(a) PRIMARY — MLPerf convention.** A compressed state is deployable if its top-1 accuracy on the
 CIFAR-10 test set (n=10,000) is **≥99% of its own model's FP32 top-1 on the same test set**. This is
-the MLPerf Inference accuracy-tier convention for the "closed division." **Citation (provided by the
-researcher, 2026-10-06 — not independently re-verified against the paper itself, since the external
-drive is not mounted; recorded as given, not as "found in records"):** Tschand et al., "MLPerf Power:
-Benchmarking the Energy Efficiency of Machine Learning Systems from µWatts to MWatts for Sustainable
-AI," 2025 IEEE HPCA, arXiv:2410.12032 — the paper's own example cited is BERT-99.0, requiring 99% of
-the original FP32 accuracy, the same convention applied here.
+the MLPerf Inference accuracy-tier convention for the "closed division." **Citation, verified by the
+supervisor session against the project-library PDF (page 1 and section V-D), 2026-10-06:** Tschand et
+al., "MLPerf Power: Benchmarking the Energy Efficiency of Machine Learning Systems from µWatts to
+MWatts for Sustainable AI," 2025 IEEE HPCA, arXiv:2410.12032 — the paper's own example cited is
+BERT-99.0, requiring 99% of the original FP32 accuracy, the same convention applied here.
 **Disclosed, two separate caveats:**
 - MLPerf's 99%/99.9% tiers were defined for ImageNet/BERT-scale classification and language tasks;
   this project borrows the convention for CIFAR-10-scale models, which is a disclosed convention
