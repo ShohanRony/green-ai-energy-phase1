@@ -649,6 +649,28 @@ no rerun of already-collected data.**
   randomized-order design needed to separate real between-session variability from this order confound.
   Not executed.
 
+## D18. Post-pruning recovery arms added (BN recalibration and brief recovery)
+
+- **What was changed:** In addition to the canonical zero-finetune pruning arm, two post-pruning recovery arms were generated and evaluated:
+  1. **BN-recalibrated (`_bnrecal`):** gradient-free running statistics recalibration over 2,000 CIFAR-10 training images (seed 2026, no weight updates). Fits the post-training optimization paradigm alongside INT8 PTQ.
+  2. **Brief-recovery (`_ft`):** 3-epoch SGD fine-tuning (lr=0.01, momentum=0.9, wd=5e-4, batch=128) per `prune_decision_checkpoint.py` with standard data augmentation.
+- **Accuracies measured (n=10,000):**
+  - **BN recalibration:**
+    - ResNet-18: 30%: 86.56% (92.99% of FP32), 50%: 71.02% (76.29% of FP32), 70%: 17.12% (18.39% of FP32).
+    - MobileNetV3-Small: 30%: 18.93% (21.90% of FP32), 50%: 10.00% (11.57% of FP32), 70%: 10.00% (11.57% of FP32).
+    - EfficientNet-B0: 30%: 78.11% (87.89% of FP32), 50%: 46.28% (52.08% of FP32), 70%: 10.10% (11.36% of FP32).
+  - **Brief recovery fine-tune:**
+    - ResNet-18: 30%: 91.27% (98.04% of FP32), 50%: 89.92% (96.59% of FP32), 70%: 84.92% (91.22% of FP32).
+    - MobileNetV3-Small: 30%: 72.61% (83.99% of FP32), 50%: 63.09% (72.98% of FP32), 70%: 44.60% (51.59% of FP32).
+    - EfficientNet-B0: 30%: 85.84% (96.59% of FP32), 50%: 84.54% (95.13% of FP32), 70%: 78.59% (88.43% of FP32).
+- **99% / 99.9% deployability tallies:**
+  - 0 of 9 BN-recalibrated states pass 99% or 99.9% of FP32.
+  - 0 of 9 brief-recovery states pass 99% or 99.9% of FP32 (highest is ResNet-18 pruned30 at 98.04% of FP32).
+- **Stage 4b measurement rationale:**
+  - `_bnrecal` is included in the Stage 4b energy matrix (measuring 9 zero-finetune + 9 `_bnrecal` states). Both share identical pruned architectures. Measuring both tests whether energy draw differs across weight/stat values at fixed architecture.
+  - If energy is equivalent (within ±5%), `_ft` energy is inferred from the measured architecture. If it differs, `_ft` will require explicit energy runs.
+  - `_ft` is designated as accuracy-only in Stage 4b.
+
 ---
 
 ## Anomalies noted, not deviations
