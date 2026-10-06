@@ -1,6 +1,6 @@
 # Overnight Report — Stage 4 Rework (2026-10-07)
 
-**Execution Status:** Completed D0, D1, D2, D3, Step 7 runner script + dry-run. Stage 4b Session 1 launched in background.
+**Execution Status:** Completed D0, D1, D2, D3, Step 7 runner script + dry-run, and Stage 4b Session 1 (all 30 conditions completed cleanly, committed in `d321598`, pushed).
 
 ---
 
@@ -12,6 +12,8 @@
 * `54918f0`: D2 — Materialized 9 `_bnrecal` and 9 `_ft` checkpoints, evaluated test accuracies, saved predictions, logged deviation D18.
 * `ff0695c`: D3 — Finalized and registered Stage 4b design (30 conditions with BN-recal arm); tagged `stage4b-registered`.
 * `d0c841c`: Step 7 — Added `scripts/run_stage4b_session.sh`, validated via session 0 dry-run.
+* `47e76d7`: Step 8 & 9 — Added initial morning report, launched Stage 4b Session 1.
+* `d321598`: Session 1 results — Full 30-condition confirmatory dataset for Stage 4b main session 1.
 
 ### Key Numbers and Findings
 * **FP16 accuracies** (`results_accuracy/summary.csv`):
@@ -62,8 +64,9 @@
   * P-core CPU affinity logging.
   * Full 30-condition test set accuracy predictions (including FP32-CPU reference arrays).
   * Runner script preflight guards and resume handling.
+  * Stage 4b Session 1 execution: 30/30 conditions completed cleanly, verified with zero errors/interruptions.
 * **Still open:**
-  * Stage 4b multi-session data collection (Session 1 launched tonight).
+  * Stage 4b multi-session data collection: Sessions 2, 3, and 4 (must be run on independent fresh reboots across at least 2 calendar days by Shohan).
 * **Deferred by Shohan's choice:**
   * M1 platform benchmarking (scheduled after x86 completion).
   * Secondary RQ1 CodeCarbon pass and batch=16 pass (scheduled after Stage 4b main sessions 1–4).
@@ -99,9 +102,13 @@ Each subsequent session requires a clean reboot:
 
 ---
 
-## 6. Session 1 Launch Status
+## 6. Session 1 Execution Status
 
-* **Status:** Launched, running in background.
+* **Status:** Completed successfully with 0 interruptions and 0 failures.
 * **Runner script:** `scripts/run_stage4b_session.sh --kind main --session 1`
 * **Log location:** `results_stage4b/main_session1/runner.log`
-* **Runner PID:** `3882` (pilot child PID: `3914`)
+* **Session log:** `results_stage4b/main_session1/session_log.md`
+* **Timing:** Start: 2026-10-06T20:22:34Z, End: 2026-10-06T22:15:43Z (elapsed: 1h 53m 09s).
+* **Conditions executed:** 30 / 30 completed cleanly.
+* **Results commit:** `d321598` (pushed to origin/master).
+* **Integrity verification:** All 30 conditions verified (28 window rows [7 repeats x 4 phases], governor=performance, affinity=pcores on CPU, system = gpu + package on CUDA, zero power anomalies).
