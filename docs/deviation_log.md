@@ -499,7 +499,12 @@ Full accounting, checked directly against logs rather than recalled:
   CodeCarbon on, kept as a separate result set (e.g. `results_stage4_codecarbon/`), **with a
   per-condition overhead audit** (hardware `energy_j`/`total_j_mean` with CodeCarbon on vs. the
   matching primary Stage 4 run, for all 21, not just the 3 feasibility-checked ones) rather than
-  assuming the 3-condition feasibility check generalizes. **Wall-time estimate, from real timestamps:**
+  assuming the 3-condition feasibility check generalizes. **Explicitly: this pass is NOT expected to
+  reproduce the primary matrix's numbers unchanged** — the 4(d) `batches`-per-window finding (−5.8% for
+  `resnet18_fp32`) shows CodeCarbon can measurably reduce per-window throughput, which would show up as
+  higher gross J/image under CodeCarbon for at least that model. The per-condition audit exists
+  specifically to quantify this per condition, not to confirm a no-change assumption. **Wall-time
+  estimate, from real timestamps:**
   per-rep wall time with CodeCarbon on was measured at 32.7 s/rep in two independent reruns — used here
   as an empirical basis, not as evidence of "no overhead" (see 4(d) above, that argument no longer
   applies) — matching the primary matrix's own 16.6-17.5 min/condition at 31 reps. 21 × ~16.6-17.5 min
@@ -507,7 +512,10 @@ Full accounting, checked directly against logs rather than recalled:
 - **Mitigation:** gap disclosed here and in `stage5_analysis_plan.md` §3 rather than silently worked
   around; RQ1 reported as unanswerable from current data until the proposed pass runs.
 
-## D16. `pilot.py`'s CPU/RAPL energy reading sums `package-0` and `psys` domains — likely inflated, not yet remediated
+## D16. `pilot.py`'s CPU/RAPL energy reading sums `package-0` and `psys` domains — ROOT CAUSE CONFIRMED
+
+**Status: root cause confirmed 2026-10-06. Remediation decided: offline recompute + harness patch,
+no rerun of already-collected data.**
 
 - **Discovery:** surfaced while answering D15/item 4(c) ("does CodeCarbon read RAPL or fall back to
   TDP for the CPU"). Checking what CodeCarbon's RAPL path does differently from `pilot.py`'s required
@@ -517,33 +525,45 @@ Full accounting, checked directly against logs rather than recalled:
   the `intel-rapl:0:0` `core` sub-domain). On this machine that filter still matches **two** top-level
   domains: `intel-rapl:0` (`package-0`) and `intel-rapl:1` (`psys`) — confirmed by reading each
   domain's `name` file directly. `integrate()` sums every matched domain's energy delta into one
-  number. `psys` ("platform") is understood to be a superset of the package domain on Intel RAPL
-  (package + chipset + voltage regulators, sometimes more), not an independent additive power rail —
-  summing package + psys very likely counts a large part of the package's own draw twice.
-- **Evidence it matters, not just a theoretical concern:** for `resnet18_int8`'s feasibility-check
-  windows, `pilot.py`'s combined reading was 736.02 J vs. CodeCarbon's package-only `cpu_energy_j` of
-  266.40 J for the same windows — CodeCarbon defaults to `rapl_prefer_psys=False` (package-only).
-  The two aren't expected to match exactly (different sampling cadence, different code paths), but a
-  ~2.8x gap is far larger than any other source of disagreement found in this audit, and is in the
-  direction a package+psys double-count would produce.
-- **Scope:** affects every CPU/RAPL-measured condition in this project — all 3 INT8 states
-  (`resnet18_int8`, `mobilenet_v3_small_int8`, `efficientnet_b0_int8`) and all 3 D13 FP32-CPU baselines.
-  Does not affect any GPU/NVML-measured condition.
-- **Timing:** discovered 2026-10-06, after all 6 affected conditions were already collected and
-  committed (Stage 4's INT8 runs were collected before this audit; D13's FP32-CPU baselines were
-  collected the same day, D7-corrected timestamps notwithstanding).
+  number.
+- **Root cause confirmed, three independent ways (2026-10-06):**
+  1. **Documented intent contradicts the code.** This project's own `README.md` §"RAPL domain in use"
+     states explicitly: "The harness reads `package-0` (CPU package energy), not `psys` (whole-system).
+     This is a stated deviation, not a bug." The code does not do this — it reads both and sums them.
+  2. **Fresh empirical check** (15s idle + 30s 16-core CPU load, explicit domain names, nothing else
+     running): `psys` > `package-0` at both idle (40.93 W vs. 12.31 W) and under load (133.37 W vs.
+     84.80 W) — consistent with `psys` being a superset platform-power domain (package + chipset +
+     voltage regulators), not an independent additive rail.
+  3. **Package-only recompute matches an independent instrument.** Recomputing `resnet18_int8`'s
+     feasibility-check energy using only the `package-0` trace column gives 266.21 J (SD 3.07) —
+     matching CodeCarbon's own, independently-read, package-only `cpu_energy_j` of 266.40 J (SD 3.16)
+     to within **0.1%**. `pilot.py`'s combined (package+psys) reading for the same windows was 736.02 J
+     — **2.765x** the package-only figure, i.e. `psys` very nearly triples the reported CPU energy for
+     this workload.
+- **Scope — 10 directories, all CPU, confirmed by checking `arguments.device` across every
+  `environment.json` in the repo, not just the 6 originally flagged:** `results_stage2/pilot_proof_int8`,
+  `results_stage3/resnet18_int8`, `results_stage4_preflight/resnet18_int8_b1`,
+  `results_stage4/{resnet18,mobilenet_v3_small,efficientnet_b0}_int8`,
+  `results_stage4/{resnet18,mobilenet_v3_small,efficientnet_b0}_fp32_cpu` (D13),
+  `results_stage4/codecarbon_check/resnet18_int8`. Zero GPU/NVML-measured conditions are affected
+  (confirmed: every GPU run's `trace` is a single-element list, one sensor, no RAPL involvement).
+- **Timing:** discovered 2026-10-06, after all 10 affected directories were already collected and
+  committed.
 - **Could this change the conclusions?** Potentially significantly for any RQ1/RQ2 claim involving
-  INT8 or the FP32-CPU baseline specifically — if the package+psys sum is substantially inflated, the
-  CPU-measured states' absolute energy (and any ratio computed against them) could be overstated.
-  Does not affect GPU-measured states or any conclusion that doesn't involve the CPU instrument.
-- **Not yet remediated — researcher's decision needed:** options not yet chosen between: (1) patch
-  `Sensor.__init__` to filter to `package-0` only (matching CodeCarbon's and most published RAPL-based
-  tooling's convention) and re-run all 6 affected conditions; (2) keep the combined reading but
-  relabel it explicitly as "package+psys" everywhere it's reported, disclosing rather than changing it;
-  (3) investigate further whether `psys` on this specific machine is actually additive rather than a
-  superset (not assumed here, would need a controlled comparison, e.g. reading both domains at idle
-  and during a known CPU-only load and checking whether `psys ≈ package` or `psys > package`).
-- **Mitigation:** none yet — flagged here rather than silently carried forward or silently patched.
+  INT8 or the FP32-CPU baseline — the package+psys sum is confirmed inflated (not just "likely"), by a
+  factor of ~2.8x for `resnet18_int8`'s feasibility-check windows specifically; the exact factor for
+  other conditions is not assumed to be identical and is being recomputed per-directory, not scaled by
+  this one ratio. Does not affect GPU-measured states or any conclusion that doesn't involve the CPU
+  instrument.
+- **Remediation decided (2026-10-06): offline recompute + harness patch, NO rerun.** `raw.jsonl`
+  already stores the full per-domain trace for every window collected, so the package-only figure can
+  be recovered exactly from already-collected data without repeating any measurement. Two parts:
+  (1) `scripts/recompute_cpu_package_energy.py` recomputes package-only energy for all 10 affected
+  directories from their existing `raw.jsonl`, writing `summary_package.csv` alongside the untouched
+  originals; (2) `pilot.py` is patched going forward to log `package`/`psys` as separate columns, with
+  package as primary, for all future CPU runs — not applied retroactively to existing `raw.jsonl`.
+- **Mitigation:** see the recompute script's commit and the `pilot.py` patch commit, both following
+  this entry.
 
 ---
 

@@ -61,26 +61,71 @@ wording.
 
 - **Primary:** energy per image (J), **gross** (idle time between launches at batch=1 is a real
   deployment cost, not measurement overhead to subtract away). x86 GPU states (FP32/FP16/pruned30/50/70)
-  use NVML; x86 INT8 and the new FP32-CPU baseline (D13) use RAPL package; M1 uses `powermetrics`.
-  **Never compare energy across different instruments directly** — every cross-instrument comparison in
-  this project (GPU vs. CPU, x86 vs. M1) must be stated with its instrument boundary, per the
-  pre-flight checklist discipline carried from Stage 1.
+  use NVML; M1 uses `powermetrics`.
   **Confirmed directly against `pilot.py`'s `Sensor` class (2026-10-06):** a run's energy figure comes
-  from exactly one backend, chosen by `--device` — RAPL package counters for `cpu`, NVML
-  `nvmlDeviceGetPowerUsage` (sampled power, trapezoidal-integrated) for `cuda`. There is no combined
-  RAPL+NVML reading anywhere in this harness; a GPU run never includes CPU/RAM power, a CPU run never
-  includes GPU power. This is a deliberate single-sensor-per-run design, not an oversight — it's what
-  makes the "never compare across instruments" rule necessary in the first place.
+  from exactly one backend, chosen by `--device` — NVML `nvmlDeviceGetPowerUsage` (sampled power,
+  trapezoidal-integrated) for `cuda`; for `cpu`, RAPL, but **summed across two domains, not one** (see
+  below). There is no combined RAPL+NVML reading anywhere in this harness; a GPU run never includes
+  CPU/RAM power. GPU-state primary energy is confirmed **NVML-only** — the GPU `Sensor`'s `read()`
+  returns exactly one value per sample and every GPU run's `trace` field carries a single-element list,
+  checked directly. **Never compare energy across different instruments directly** — every
+  cross-instrument comparison in this project (GPU vs. CPU, x86 vs. M1) must be stated with its
+  instrument boundary, per the pre-flight checklist discipline carried from Stage 1.
+  **CPU boundary corrected 2026-10-06 (`deviation_log.md` D16) — this entry previously said "RAPL
+  package"; that was wrong.** `pilot.py`'s CPU `Sensor` globs `/sys/class/powercap/intel-rapl:*/energy_uj`
+  one colon deep, which on this machine matches **both** `intel-rapl:0` (`package-0`) and
+  `intel-rapl:1` (`psys`), and `integrate()` sums both domains' deltas into one number. Confirmed
+  empirically (2026-10-06, 15s idle + 30s 16-core CPU load, fresh reads with explicit domain names):
+  `psys` reports **more** than `package-0` at both idle (40.93 W vs. 12.31 W) and under load (133.37 W
+  vs. 84.80 W) — consistent with `psys` being a superset platform-power domain (package + chipset +
+  voltage regulators), not an independent additive rail. This directly contradicts this project's own
+  `README.md` §"RAPL domain in use," which states the harness reads `package-0` only, "not `psys`
+  (whole-system)," as a deliberate, disclosed choice — the code does not match that documented intent.
+  **Every CPU-measured energy number in this project (all 3 INT8 states, all 3 D13 FP32-CPU baselines,
+  plus Stage 2/3/pre-flight CPU pilot runs) used the summed package+psys value, confirmed roughly
+  2.8x the package-only figure for `resnet18_int8`'s feasibility-check windows** (pilot.py combined:
+  736.02 J; pilot.py package-only recomputed from the same raw trace: 266.21 J — which matches
+  CodeCarbon's own independent package-only RAPL read, 266.40 J, to within 0.1%). **D16 is BLOCKING
+  for any CPU-side analysis (INT8 vs. FP32-CPU, or any comparison involving either) until resolved —
+  not yet remediated, researcher's decision pending between offline recompute, patch-and-rerun, or
+  relabel.**
 - **Secondary:** net-of-idle energy, latency, accuracy (from Stage 2), realised FLOPs/params reduction
   (from Stage 2's `torch-pruning` dependency-graph report, not nominal sparsity), power regime.
-- **RQ1 instrument-agreement check:** CodeCarbon vs. hardware counters, reported as mean difference and
-  ratio with 95% CI, plus Bland-Altman limits of agreement — **contingent on CodeCarbon data existing.**
-  Checked directly (Part B item 4): `codecarbon` was `False` in every Stage 4 run's logged `arguments`
-  field — **no paired CodeCarbon readings exist in the Stage 4 data collected so far.** This is a real
-  gap against the proposal's explicit requirement (§3: "CodeCarbon runs concurrently with hardware
-  measurement on every run, which is what makes the RQ1 comparison a within-run paired comparison") —
-  flagged here and in Part B's report, not silently worked around. RQ1 cannot be answered from the
-  current x86 dataset until CodeCarbon-paired runs exist.
+- **RQ1 instrument-agreement check — component-wise comparison is PRIMARY, total-vs-total is
+  secondary (added 2026-10-06, after the codecarbon_check feasibility data showed why):** CodeCarbon
+  reports `cpu_energy`, `gpu_energy`, and `ram_energy` as separate fields, not a single number, and
+  they measure fundamentally different things:
+  - **GPU runs:** compare CodeCarbon's `gpu_energy` against `pilot.py`'s NVML power-integrated
+    reading. CodeCarbon's GPU path (confirmed in installed `codecarbon` v3.3.1's `core/gpu_nvidia.py`)
+    calls `pynvml.nvmlDeviceGetTotalEnergyConsumption` — the cumulative counter this project's own
+    Stage 1 validation work found over-reports active-phase power ~30% versus the validated
+    `nvmlDeviceGetPowerUsage` default `pilot.py` uses. A direct GPU-vs-GPU comparison isolates this
+    known, already-characterised discrepancy from everything else CodeCarbon adds on top.
+  - **CPU runs:** compare CodeCarbon's `cpu_energy` against `pilot.py`'s RAPL reading — **but only
+    once D16 is resolved and `pilot.py`'s own CPU reading is package-only**, since CodeCarbon's
+    `cpu_energy` is already package-only by default (`rapl_prefer_psys=False`; confirmed in
+    `core/resource_tracker.py`'s `_setup_rapl()`).
+  - **CodeCarbon's `ram_energy` is not a measurement — confirmed from source
+    (`external/ram.py`): a fixed-wattage heuristic** (`RAM_SLOT_POWER_X86 = 5` Watts per estimated
+    DIMM slot, from total detected RAM size, not read from any sensor — no consumer hardware exposes
+    real-time RAM power telemetry). It should never be compared against a hardware "RAM energy" figure
+    because no such hardware figure exists anywhere in this project.
+  - **CodeCarbon tracks all detected hardware on the machine, not just what the measured workload
+    uses — confirmed from source** (`core/resource_tracker.py`'s `_run_full_hardware_setup`: a `RAM`
+    tracker is always appended; a `GPU` tracker is appended whenever any NVIDIA GPU is detected,
+    independent of `pilot.py`'s own `--device` argument). This is why the CPU-only `resnet18_int8`
+    feasibility-check run still logged a nonzero `codecarbon_gpu_energy_j` (98.10 J) — the idle RTX
+    3050 was tracked the whole time even though no CUDA code ran.
+  - **Total-vs-total** (CodeCarbon's aggregate `energy_consumed` vs. `pilot.py`'s single-device total)
+    is kept as a secondary, whole-system-vs-single-device sanity check, not the primary RQ1 comparison
+    — it conflates all of the above into one number and is harder to attribute.
+  **Contingent on CodeCarbon data existing.** Checked directly (Part B item 4): `codecarbon` was
+  `False` in every Stage 4 run's logged `arguments` field — **no paired CodeCarbon readings exist in
+  the Stage 4 data collected so far.** This is a real gap against the proposal's explicit requirement
+  (§3: "CodeCarbon runs concurrently with hardware measurement on every run, which is what makes the
+  RQ1 comparison a within-run paired comparison") — flagged here and in Part B's report, not silently
+  worked around. RQ1 cannot be answered from the current x86 dataset until CodeCarbon-paired runs
+  exist, and the CPU half of it is additionally blocked on D16.
 
 ## 4. Comparisons and statistics
 
@@ -187,13 +232,28 @@ explicitly confirms (a)'s 99% primary threshold.**
 
 **(a) PRIMARY — MLPerf convention.** A compressed state is deployable if its top-1 accuracy on the
 CIFAR-10 test set (n=10,000) is **≥99% of its own model's FP32 top-1 on the same test set**. This is
-the MLPerf Inference accuracy-tier convention for the "closed division."
-`TODO — not found in records: exact MLPerf Power paper citation. No project reference-library file
-exists in this repo, and the external drive hosting the "scholarship" library is not mounted on this
-machine as of this entry — add the full citation once available.` **Disclosed:** MLPerf's 99%/99.9%
-tiers were defined for ImageNet/BERT-scale classification and language tasks; this project borrows the
-convention for CIFAR-10-scale models, which is a disclosed convention transplant, not a threshold
-independently validated for this task's scale or difficulty.
+the MLPerf Inference accuracy-tier convention for the "closed division." **Citation (provided by the
+researcher, 2026-10-06 — not independently re-verified against the paper itself, since the external
+drive is not mounted; recorded as given, not as "found in records"):** Tschand et al., "MLPerf Power:
+Benchmarking the Energy Efficiency of Machine Learning Systems from µWatts to MWatts for Sustainable
+AI," 2025 IEEE HPCA, arXiv:2410.12032 — the paper's own example cited is BERT-99.0, requiring 99% of
+the original FP32 accuracy, the same convention applied here.
+**Disclosed, two separate caveats:**
+- MLPerf's 99%/99.9% tiers were defined for ImageNet/BERT-scale classification and language tasks;
+  this project borrows the convention for CIFAR-10-scale models, which is a disclosed convention
+  transplant, not a threshold independently validated for this task's scale or difficulty.
+- **MLPerf Tiny's own CIFAR-10 ResNet benchmark does not use this relative convention at all** — it
+  sets an **absolute** accuracy target (~85% top-1) rather than a percentage of an FP32 reference.
+  MLPerf itself does not have one single convention for CIFAR-10-scale models; (a) above picks the
+  Inference-benchmark relative convention over the Tiny-benchmark absolute convention, which is a
+  choice, not the only available option.
+- **Single-seed variance near the threshold was not measured and cannot be estimated from data as
+  collected.** (f) below confirms every checkpoint in this project comes from one fixed seed (2026),
+  with no multi-seed replication — so there is no empirical estimate of how much a state's accuracy
+  would move under a different seed, which matters most exactly for states landing close to the 99%/
+  99.9% boundary, where a different seed could plausibly flip a "deployable" call to "not deployable"
+  or vice versa. The Wilson CI in (d) does not cover this; it only covers test-set sampling variability
+  for the one seed actually trained.
 
 **(b) STRICT tier.** Also report, for every state, whether it clears **99.9%** of FP32 top-1 — labelled
 separately from (a)'s primary tier, not merged into it.
