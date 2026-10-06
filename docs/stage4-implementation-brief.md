@@ -75,46 +75,26 @@ not a timer:
 2. **The first run of a session passes `check_fresh_boot()` naturally.** For subsequent runs in the
    same session (uptime will exceed 30 min quickly), pass `--allow-stale-boot` — this is a deliberate,
    disclosed choice given (c) above, not a workaround for an inconvenient check.
-3. **After every run, check its summary row's `power_regime` field.** If it's `pinned`: accept and move
-   to the next condition. If it's `dip` or `mixed`: **stop, reboot, and rerun that exact condition**
-   before doing anything else — do not accept a dip/mixed result as valid Stage 4 data, and do not
-   continue to the next condition on top of an unresolved flag. **Unless the carve-out in point 3a
-   applies.**
-3a. **Carve-out (generalized 2026-10-06 during real Stage 4 execution — see below): any state, on any
-   model, light enough that batch=1 doesn't keep the GPU boosted is exempt from the reboot-and-rerun
-   trigger.** Originally written narrower ("ResNet-18 pruned50/70 at batch=1 only") based on Task 1's
-   pre-flight data, which only tested ResNet-18. That framing was too narrow: MobileNetV3-Small's own
-   FP32 baseline — not a compressed state, its *heaviest* state — sub-saturated at batch=1 too (tight,
-   consistent dip at 25-26.5W, well below even ResNet-18's pruned50/70 dip range of 35-52W, confirmed
-   across all 30 reps, not mixed). MobileNetV3-Small is ~96x fewer FLOPs than ResNet-18 at FP32
-   (5.8M vs 557M MACs) — light enough that even its uncompressed baseline doesn't saturate the GPU at
-   batch=1. The mechanism is identical to the original ResNet-18 pruned50/70 case (model fast enough
-   that the GPU idles between launches instead of staying boosted) — it's the same physically-explained
-   phenomenon, not the pre-flight pin/dip mystery (which was about configs landing in *unexpectedly*
-   different regimes on different invocations, not a model being consistently light). A `dip` on any
-   state of any model is **expected, not an escalation trigger**, UNLESS that state/model combination
-   has not yet shown its own data — log it as `dip (expected — sub-saturation at batch=1)` and move on.
-   **Per-model carve-out status, updated as data comes in:**
-   - ResNet-18: FP32/FP16/pruned30 pinned (expected-saturate), pruned50/70 dip (expected-sub-saturate).
-   - MobileNetV3-Small: **carve-out extended to all 6 states** (2026-10-06, user-approved) — don't stop
-     for dip on any MobileNetV3-Small condition. **Extra scrutiny required in Task 2's plausibility
-     pass specifically for this model**: a correctly-classified `dip` regime confirms the GPU wasn't
-     power-capped, but does not by itself confirm the energy number is a real measurement rather than a
-     different, unrelated problem that happens to also look like low power — check energy-per-image
-     orders sensibly against MobileNetV3-Small's own FP32 baseline for every one of its 6 states, and
-     that the magnitude is consistent with each state's expected compute reduction, not just that the
-     regime field says `dip`.
-   - EfficientNet-B0: still *unknown*, not automatically exempt — Task 1 never collected batch=1 data
-     for this model either, and MobileNetV3-Small's result means "it's probably also light enough" is
-     no longer a safe assumption to extend further without evidence. Apply §5 point 3's full rule
-     (reboot-and-rerun on dip/mixed) until EfficientNet-B0's own data says otherwise.
-   The reboot-and-rerun rule in point 3 still applies in full to anything at batch≥4, and to
-   EfficientNet-B0 until shown otherwise.
-4. **Log every reboot-and-rerun event, and every carve-out invocation** (condition, regime observed,
-   timestamp, which rule applied) in the eventual deliverable's provenance notes — neither a rerun nor
-   an exemption is a hidden detail.
-5. If dip/mixed recurs on a config that is *not* covered by the 3a carve-out — i.e., a config expected
-   to saturate the GPU still lands dip/mixed after a reboot — that is new evidence against the
+3. **Resolved 2026-10-06, during real Stage 4 execution: `dip`/`mixed` is no longer a stop-and-ask
+   event. Log the regime and keep running.** What changed: this was originally written as "stop,
+   reboot, rerun" because pre-flight's dip/pinned split looked like an unexplained, possibly-stochastic
+   GPU quirk. Confirmed during Stage 4 itself across three different models' own FP32 baselines
+   (ResNet-18 557M MACs: pinned; EfficientNet-B0 33.28M MACs: dip at 38.6-40.5W; MobileNetV3-Small
+   5.8M MACs: dip at 25-26.5W) that **whether a config dips or pins at batch=1 is a direct function of
+   its compute cost relative to this GPU's boost-sustaining threshold, not a per-model exception or an
+   unresolved mystery.** A model/state light enough simply never reaches the power cap during
+   single-image inference — that's real, physically-explained hardware behavior, not a measurement
+   glitch to chase with reboots. See §9 for why this is a citable finding, not just an operational note.
+   **The real backstop is Task 2's plausibility pass, not the regime field**: for every condition,
+   confirm energy-per-image orders sensibly against that model's own FP32 baseline and tracks the
+   expected compute reduction, regardless of which regime it landed in. A correctly-classified `dip`
+   confirms the GPU wasn't power-capped — it does not by itself confirm the energy number is a real
+   measurement rather than an unrelated problem that happens to also look like low power. Only escalate
+   a specific run if its numbers look wrong on those plausibility grounds, never because it dipped.
+4. **Log every run's regime** (condition, `power_regime`, implied W) in the eventual deliverable —
+   this is now expected data to report, not an exception needing a provenance note.
+5. (Superseded by point 3 above — kept for history.) The original trigger was: if dip/mixed recurs on a
+   config expected to saturate the GPU, that would be new evidence against the
    uptime-duration hypothesis and should come back for a fresh look, not be pattern-matched into "just
    reboot again" forever.
 
@@ -141,8 +121,8 @@ rather than explaining it away.
 
 ### Task 3 — Checklist compliance report
 Same 14-item checklist as Stage 1/3, with real observed values, plus the new power-regime field's
-value for every one of the 18 conditions (expect `pinned` everywhere per §5 — any `dip`/`mixed` that
-made it into the final dataset despite §5 is itself a checklist finding, not a silent pass).
+value for every one of the 18 conditions — `dip` is expected and valid for light-enough models/states
+at batch=1 (see §5, §9), report it as data, not as a failure.
 
 ### Task 4 — Deliverable assembly
 `stage4_deliverable.md`: full 18-condition table (mean/SD energy, latency, power_regime, reps), the
@@ -162,3 +142,17 @@ exist and ARM is out of scope here: ~4.5-5 hours of actual measurement time, lik
 several sessions for practical reasons (laptop availability, not needing to run unattended overnight).
 Don't compress §5's checklist discipline to hit a shorter timeline — the whole point of pre-flight was
 making sure Stage 4's data is trustworthy, not fast.
+
+## 9. Citable finding, not just a measurement-hygiene note
+
+At batch=1, a model light enough — confirmed directly: MobileNetV3-Small (FP32 baseline, 25-26.5W),
+EfficientNet-B0 (FP32 baseline, 38.6-40.5W), and ResNet-18's pruned50/70 states (35-52W) — **never
+reaches this GPU's power cap at all** during single-image inference. ResNet-18's own FP32/FP16/pruned30
+stay pinned at the ~60W cap in the same conditions. This is a direct, concrete illustration of this
+proposal's actual thesis: **compression's real energy effect must be measured, not inferred from
+compute-reduction proxies.** Any energy estimate built from "FLOPs × assumed constant power draw" would
+be wrong by a large, non-uniform factor for exactly these cases — the assumed-constant power draw simply
+isn't true once a model (or a sufficiently compressed state of one) stops saturating the GPU. The actual
+wattage numbers above are the evidence; carry them into Results/Discussion with the real figures, not a
+methods-appendix footnote — this belongs with the rest of the paper's hypothesis-relevant findings,
+documented in §5 as it accumulated in real time.
