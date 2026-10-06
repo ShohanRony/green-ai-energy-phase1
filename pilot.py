@@ -5,7 +5,7 @@ If set, records how many reps are done in resume_state.json and exits cleanly. R
 --resume <out dir> -- all other flags (device, checkpoint, sizes, etc.) are restored from
 that run's own environment.json, not re-specified.
 """
-import argparse, csv, glob, json, math, os, platform, random, statistics, sys, threading, time, traceback
+import argparse, csv, glob, json, math, os, platform, random, statistics, subprocess, sys, threading, time, traceback
 from pathlib import Path
 
 import power_state
@@ -18,8 +18,18 @@ class Sensor:
             self.paths = [Path(p) for p in paths if Path(p).parent.name.count(':') == 1]
             if not self.paths: raise RuntimeError('No accessible Intel RAPL package counters; native Linux required.')
             self.ranges = [float(p.with_name('max_energy_range_uj').read_text()) / 1e6 for p in self.paths]
-            self.backend = 'RAPL package energy counters'; self.power_cap_w = None
+            # D16: this glob matches every top-level RAPL domain, which on this machine includes both
+            # package-0 and psys (a superset platform-power domain, not an independent rail -- summing
+            # both inflated every CPU energy number this harness logged before this fix). Read each
+            # domain's own name so window()/integrate() can split them instead of blindly summing.
+            self.domain_names = [p.with_name('name').read_text().strip() for p in self.paths]
+            if 'package-0' not in self.domain_names:
+                raise RuntimeError(f"No 'package-0' RAPL domain found among {self.domain_names}; "
+                                    "cannot establish primary CPU energy (D16).")
+            self.backend = 'RAPL energy counters (package-0 primary; other domains secondary -- D16)'
+            self.power_cap_w = None
         else:
+            self.domain_names = None
             import pynvml as nv
             self.nv = nv; nv.nvmlInit(); self.handle = nv.nvmlDeviceGetHandleByIndex(0)
             self.power_cap_w = nv.nvmlDeviceGetEnforcedPowerLimit(self.handle) / 1000
@@ -99,18 +109,29 @@ def check_fresh_boot(max_uptime_s, override, flag_name):
     print(f'WARNING: {reason}', file=sys.stderr)
     return uptime_s
 
-def integrate(trace, ranges):
-    energy = 0.
+def integrate(trace, ranges, names=None):
+    """names=None: single scalar (GPU NVML, one value per sample). names given (CPU RAPL,
+    D16): sum each domain's delta separately, keyed by domain name, instead of blindly
+    summing every matched domain into one number."""
+    if names is None:
+        energy = 0.
+        for (t0, x0), (t1, x1) in zip(trace, trace[1:]):
+            if not ranges: energy += (t1-t0) * (x0[0]+x1[0])/2
+            else:
+                for a,b,limit in zip(x0,x1,ranges):
+                    d = b-a
+                    if d < 0:
+                        if limit is None: raise RuntimeError('Energy counter reset')
+                        d += limit
+                    energy += d
+        return energy
+    totals = {n: 0. for n in names}
     for (t0, x0), (t1, x1) in zip(trace, trace[1:]):
-        if not ranges: energy += (t1-t0) * (x0[0]+x1[0])/2
-        else:
-            for a,b,limit in zip(x0,x1,ranges):
-                d = b-a
-                if d < 0:
-                    if limit is None: raise RuntimeError('Energy counter reset')
-                    d += limit
-                energy += d
-    return energy
+        for a,b,limit,name in zip(x0,x1,ranges,names):
+            d = b-a
+            if d < 0: d += limit
+            totals[name] += d
+    return totals
 
 def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concurrent_gpu=False):
     check_no_concurrent_gpu(sensor, allow_concurrent_gpu)
@@ -134,14 +155,21 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
         sync(); stop.set(); thread.join(); sample()
     if errors: raise RuntimeError('; '.join(errors))
     duration=trace[-1][0]-trace[0][0]
-    energy=integrate(trace,sensor.ranges)
+    extra={}
+    if sensor.domain_names:
+        per_domain=integrate(trace,sensor.ranges,sensor.domain_names)
+        energy=per_domain['package-0']  # primary (D16); other domains (e.g. psys) logged secondary below
+        extra={f"{n.replace('-0','')}_energy_j":v for n,v in per_domain.items() if n!='package-0'}
+    else:
+        energy=integrate(trace,sensor.ranges)
     if energy <= 0: raise RuntimeError('Nonpositive energy: stale or unavailable sensor; reject window')
     return dict(energy_j=energy,duration_s=duration,batches=batches,
                 max_sample_gap_s=max(b[0]-a[0] for a,b in zip(trace,trace[1:])),
                 changed_reads=sum(a[1]!=b[1] for a,b in zip(trace,trace[1:])),
                 trace=trace,backend=sensor.backend,
                 plausibility_flag=flag_implausible_power(sensor.device, energy/duration, sensor.power_cap_w),
-                power_regime=classify_power_regime(sensor.device, energy/duration, sensor.power_cap_w))
+                power_regime=classify_power_regime(sensor.device, energy/duration, sensor.power_cap_w),
+                **extra)
 
 def summarize(rows):
     # Independently paired A/A differences estimate the noise relevant to a future A/B comparison.
@@ -228,6 +256,10 @@ def main():
     p.add_argument('--threads',type=int,default=4); p.add_argument('--warmup',type=float,default=3)
     p.add_argument('--codecarbon',action='store_true',help='Run CodeCarbon concurrently with the RAPL/NVML reads on each active window.')
     p.add_argument('--codecarbon-country',default='CZE',help='ISO code for CodeCarbon offline grid-intensity lookup (energy figure itself is country-independent).')
+    p.add_argument('--allow-overwrite',action='store_true',
+                    help='Allow writing into a non-empty --out directory. Without this, a non-empty '
+                         '--out raises. Added after a checklist item 12 lapse (D15): a CodeCarbon-check '
+                         "run's raw data was silently overwritten by a later rerun into the same --out.")
     p.add_argument('--checkpoint'); a=p.parse_args()
     start_rep=0; rows=[]
     if a.resume:
@@ -241,9 +273,15 @@ def main():
         print(f'Resuming {out} from rep {start_rep}/{a.repeats}',file=sys.stderr)
     else:
         if not a.device or not a.out: p.error('--device and --out are required unless --resume is given')
-        out=Path(a.out); out.mkdir(parents=True,exist_ok=False)
+        out=Path(a.out); out.mkdir(parents=True,exist_ok=True)
+        if any(out.iterdir()) and not a.allow_overwrite:
+            p.error(f'{out} is not empty; pass --allow-overwrite to write into it anyway (checklist item 12 guard, D15).')
+    try:
+        git_hash=subprocess.check_output(['git','rev-parse','HEAD'],cwd=Path(__file__).resolve().parent).decode().strip()
+    except Exception:
+        git_hash='unknown'
     env=dict(platform=platform.platform(),cpu=platform.processor(),arguments=vars(a),
-             timestamp_utc=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),
+             timestamp_utc=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),git_hash=git_hash,
              cpuinfo=Path('/proc/cpuinfo').read_text() if Path('/proc/cpuinfo').exists() else '')
     (out/'environment.json').write_text(json.dumps(env,indent=2))
     try:
