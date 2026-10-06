@@ -1,94 +1,94 @@
-# Stage 4b design — multi-session replication (DRAFT, NOT EXECUTED)
+# Stage 4b: Confirmatory x86 Dataset — Registered Design
 
-**Status: drafted 2026-10-06 at the supervisor's request, for review only. No part of this design
-has been run.** It exists to close the gap D17 found: a single later rerun of 12 conditions differed
-from the primary matrix by -12.20% to +3.70% on `gross_j_per_image_mean`, confounded with run order
-(one fixed sequence, run strictly after the primary matrix) — so it's not yet known whether that gap
-is genuine between-session variability, an order/practice effect, or both. This design is built to
-separate those.
+**Status: registered and finalized (2026-10-07). Tagged in git as `stage4b-registered`.**
+Supersedes the initial draft (`85d966c`), which remains in git history (see `stage5_analysis_plan.md` amendment A3).
 
-## 1. Why a redesign, not just "run it again"
+---
 
-- D14: reps within one session are serial, not independent — already registered as a §4 limitation,
-  handled by treating effect sizes as primary and p-values as within-session-descriptive only.
-- D17: a second source of variance exists *between* sessions, and the one comparison available
-  (dip-stability check vs. primary matrix) can't separate it from order, because there was only one
-  rerun and it always ran later, in one fixed order.
-- Consequence: the primary Stage 4 matrix is **one session's worth of data** for every one of its 18
-  (now 21, with D13) conditions. Nothing in the data collected so far tells us how that one session's
-  numbers would vary if collected again, in a different session, in a different order.
+## 1. Conditions (30 total)
 
-## 2. Design
+Each session executes all 30 conditions in a freshly drawn random sequence:
 
-- **≥3 fresh-boot sessions.** Each session: reboot, confirm `uptime` genuinely low before starting
-  (same discipline as the primary matrix's own Task 0), then run.
-- **Each session runs all 21 conditions** (18 compression states + the 3 D13 FP32-CPU baselines) **in
-  a freshly randomised order, different per session** — directly targets D17's order confound. The
-  random permutation (and the seed used to draw it) is logged in that session's own run metadata, not
-  reused across sessions.
-- **~10 reps per condition per session** (not 31) — deliberately smaller than the primary matrix's
-  per-condition rep count, because the replicate unit here is the **session**, not the rep. 10 reps
-  is enough to get a stable within-session mean per condition (the primary matrix's own `pairs>=3`
-  floor for a usable `summarize()` row is far below 10); the statistical power this design buys comes
-  from ≥3 independent sessions, not from more reps inside any one of them.
-- **Session is the replicate unit, stated explicitly so no one reads this as a 3×10=30-rep design
-  with the same statistical properties as the primary matrix's 31-rep design.** It is not — it trades
-  within-session rep count for between-session replication, which is the thing D17 found was never
-  measured.
+For each model (`resnet18`, `mobilenet_v3_small`, `efficientnet_b0`):
+1. `fp32` (cuda)
+2. `fp16` (cuda)
+3. `pruned30` zero-finetune (cuda)
+4. `pruned50` zero-finetune (cuda)
+5. `pruned70` zero-finetune (cuda)
+6. `pruned30_bnrecal` BN-recalibrated (cuda)
+7. `pruned50_bnrecal` BN-recalibrated (cuda)
+8. `pruned70_bnrecal` BN-recalibrated (cuda)
+9. `int8` (cpu)
+10. `fp32` (cpu)
 
-## 3. Three energy boundaries
+*Note on brief-recovery (`_ft`) models:* The 9 brief-recovery models (`checkpoints/{model}_pruned{N}_ft.pt`) are evaluated for accuracy only (`results_accuracy/`). Energy draw is assumed equivalent to the corresponding zero-finetune and `_bnrecal` architectures, conditional on the D2 hypothesis test (verifying whether energy depends on weight/stat values at fixed architecture within ±5%).
 
-Using item 3's harness patch (`--concurrent-cpu-package`, `pilot.py` commit `b66349d`):
+---
 
-- **GPU-only** (`energy_j`, NVML `nvmlDeviceGetPowerUsage`): the primary matrix's existing boundary,
-  for the 15 GPU-measured conditions (fp32/fp16/pruned30/50/70 × 3 models).
-- **CPU package** (`cpu_package_energy_j` on GPU runs; `energy_j` on the 6 CPU-measured conditions
-  INT8×3 + D13 FP32-CPU×3, now package-0-only per D16): CPU-side draw concurrent with a GPU run, or
-  the sole reading for CPU-measured conditions.
-- **GPU+CPU** (sum of the above): the closest this harness gets to whole-system energy for a GPU
-  run, still excluding RAM/peripherals/other rails (no claim of true whole-system energy).
+## 2. Fixed Settings
 
-**The 6 CPU-measured conditions only have one real boundary (CPU package) — "GPU-only" is undefined
-for them (no GPU used) and "GPU+CPU" reduces to the same CPU package number.** The three-boundary
-design applies fully only to the 15 GPU-measured conditions; stated here so the eventual results
-table doesn't imply three independent readings exist where only one does.
+* **Harness parameters:** `--sizes 32 --batches 1 --windows 5 --interval 0.4 --warmup 3 --threads 4 --cpu-affinity pcores`
+* **System control:** CPU governor locked to `performance`, ACPI platform power profile locked to `performance`, CodeCarbon disabled.
+* **Concurrent RAPL:** `--concurrent-cpu-package` enabled on all CUDA runs.
+* **Repetitions:** **7 repeats** per condition per session. The first repeat (repeat 0) is discarded as cold-cache/cold-thermal per checklist item 3, leaving 6 warm pairs (12 active windows).
 
-## 4. Analysis
+---
 
-- **Primary: per-session compressed/baseline energy ratios, with between-session CIs.** For each
-  session and each compressed state, compute that session's own compressed-vs-baseline energy ratio
-  (using that session's own ~10 reps for both, same-session so the ratio isn't cross-session-
-  contaminated). Across the ≥3 sessions, report the mean ratio and a between-session CI (bootstrap
-  over the session-level ratios, session as the resampling unit — not over individual reps, which
-  would understate the real uncertainty by treating session as a fixed effect).
-- **Mixed model, session as a random effect.** A linear mixed-effects model on (log-)energy, fixed
-  effect = compression state, random intercept (and, if the data supports it, random slope) for
-  session. This is the model that actually accounts for both variance sources at once — within-
-  session serial correlation (D14) and between-session variance (D17) — rather than either ignoring
-  between-session variance (as a naive pooled-rep analysis would) or ignoring within-session structure
-  (as treating each session as a single point estimate with no uncertainty would).
-- **Mann-Whitney U kept only as a within-session descriptive check** — e.g. "did this state's reps
-  clearly separate from baseline's reps, within this one session" — not as the cross-session
-  confirmatory test. This follows directly from D14 (independent-reps reasoning holds within a
-  session) and D17 (that reasoning doesn't extend across sessions without the mixed-model treatment
-  above).
-- Each of the three energy boundaries (§3) gets this same analysis independently — they are not
-  pooled into one number.
+## 3. Sessions and Presentation Order
 
-## 5. Wall-time estimate, from real timestamps
+* **Number of sessions:** **4**, each executed in a **separate fresh boot**, spread across at least 2 calendar days.
+  * Session 1 executes in the current boot with uptime recorded.
+  * Sessions 2–4 each start within 15 minutes of a clean system reboot.
+  * The session count is fixed at 4 a priori; no sessions are added or removed conditionally.
+* **Presentation order:** Drawn independently per session via `random.Random(1000 + session_id)`. The permutation is written to `results_stage4b/session{N}/order.txt` prior to execution.
+* **Replication unit:** The **session** is the primary unit of replication. Within-session repeats describe within-session repeatability only.
 
-Per-rep time is consistently ~32-34 s/rep across every condition type measured so far in this
-project (GPU and CPU alike, with or without CodeCarbon, with or without the item-3 patch) —
-confirmed repeatedly: the primary matrix's own 16.6-17.5 min at 31 reps (≈32.1-33.9 s/rep), the
-CodeCarbon feasibility checks (32.67 s/rep, twice), and the item-3 validation runs (same range).
+---
 
-- Per condition at ~10 reps: ~10 × 33 s + a few seconds of fixed setup (checkpoint/dataset load) ≈
-  **~5.5-6 min/condition**.
-- Per session (21 conditions): 21 × ~5.5-6 min ≈ **~116-126 min (≈1.9-2.1 hours)** of actual
-  measurement, plus session-start overhead (reboot, `uptime` verification, confirming the random
-  order was drawn and logged) — call it **~2.0-2.3 hours/session** all-in.
-- **3 sessions: ~6.0-6.9 hours of measurement time total**, necessarily spread across ≥3 separate
-  reboots (likely separate work sessions on different days, matching how the primary matrix's own
-  sessions were spaced).
+## 4. Energy Boundaries
 
-Not executed. Awaiting approval.
+* **Primary boundary:**
+  * **GPU states:** **system energy = NVML GPU power + RAPL CPU package-0**, adhering to the MLPerf Power full-system principle (Tschand et al., IEEE HPCA 2025, §III-C).
+  * **CPU states:** **RAPL CPU package-0**.
+  * Direct energy comparisons between GPU states and CPU states are never made.
+* **Secondary boundaries (GPU states):**
+  * GPU-only (NVML sampled power).
+  * CPU-package-only (RAPL `package-0`).
+
+---
+
+## 5. Primary Outcome and Statistical Analysis
+
+* **Primary outcome:** Gross energy per image in Joules (`gross_j_per_image_mean`).
+* **Primary comparisons:** Within-session ratio of compressed state to same-model, same-device FP32 baseline:
+  $$r = \frac{\text{J/image}(\text{state})}{\text{J/image}(\text{FP32})}$$
+* **Primary estimation:**
+  * Per-comparison geometric mean of $r$ across the 4 independent sessions.
+  * 95% confidence interval derived from the Student's $t$-distribution on $\log r$ ($df = 3$).
+  * Confirmatory linear mixed-effects model robustness check:
+    $$\log(\text{J/image}) \sim \text{condition} + (1 \mid \text{session})$$
+* **Smallest Effect of Interest (SESOI):** $\mathbf{\pm 5\%}$ (anchored to observed between-session drift; D17):
+  * Equivalence established via Two One-Sided Tests (TOST) on $\log r$ with margin $\log(1.05)$. A ratio whose 95% CI falls entirely within $[0.952, 1.050]$ is classified as "practically equivalent."
+  * A CI spanning $\pm 5\%$ that fails to exclude 1.0 is reported as "unresolved" rather than "no effect."
+* **RQ2 (FLOPs vs. Energy):** Realized MAC reduction ratio vs. energy ratio for pruned states; bit-width adjusted BOPs for FP16 and INT8.
+
+---
+
+## 6. Accuracy and Deployability Criteria
+
+* Accuracy evaluated over the full CIFAR-10 test set ($n = 10,000$) from `results_accuracy/` with 95% Wilson score CIs.
+* Deployability threshold confirmed by Shohan (2026-10-06):
+  * **Primary (MLPerf closed division tier):** Top-1 accuracy $\ge 99.0\%$ of same-model same-device FP32 baseline.
+  * **Strict tier:** Top-1 accuracy $\ge 99.9\%$ of baseline.
+* McNemar tests performed against same-device FP32 using per-image prediction arrays.
+* Full Pareto frontiers presented with all evaluated states shown and labeled without exclusion.
+
+---
+
+## 7. Execution and Exclusion Rules
+
+* **Interruption handling:** If a condition fails or is interrupted by power loss, it is re-run once at the end of the session. If it fails a second time, it is marked failed and excluded from that session.
+* **Exploratory status of Stage 4:** The initial Stage 4 dataset is formally designated exploratory (D17) and is never pooled with Stage 4b confirmatory data.
+* **Secondary / Follow-up passes (same harness version, not pooled):**
+  * RQ1 CodeCarbon pass: 1 session, all 30 conditions with `--codecarbon`.
+  * Batch=16 sensitivity pass: 1 session, all 30 conditions with `--batches 16`.
