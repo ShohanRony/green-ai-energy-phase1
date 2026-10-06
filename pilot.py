@@ -10,9 +10,40 @@ from pathlib import Path
 
 import power_state
 
+def p_core_set():
+    """P-core CPU indices from Linux's hybrid-topology sysfs attribute (Alder-Lake-and-later Intel).
+    Raises if this machine/kernel doesn't expose it -- no silent fallback to all cores."""
+    path = Path('/sys/devices/cpu_core/cpus')
+    if not path.exists():
+        raise RuntimeError('No /sys/devices/cpu_core/cpus; --cpu-affinity requires a hybrid '
+                            'P-core/E-core CPU with kernel hybrid-topology support.')
+    cpus = set()
+    for part in path.read_text().strip().split(','):
+        if '-' in part:
+            lo, hi = part.split('-'); cpus.update(range(int(lo), int(hi) + 1))
+        else:
+            cpus.add(int(part))
+    return cpus
+
+def find_rapl_domain(name):
+    """Locate a specific top-level RAPL domain by its sysfs name (e.g. 'package-0'), not a
+    blind glob (that's the D16 bug). Returns (path, range_j) or (None, None) if absent."""
+    for p in glob.glob('/sys/class/powercap/intel-rapl:*/energy_uj'):
+        p = Path(p)
+        if p.parent.name.count(':') == 1 and p.with_name('name').read_text().strip() == name:
+            return p, float(p.with_name('max_energy_range_uj').read_text()) / 1e6
+    return None, None
+
 class Sensor:
-    def __init__(self, device, legacy_cumulative=False):
+    def __init__(self, device, legacy_cumulative=False, concurrent_cpu_package=False):
         self.device = device
+        self.concurrent_rapl_path = None
+        self.concurrent_rapl_range = None
+        if device == 'cuda' and concurrent_cpu_package:
+            self.concurrent_rapl_path, self.concurrent_rapl_range = find_rapl_domain('package-0')
+            if self.concurrent_rapl_path is None:
+                print('WARNING: --concurrent-cpu-package requested but no package-0 RAPL domain '
+                      'found; proceeding without it.', file=sys.stderr)
         if device == 'cpu':
             paths = glob.glob('/sys/class/powercap/intel-rapl:*/energy_uj')
             self.paths = [Path(p) for p in paths if Path(p).parent.name.count(':') == 1]
@@ -47,8 +78,11 @@ class Sensor:
                 self.backend = 'NVML sampled power'; self.ranges = []
     def read(self):
         if self.device == 'cpu': return [float(p.read_text()) / 1e6 for p in self.paths]
-        if self.ranges: return [self.nv.nvmlDeviceGetTotalEnergyConsumption(self.handle) / 1000]
-        return [self.nv.nvmlDeviceGetPowerUsage(self.handle) / 1000]
+        val = [self.nv.nvmlDeviceGetTotalEnergyConsumption(self.handle) / 1000] if self.ranges \
+            else [self.nv.nvmlDeviceGetPowerUsage(self.handle) / 1000]
+        if self.concurrent_rapl_path is not None:
+            val.append(float(self.concurrent_rapl_path.read_text()) / 1e6)  # index 1: CPU package-0, concurrent
+        return val
 
 def check_interval_floor(device_matches, interval, floor, override, flag_name, reason):
     """Reject (or warn-and-allow, behind an override flag) a polling interval below a measured floor."""
@@ -161,7 +195,16 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
         energy=per_domain['package-0']  # primary (D16); other domains (e.g. psys) logged secondary below
         extra={f"{n.replace('-0','')}_energy_j":v for n,v in per_domain.items() if n!='package-0'}
     else:
-        energy=integrate(trace,sensor.ranges)
+        energy=integrate(trace,sensor.ranges)  # uses index 0 only; a concurrent RAPL column (index 1,
+        # if present) is ignored here and integrated separately below -- it's a monotonic cumulative
+        # counter needing delta-sum+wraparound, not the GPU's trapezoidal sampled-power integration.
+        if sensor.concurrent_rapl_path is not None:
+            pkg_e=0.
+            for (t0,x0),(t1,x1) in zip(trace,trace[1:]):
+                d=x1[1]-x0[1]
+                if d<0: d+=sensor.concurrent_rapl_range
+                pkg_e+=d
+            extra={'cpu_package_energy_j':pkg_e}
     if energy <= 0: raise RuntimeError('Nonpositive energy: stale or unavailable sensor; reject window')
     return dict(energy_j=energy,duration_s=duration,batches=batches,
                 max_sample_gap_s=max(b[0]-a[0] for a,b in zip(trace,trace[1:])),
@@ -260,6 +303,15 @@ def main():
                     help='Allow writing into a non-empty --out directory. Without this, a non-empty '
                          '--out raises. Added after a checklist item 12 lapse (D15): a CodeCarbon-check '
                          "run's raw data was silently overwritten by a later rerun into the same --out.")
+    p.add_argument('--concurrent-cpu-package',action='store_true',
+                    help='On --device cuda runs, also read RAPL package-0 concurrently with the NVML '
+                         'reads and log it as cpu_package_energy_j per window (CPU-side energy during '
+                         'a GPU run, for the three-boundary design in stage4b-design.md).')
+    p.add_argument('--cpu-affinity',action='store_true',
+                    help='Pin the process to this machine\'s P-cores only (taskset-style, via '
+                         'os.sched_setaffinity), for --device cpu runs. Requires a hybrid P-core/E-core '
+                         'CPU exposing /sys/devices/cpu_core/cpus (confirmed present: 13th Gen Intel '
+                         'Core i5-13450HX, P-cores = cpus 0-11). Logged in environment.json either way.')
     p.add_argument('--checkpoint'); a=p.parse_args()
     start_rep=0; rows=[]
     if a.resume:
@@ -298,7 +350,15 @@ def main():
                   'known to over-report active-phase power by ~30% on this GPU (see '
                   'results/active_power_baseline_investigation.md). Use only to reproduce/cite pre-correction numbers.',
                   file=sys.stderr)
-        sensor=Sensor(a.device, legacy_cumulative=a.legacy_cumulative_counter)
+        cpu_affinity_set=None
+        if a.cpu_affinity:
+            if a.device!='cpu':
+                print('WARNING: --cpu-affinity only applies to --device cpu; ignored.', file=sys.stderr)
+            else:
+                cpu_affinity_set=sorted(p_core_set())
+                os.sched_setaffinity(0, cpu_affinity_set)
+        sensor=Sensor(a.device, legacy_cumulative=a.legacy_cumulative_counter,
+                      concurrent_cpu_package=a.concurrent_cpu_package)
         import torch, torchvision
         from torchvision import transforms
         torch.manual_seed(2026); random.seed(2026); torch.set_num_threads(a.threads)
@@ -323,7 +383,7 @@ def main():
                    nvidia_driver_version=sensor.nv.nvmlSystemGetDriverVersion() if a.device=='cuda' else None,
                    gpu_power_cap_w=sensor.power_cap_w,
                    cpu_governors=sorted({Path(p).read_text().strip() for p in gov_paths}) if gov_paths else None,
-                   platform_profile=platform_profile,uptime_s=uptime_s,
+                   platform_profile=platform_profile,uptime_s=uptime_s,cpu_affinity=cpu_affinity_set,
                    weights='checkpoint' if a.checkpoint else 'seeded random weights: timing pilot only')
         (out/'environment.json').write_text(json.dumps(env,indent=2))
         with torch.inference_mode():
@@ -357,6 +417,7 @@ def main():
                                 result['codecarbon_cpu_energy_j']=ed.cpu_energy*3.6e6
                                 result['codecarbon_gpu_energy_j']=ed.gpu_energy*3.6e6
                                 result['codecarbon_ram_energy_j']=ed.ram_energy*3.6e6
+                            result['images_per_s']=result['batches']*batch/result['duration_s']
                             row=dict(device=a.device,size=size,batch=batch,requested_s=seconds,repeat=rep,phase=phase,**result)
                             rows.append({k:v for k,v in row.items() if k!='trace'})
                             with (out/'raw.jsonl').open('a') as f: f.write(json.dumps(row)+'\n')
