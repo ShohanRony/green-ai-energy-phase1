@@ -294,9 +294,9 @@ Full accounting, checked directly against logs rather than recalled:
   18 cold reps across Stage 4's 18 conditions (one per condition, `pairs=30` reported from 31 collected
   reps each), consistent with the same discard rule used in every stage since Stage 1
   (`phase1-execution-plan.md` §2 checklist item 3).
-- **CUDA OOM skips:** none recorded in `results_stage4/*/skipped.jsonl` (the file pilot.py creates only
-  on an actual OOM) — `TODO — confirm no skipped.jsonl files exist in results_stage4/, not independently
-  re-checked for this log entry beyond the absence noted during Stage 4 execution`.
+- **CUDA OOM skips:** none. **Closed 2026-10-06** — `find results_stage4 -iname skipped.jsonl` (the
+  file `pilot.py` creates only on an actual CUDA OOM) returns zero matches, checked directly across
+  every condition directory, not just noted in passing during execution.
 
 ## D10. Power outage mid pre-flight
 
@@ -354,7 +354,10 @@ Full accounting, checked directly against logs rather than recalled:
   were both already in hand.
 - **Could this change the conclusions?** Improves RQ1/RQ2 answerability for INT8 specifically, by
   providing a same-instrument baseline; does not change any already-collected GPU-measured data.
-- **Status:** planned as Part B work, not yet executed as of this log's writing.
+- **Status: executed, 2026-10-06.** All 3 conditions run and committed (`7c5c6d7`): `resnet18_fp32_cpu`
+  (started 2026-10-06T13:25:53Z), `mobilenet_v3_small_fp32_cpu` (13:42:27Z), `efficientnet_b0_fp32_cpu`
+  (13:59:02Z) — same session (post-reboot, uptime 1840-3829s), 31 reps each, `pairs=30` after the
+  cold-start discard, in `results_stage4/{arch}_fp32_cpu/`.
 
 ## D14. Stage 5 statistics: proposal's own tests restored as primary, Mann-Whitney U substituted for signed-rank
 
@@ -388,6 +391,22 @@ Full accounting, checked directly against logs rather than recalled:
   resolution; the original Welch's-primary text is not silently erased from this log's history, only
   from the live plan (which per its own §12 rule amends rather than edits in place — this D14 entry
   and the status-note update together serve as that amendment record).
+- **OPEN, 2026-10-06:** the proposal's own §3 text (which specific comparisons it meant the signed-rank
+  test for, and whether its design assumed paired reps) is not independently re-verifiable right now —
+  the external drive hosting `Proposal_GreenAI_taught.NEW.docx` is not mounted on this machine as of
+  this entry. Everything above is based on the paraphrase already committed in this log/plan from when
+  the drive was last mounted, not a fresh re-read. **This entry stays open** until the drive is
+  remounted and the exact §3 wording is re-quoted verbatim; if that wording turns out to describe a
+  genuinely paired design for the compressed-vs-baseline comparison (not assumed here), this
+  resolution would need revisiting.
+- **Signed-rank may still be the right primary test elsewhere — not ruled out generally.** The
+  compressed-vs-baseline energy comparison (where Mann-Whitney U was substituted above) is the
+  *unpaired* case. The CodeCarbon-vs-hardware instrument-agreement comparison (D15, RQ1) is different:
+  both readings come from the same run, the same active window, at the same time — a real pairing
+  exists there. Wilcoxon signed-rank (or a paired bootstrap on the per-window differences) is plausibly
+  the *correct* primary test for that specific comparison, not a misapplication — flagged here so the
+  Mann-Whitney substitution above isn't read as a blanket "signed-rank is wrong for this project"
+  conclusion.
 
 ## D15. CodeCarbon never enabled in any Stage 4 run
 
@@ -418,26 +437,113 @@ Full accounting, checked directly against logs rather than recalled:
   - CodeCarbon's own reading is also far noisier than the hardware counter: CV 3.0-15.3% across the
     three conditions' `codecarbon_energy_j`, vs. 0.6-4.7% for the paired `energy_j` hardware readings
     over the same windows.
-  - Running CodeCarbon concurrently does **not** measurably perturb the hardware counter itself:
-    `total_j_mean` with CodeCarbon on vs. the primary (no-CodeCarbon) Stage 4 run for the same 3
-    conditions differs by −0.02 J (−0.01%), +1.10 J (+0.85%), +6.14 J (+0.89%) respectively — all
-    within (well under, for 2 of 3) one SD of the primary run's own repeat-to-repeat variation.
-    Wall-clock per repeat is also unaffected: 32.7 s/rep with CodeCarbon on, matching the 32.1-33.9
-    s/rep implied by the primary matrix's own per-condition timing.
+- **Rerun with per-component logging (2026-10-06, same day, `pilot.py` extended to log
+  `codecarbon_cpu_energy_j`/`_gpu_energy_j`/`_ram_energy_j`, not just the total):**
+
+  | Condition | hardware `energy_j` | CC `cpu_energy_j` | CC `gpu_energy_j` | CC `ram_energy_j` | CC total |
+  |---|---|---|---|---|---|
+  | resnet18_fp32 (GPU) | 296.63 | 127.31 | 346.60 | 116.09 | 590.00 |
+  | mobilenet_v3_small_fp32 (GPU) | 137.99 | 131.87 | 193.56 | 116.39 | 441.82 |
+  | resnet18_int8 (CPU) | 736.02 | 266.40 | 98.10 | 107.45 | 471.95 |
+
+  This resolves the mechanism precisely: for the two GPU conditions, CodeCarbon's `gpu_energy_j` alone
+  is already 1.17x (resnet18) and 1.40x (mobilenet) the hardware NVML reading — consistent with
+  CodeCarbon's GPU path calling `pynvml.nvmlDeviceGetTotalEnergyConsumption` (confirmed by reading
+  `codecarbon/core/gpu_nvidia.py` in the installed package, v3.3.1), the same cumulative NVML counter
+  this project's own Stage 1 validation work (commits `92fd4c1`/`672ce93`/`975b7fd`) found over-reports
+  active-phase power by ~30% on this GPU versus the validated `nvmlDeviceGetPowerUsage` default
+  `pilot.py` uses. On top of that, CodeCarbon adds `cpu_energy_j`≈127-132 J and `ram_energy_j`≈107-116 J
+  to every condition regardless of what the workload actually touches — including a nonzero
+  `gpu_energy_j`=98.10 J on the **CPU-only** `resnet18_int8` run, where no CUDA code executes at all.
+  CodeCarbon tracks all detected hardware on the machine as whole-system overhead, not just the
+  component the measured workload uses; `pilot.py`'s hardware figure, by contrast, is always
+  single-device by design (§3 of `stage5_analysis_plan.md`).
+- **A second, independent finding surfaced while checking the CPU path (item 4c): `pilot.py`'s own
+  RAPL reading sums two domains, not one.** `Sensor.__init__`'s glob
+  (`/sys/class/powercap/intel-rapl:*/energy_uj`, filtered to one colon) matches **both**
+  `intel-rapl:0` (`package-0`) **and** `intel-rapl:1` (`psys`) on this machine — confirmed directly by
+  listing `/sys/class/powercap/intel-rapl:*/name`. `integrate()` sums every matched domain's delta into
+  one scalar. `psys` ("platform", typically package + chipset + voltage regulators) is a superset of
+  `package-0`, not an independent additive domain — summing both very likely substantially inflates
+  every CPU/RAPL energy number this project has ever recorded. CodeCarbon's own RAPL path
+  (`core/resource_tracker.py`'s `_setup_rapl()` → `IntelRAPL`) defaults to `rapl_prefer_psys=False`,
+  i.e. **package-only** — which is almost certainly why its `cpu_energy_j` (266.40 J) is so much lower
+  than `pilot.py`'s combined package+psys reading (736.02 J) for the same `resnet18_int8` run, rather
+  than the two being expected to agree. **Logged separately as D16 — this affects every CPU-measured
+  condition in the project (all 3 INT8 states + all 3 D13 FP32-CPU baselines, 6 conditions total), not
+  just this feasibility check, and is not yet remediated.**
+- **4(a) — CodeCarbon's internal sampling cadence, confirmed from source:** `pilot.py` sets
+  `measure_power_secs=max(a.interval,1)` = 1 second (since `a.interval=0.4`). Confirmed from
+  `emissions_tracker.py`: `.start()` takes one immediate sample, then a `PeriodicScheduler` fires the
+  same sampling function every `measure_power_secs` until `.stop()`. Each active window is a fixed
+  5-second box (`window_s=5.0`), so each window gets ~5-6 internal CodeCarbon samples — comfortably
+  ≥2, confirmed by reading the scheduling code, not inferred from the setting alone.
+- **4(d) — the wall-clock "no overhead" argument is withdrawn, not just caveated.** Each active window
+  is time-boxed (`window()` loops `while time.perf_counter()-start < seconds`, a fixed 5.0s regardless
+  of how much work completes) — so wall-clock duration structurally cannot reveal throughput-level
+  overhead; it only shows whether *outer* per-rep bookkeeping grew, which it didn't (32.7 s/rep in two
+  independent reruns, matching the primary matrix's 32.1-33.9 s/rep). The correct probe is `batches`
+  completed per fixed window: with CodeCarbon on, resnet18_fp32 completed **5.8% fewer** batches/window
+  than its primary (no-CodeCarbon) run (2549 vs. 2706, with-CC SD only 9.8 — not noise); mobilenet and
+  resnet18_int8 showed smaller reductions (−1.5%, −0.8%). CodeCarbon's background sampling thread does
+  measurably compete for CPU/GIL time during active dispatch for at least one model; this would show up
+  as slightly higher **gross J/image** (this project's primary energy unit, energy ÷ images processed)
+  under CodeCarbon, not in the window's raw energy total, which integrates power over fixed wall time
+  and is insensitive to how many images that time produced.
 - **Could this change the conclusions?** Directly blocks RQ1 as currently specified — no instrument-
   agreement claim can be made from Stage 4 data without CodeCarbon-paired runs. Does not affect RQ2 or
-  RQ3, which don't depend on CodeCarbon.
-- **Proposed, not executed:** an 18-condition, batch=1, CodeCarbon-on pass across the full x86 matrix
-  (31 reps/condition, same protocol as the primary Stage 4 matrix), kept as a separate result set
-  (e.g. `results_stage4_codecarbon/`) rather than mixed into the primary matrix — since the feasibility
-  check found no measurable hardware-reading or wall-time overhead from enabling CodeCarbon, this pass
-  is expected to reproduce the primary matrix's energy numbers while adding the paired CodeCarbon
-  column RQ1 requires. **Wall-time estimate:** feasibility-check repeats ran 32.7 s/rep with CodeCarbon
-  on, matching the primary matrix's own 32.1-33.9 s/rep (16.6-17.5 min/condition at 31 reps) — no
-  overhead detected, so 18 × ~16.6-17.5 min ≈ **5.0-5.3 hours total**, in line with D11's original
-  ~4.5-5h estimate for the no-CodeCarbon matrix. Awaiting approval before execution.
+  RQ3, which don't depend on CodeCarbon. D16 (RAPL double-counting) is the more consequential finding
+  and could affect every reported CPU-side energy number pending its remediation.
+- **4(e), proposed, not executed:** revised to **21 conditions** (18 compression states + the 3 D13
+  FP32-CPU baselines, all of which need the same paired instrument-agreement check), batch=1,
+  CodeCarbon on, kept as a separate result set (e.g. `results_stage4_codecarbon/`), **with a
+  per-condition overhead audit** (hardware `energy_j`/`total_j_mean` with CodeCarbon on vs. the
+  matching primary Stage 4 run, for all 21, not just the 3 feasibility-checked ones) rather than
+  assuming the 3-condition feasibility check generalizes. **Wall-time estimate, from real timestamps:**
+  per-rep wall time with CodeCarbon on was measured at 32.7 s/rep in two independent reruns — used here
+  as an empirical basis, not as evidence of "no overhead" (see 4(d) above, that argument no longer
+  applies) — matching the primary matrix's own 16.6-17.5 min/condition at 31 reps. 21 × ~16.6-17.5 min
+  ≈ **5.8-6.1 hours total**. Awaiting approval before execution.
 - **Mitigation:** gap disclosed here and in `stage5_analysis_plan.md` §3 rather than silently worked
   around; RQ1 reported as unanswerable from current data until the proposed pass runs.
+
+## D16. `pilot.py`'s CPU/RAPL energy reading sums `package-0` and `psys` domains — likely inflated, not yet remediated
+
+- **Discovery:** surfaced while answering D15/item 4(c) ("does CodeCarbon read RAPL or fall back to
+  TDP for the CPU"). Checking what CodeCarbon's RAPL path does differently from `pilot.py`'s required
+  checking what `pilot.py`'s RAPL path actually reads — and it reads more than intended.
+- **What `pilot.py` actually does:** `Sensor.__init__` (device='cpu') globs
+  `/sys/class/powercap/intel-rapl:*/energy_uj`, filtered to paths one colon deep (correctly excluding
+  the `intel-rapl:0:0` `core` sub-domain). On this machine that filter still matches **two** top-level
+  domains: `intel-rapl:0` (`package-0`) and `intel-rapl:1` (`psys`) — confirmed by reading each
+  domain's `name` file directly. `integrate()` sums every matched domain's energy delta into one
+  number. `psys` ("platform") is understood to be a superset of the package domain on Intel RAPL
+  (package + chipset + voltage regulators, sometimes more), not an independent additive power rail —
+  summing package + psys very likely counts a large part of the package's own draw twice.
+- **Evidence it matters, not just a theoretical concern:** for `resnet18_int8`'s feasibility-check
+  windows, `pilot.py`'s combined reading was 736.02 J vs. CodeCarbon's package-only `cpu_energy_j` of
+  266.40 J for the same windows — CodeCarbon defaults to `rapl_prefer_psys=False` (package-only).
+  The two aren't expected to match exactly (different sampling cadence, different code paths), but a
+  ~2.8x gap is far larger than any other source of disagreement found in this audit, and is in the
+  direction a package+psys double-count would produce.
+- **Scope:** affects every CPU/RAPL-measured condition in this project — all 3 INT8 states
+  (`resnet18_int8`, `mobilenet_v3_small_int8`, `efficientnet_b0_int8`) and all 3 D13 FP32-CPU baselines.
+  Does not affect any GPU/NVML-measured condition.
+- **Timing:** discovered 2026-10-06, after all 6 affected conditions were already collected and
+  committed (Stage 4's INT8 runs were collected before this audit; D13's FP32-CPU baselines were
+  collected the same day, D7-corrected timestamps notwithstanding).
+- **Could this change the conclusions?** Potentially significantly for any RQ1/RQ2 claim involving
+  INT8 or the FP32-CPU baseline specifically — if the package+psys sum is substantially inflated, the
+  CPU-measured states' absolute energy (and any ratio computed against them) could be overstated.
+  Does not affect GPU-measured states or any conclusion that doesn't involve the CPU instrument.
+- **Not yet remediated — researcher's decision needed:** options not yet chosen between: (1) patch
+  `Sensor.__init__` to filter to `package-0` only (matching CodeCarbon's and most published RAPL-based
+  tooling's convention) and re-run all 6 affected conditions; (2) keep the combined reading but
+  relabel it explicitly as "package+psys" everywhere it's reported, disclosing rather than changing it;
+  (3) investigate further whether `psys` on this specific machine is actually additive rather than a
+  superset (not assumed here, would need a controlled comparison, e.g. reading both domains at idle
+  and during a known CPU-only load and checking whether `psys ≈ package` or `psys > package`).
+- **Mitigation:** none yet — flagged here rather than silently carried forward or silently patched.
 
 ---
 

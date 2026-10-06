@@ -314,7 +314,11 @@ def main():
                             result=window(sensor,seconds,a.interval,work if phase.startswith('a') else None,sync,a.allow_concurrent_gpu)
                             if cc_tracker is not None:
                                 cc_tracker.stop()
-                                result['codecarbon_energy_j']=cc_tracker.final_emissions_data.energy_consumed*3.6e6
+                                ed=cc_tracker.final_emissions_data
+                                result['codecarbon_energy_j']=ed.energy_consumed*3.6e6
+                                result['codecarbon_cpu_energy_j']=ed.cpu_energy*3.6e6
+                                result['codecarbon_gpu_energy_j']=ed.gpu_energy*3.6e6
+                                result['codecarbon_ram_energy_j']=ed.ram_energy*3.6e6
                             row=dict(device=a.device,size=size,batch=batch,requested_s=seconds,repeat=rep,phase=phase,**result)
                             rows.append({k:v for k,v in row.items() if k!='trace'})
                             with (out/'raw.jsonl').open('a') as f: f.write(json.dumps(row)+'\n')
