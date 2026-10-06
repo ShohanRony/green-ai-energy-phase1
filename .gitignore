@@ -4,3 +4,4 @@ data/
 *.pyc
 .~lock.*#
 .power_state/
+power_watchdog.log

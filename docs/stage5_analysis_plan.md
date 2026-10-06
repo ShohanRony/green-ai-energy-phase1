@@ -257,10 +257,9 @@ primary family — there is no "primary" version of this specific test to prefer
 the supplementary toolkit by design, because that is where this project's bootstrap-CI machinery
 already lives, not because §5 is treated as less rigorous than §4's primary tests.
 
-## 6. Accuracy rule — PENDING Shohan's explicit confirmation
+## 6. Accuracy rule — CONFIRMED by Shohan (2026-10-06)
 
-**Status: proposed 2026-10-06, not yet confirmed. No Stage 5 statistics are run before Shohan
-explicitly confirms (a)'s 99% primary threshold.**
+**Status: confirmed by Shohan on 2026-10-06. The 99% primary / 99.9% strict relative-to-FP32 accuracy rules are approved and active.**
 
 **(a) PRIMARY — MLPerf convention.** A compressed state is deployable if its top-1 accuracy on the
 CIFAR-10 test set (n=10,000) is **≥99% of its own model's FP32 top-1 on the same test set**. This is
@@ -533,3 +532,10 @@ A1, across two supervisor-review rounds the same day:
   Stage 2); the stray root-level `test_pilot.py` this session created was merged into the existing
   `tests/test_pilot.py` (duplicate filename, wrong location — the project's real test suite has always
   lived under `tests/`) and the root copy deleted.
+
+**A3 — 2026-10-06/07.** Explicitly records Shohan's formal confirmation (2026-10-06) of §6's accuracy
+rule (99% primary / 99.9% strict relative-to-FP32 deployability threshold). Notes that the initial
+Stage 4b design draft (`85d966c`) is superseded by the finalized Stage 4b specification in `stage4b-design.md`,
+substituting the 9 `_bnrecal` conditions for energy measurement and designating the 9 `_ft` recovery models as
+accuracy-only controls.
+

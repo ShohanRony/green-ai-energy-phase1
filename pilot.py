@@ -194,17 +194,23 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
         per_domain=integrate(trace,sensor.ranges,sensor.domain_names)
         energy=per_domain['package-0']  # primary (D16); other domains (e.g. psys) logged secondary below
         extra={f"{n.replace('-0','')}_energy_j":v for n,v in per_domain.items() if n!='package-0'}
+        extra['cpu_package_energy_j']=energy
+        extra['system_energy_j']=energy
+        if 'psys' in per_domain:
+            extra['cpu_psys_energy_j']=per_domain['psys']
     else:
         energy=integrate(trace,sensor.ranges)  # uses index 0 only; a concurrent RAPL column (index 1,
         # if present) is ignored here and integrated separately below -- it's a monotonic cumulative
         # counter needing delta-sum+wraparound, not the GPU's trapezoidal sampled-power integration.
+        pkg_e=0.
         if sensor.concurrent_rapl_path is not None:
-            pkg_e=0.
             for (t0,x0),(t1,x1) in zip(trace,trace[1:]):
                 d=x1[1]-x0[1]
                 if d<0: d+=sensor.concurrent_rapl_range
                 pkg_e+=d
-            extra={'cpu_package_energy_j':pkg_e}
+            extra['cpu_package_energy_j']=pkg_e
+        extra['gpu_energy_j']=energy
+        extra['system_energy_j']=energy+pkg_e
     if energy <= 0: raise RuntimeError('Nonpositive energy: stale or unavailable sensor; reject window')
     return dict(energy_j=energy,duration_s=duration,batches=batches,
                 max_sample_gap_s=max(b[0]-a[0] for a,b in zip(trace,trace[1:])),
@@ -221,6 +227,7 @@ def summarize(rows):
     for key in keys:
         group=[r for r in rows if (r['device'],r['size'],r['batch'],r['requested_s'])==key]
         ids=sorted({r['repeat'] for r in group}); pairs=[]; active=[]; idle=[]; net=[]; fractions=[]; diffs=[]; regimes=[]
+        gpu_pairs=[]; pkg_pairs=[]; sys_pairs=[]; ips_vals=[]
         for rep in ids:
             d={r['phase']:r for r in group if r['repeat']==rep}
             if set(d) != {'idle_before','a1','a2','idle_after'}: continue
@@ -228,20 +235,29 @@ def summarize(rows):
             # (checklist item 3), but still annotate it below so raw/windows logs retain it (item 12).
             cold=rep==ids[0] and len(ids)>1
             idlepower=statistics.mean(d[p]['energy_j']/d[p]['duration_s'] for p in ['idle_before','idle_after'])
-            per=[]
+            per=[]; gpu_p=[]; pkg_p=[]; sys_p=[]
             for p in ['a1','a2']:
                 r=d[p]; gross=r['energy_j']; above=gross-idlepower*r['duration_s']
-                per.append(gross/(r['batches']*key[2]))
+                imgs=r['batches']*key[2]
+                per.append(gross/imgs if imgs else float('nan'))
+                gpu_p.append(r.get('gpu_energy_j', gross if key[0]=='cuda' else 0.0)/imgs if imgs else float('nan'))
+                pkg_p.append(r.get('cpu_package_energy_j', gross if key[0]=='cpu' else 0.0)/imgs if imgs else float('nan'))
+                sys_p.append(r.get('system_energy_j', gross)/imgs if imgs else float('nan'))
                 r['estimated_idle_j']=idlepower*r['duration_s']; r['above_idle_j']=above
                 r['above_idle_fraction']=above/gross if gross else None
                 r['gross_j_per_image']=per[-1]
                 if not cold:
                     active.append(gross); net.append(above); fractions.append(above/gross if gross else float('nan'))
                     if r['power_regime'] is not None: regimes.append(r['power_regime'])
+                    if 'images_per_s' in r: ips_vals.append(r['images_per_s'])
+                    elif r['duration_s']>0 and imgs: ips_vals.append(imgs/r['duration_s'])
             if cold: continue
             # Match both idle readings to the planned window to avoid timing overshoot bias.
             idle.extend(d[p]['energy_j']/d[p]['duration_s']*key[3] for p in ['idle_before','idle_after'])
             pairs.append(statistics.mean(per)); diffs.append(per[1]-per[0])
+            gpu_pairs.append(statistics.mean(gpu_p))
+            pkg_pairs.append(statistics.mean(pkg_p))
+            sys_pairs.append(statistics.mean(sys_p))
         if len(pairs)<3: continue
         n=len(pairs); mean=statistics.mean(pairs); sd=statistics.stdev(diffs)
         mde=2.80*sd/math.sqrt(n) # normal approximation: two-sided alpha .05, power .80
@@ -252,6 +268,10 @@ def summarize(rows):
                         total_j_mean=statistics.mean(active),total_j_sd=statistics.stdev(active),
                         above_idle_j_mean=statistics.mean(net),above_idle_fraction_mean=statistics.mean(fractions),
                         gross_j_per_image_mean=mean,paired_difference_sd=sd,
+                        gpu_j_per_image_mean=statistics.mean(gpu_pairs) if gpu_pairs else None,
+                        cpu_package_j_per_image_mean=statistics.mean(pkg_pairs) if pkg_pairs else None,
+                        system_j_per_image_mean=statistics.mean(sys_pairs) if sys_pairs else None,
+                        images_per_s_mean=statistics.mean(ips_vals) if ips_vals else None,
                         paired_order_bias=statistics.mean(diffs),approx_mde_j_per_image=mde,
                         conservative_screen_fraction=limit/mean if mean>0 else None,
                         candidate_for_confirmation=bool(n>=30 and mean>0 and limit<=.05*mean),
@@ -307,11 +327,11 @@ def main():
                     help='On --device cuda runs, also read RAPL package-0 concurrently with the NVML '
                          'reads and log it as cpu_package_energy_j per window (CPU-side energy during '
                          'a GPU run, for the three-boundary design in stage4b-design.md).')
-    p.add_argument('--cpu-affinity',action='store_true',
+    p.add_argument('--cpu-affinity',choices=['pcores','none'],default='none',nargs='?',const='pcores',
                     help='Pin the process to this machine\'s P-cores only (taskset-style, via '
-                         'os.sched_setaffinity), for --device cpu runs. Requires a hybrid P-core/E-core '
-                         'CPU exposing /sys/devices/cpu_core/cpus (confirmed present: 13th Gen Intel '
-                         'Core i5-13450HX, P-cores = cpus 0-11). Logged in environment.json either way.')
+                         'os.sched_setaffinity), for --device cpu runs. Choices: pcores, none.')
+    p.add_argument('--session-id',default=None,help='Session identifier (e.g. session1)')
+    p.add_argument('--condition-label',default=None,help='Condition label (e.g. resnet18_fp32)')
     p.add_argument('--checkpoint'); a=p.parse_args()
     start_rep=0; rows=[]
     if a.resume:
@@ -351,7 +371,7 @@ def main():
                   'results/active_power_baseline_investigation.md). Use only to reproduce/cite pre-correction numbers.',
                   file=sys.stderr)
         cpu_affinity_set=None
-        if a.cpu_affinity:
+        if a.cpu_affinity and a.cpu_affinity != 'none':
             if a.device!='cpu':
                 print('WARNING: --cpu-affinity only applies to --device cpu; ignored.', file=sys.stderr)
             else:

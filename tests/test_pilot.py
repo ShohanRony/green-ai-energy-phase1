@@ -169,4 +169,27 @@ class PCoreAffinityTests(unittest.TestCase):
         with patch('pilot.Path', self._FakePath(False)):
             with self.assertRaises(RuntimeError): p_core_set()
 
+class Stage4bHarnessTests(unittest.TestCase):
+    def test_summarize_per_boundary_means(self):
+        rows=[]
+        for i in range(10):
+            for phase in ['idle_before','a1','a2','idle_after']:
+                active=phase.startswith('a'); dur=5.0
+                e=50.0 if active else 10.0
+                rows.append(dict(device='cuda',size=32,batch=1,requested_s=5,repeat=i,phase=phase,
+                                 duration_s=dur,energy_j=e,gpu_energy_j=e,cpu_package_energy_j=20.0 if active else 0.0,
+                                 system_energy_j=e + (20.0 if active else 0.0),
+                                 batches=100 if active else 0,images_per_s=20.0 if active else 0.0,power_regime='pinned'))
+        res=summarize(rows)[0]
+        self.assertAlmostEqual(res['gpu_j_per_image_mean'], 0.5)
+        self.assertAlmostEqual(res['cpu_package_j_per_image_mean'], 0.2)
+        self.assertAlmostEqual(res['system_j_per_image_mean'], 0.7)
+        self.assertAlmostEqual(res['images_per_s_mean'], 20.0)
+
+    def test_system_energy_sum(self):
+        gpu_e = 45.2
+        pkg_e = 12.8
+        sys_e = gpu_e + pkg_e
+        self.assertAlmostEqual(sys_e - (gpu_e + pkg_e), 0.0, places=9)
+
 if __name__=='__main__': unittest.main()
