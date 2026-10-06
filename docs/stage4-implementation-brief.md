@@ -80,20 +80,36 @@ not a timer:
    before doing anything else — do not accept a dip/mixed result as valid Stage 4 data, and do not
    continue to the next condition on top of an unresolved flag. **Unless the carve-out in point 3a
    applies.**
-3a. **Carve-out: configs already known to be genuinely sub-saturating at batch=1 are exempt from the
-   reboot-and-rerun trigger.** Stage 4 pre-flight's own Task 1 (`stage4_preflight_findings.md`) already
-   measured and physically explained this: at batch=1, pruned50/70 are fast enough that the GPU idles
-   between launches instead of staying boosted — confirmed directly from per-window traces, not a
-   guess. This is a *different* phenomenon from the pre-flight pin/dip mystery (which was about
-   FP32/FP16/pruned70 at larger batches landing in different regimes *unexpectedly*). A `dip` on a
-   config already known from Task 1 to sub-saturate — pruned50 and pruned70 at batch=1, confirmed
-   again below for ResNet-18 — is **expected, not an escalation trigger**: log it as `dip (expected —
-   sub-saturation at batch=1)` in the deliverable and move on. The reboot-and-rerun rule in point 3
-   still applies in full to any config expected to saturate the GPU: FP32, FP16, pruned30 (confirmed
-   pinned at batch=1 for ResNet-18 in Task 1's original data — not a borderline case), and anything at
-   batch≥4. **For MobileNetV3-Small and EfficientNet-B0's pruned states, Task 1 never collected
-   batch=1 data** (ResNet-18 only) — treat pruned30/50/70 for those two models as *unknown* regime
-   expectation, not automatically exempt, until their own data says otherwise.
+3a. **Carve-out (generalized 2026-10-06 during real Stage 4 execution — see below): any state, on any
+   model, light enough that batch=1 doesn't keep the GPU boosted is exempt from the reboot-and-rerun
+   trigger.** Originally written narrower ("ResNet-18 pruned50/70 at batch=1 only") based on Task 1's
+   pre-flight data, which only tested ResNet-18. That framing was too narrow: MobileNetV3-Small's own
+   FP32 baseline — not a compressed state, its *heaviest* state — sub-saturated at batch=1 too (tight,
+   consistent dip at 25-26.5W, well below even ResNet-18's pruned50/70 dip range of 35-52W, confirmed
+   across all 30 reps, not mixed). MobileNetV3-Small is ~96x fewer FLOPs than ResNet-18 at FP32
+   (5.8M vs 557M MACs) — light enough that even its uncompressed baseline doesn't saturate the GPU at
+   batch=1. The mechanism is identical to the original ResNet-18 pruned50/70 case (model fast enough
+   that the GPU idles between launches instead of staying boosted) — it's the same physically-explained
+   phenomenon, not the pre-flight pin/dip mystery (which was about configs landing in *unexpectedly*
+   different regimes on different invocations, not a model being consistently light). A `dip` on any
+   state of any model is **expected, not an escalation trigger**, UNLESS that state/model combination
+   has not yet shown its own data — log it as `dip (expected — sub-saturation at batch=1)` and move on.
+   **Per-model carve-out status, updated as data comes in:**
+   - ResNet-18: FP32/FP16/pruned30 pinned (expected-saturate), pruned50/70 dip (expected-sub-saturate).
+   - MobileNetV3-Small: **carve-out extended to all 6 states** (2026-10-06, user-approved) — don't stop
+     for dip on any MobileNetV3-Small condition. **Extra scrutiny required in Task 2's plausibility
+     pass specifically for this model**: a correctly-classified `dip` regime confirms the GPU wasn't
+     power-capped, but does not by itself confirm the energy number is a real measurement rather than a
+     different, unrelated problem that happens to also look like low power — check energy-per-image
+     orders sensibly against MobileNetV3-Small's own FP32 baseline for every one of its 6 states, and
+     that the magnitude is consistent with each state's expected compute reduction, not just that the
+     regime field says `dip`.
+   - EfficientNet-B0: still *unknown*, not automatically exempt — Task 1 never collected batch=1 data
+     for this model either, and MobileNetV3-Small's result means "it's probably also light enough" is
+     no longer a safe assumption to extend further without evidence. Apply §5 point 3's full rule
+     (reboot-and-rerun on dip/mixed) until EfficientNet-B0's own data says otherwise.
+   The reboot-and-rerun rule in point 3 still applies in full to anything at batch≥4, and to
+   EfficientNet-B0 until shown otherwise.
 4. **Log every reboot-and-rerun event, and every carve-out invocation** (condition, regime observed,
    timestamp, which rule applied) in the eventual deliverable's provenance notes — neither a rerun nor
    an exemption is a hidden detail.
