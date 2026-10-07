@@ -171,10 +171,10 @@ get_condition_args() {
       extra_flags+=(--device cuda --checkpoint "checkpoints/${arch}_${state}.pt" --concurrent-cpu-package)
       ;;
     int8)
-      extra_flags+=(--device cpu --checkpoint "checkpoints/${arch}_int8.pt" --cpu-affinity pcores)
+      extra_flags+=(--device cpu --checkpoint "checkpoints/${arch}_int8.pt")
       ;;
     fp32_cpu)
-      extra_flags+=(--device cpu --arch "$arch" --checkpoint "checkpoints/${arch}_fp32.pt" --cpu-affinity pcores)
+      extra_flags+=(--device cpu --arch "$arch" --checkpoint "checkpoints/${arch}_fp32.pt")
       ;;
     *)
       echo "Unknown state: $state" >&2
@@ -240,6 +240,7 @@ run_condition() {
     --allow-stale-boot
     --session-id "$SESSION_DIR_NAME"
     --condition-label "$cond"
+    --cpu-affinity pcores
     --out "$cond_dir"
     "${EXTRA_KIND_FLAGS[@]}"
     $cond_args

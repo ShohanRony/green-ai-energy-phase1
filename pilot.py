@@ -372,11 +372,8 @@ def main():
                   file=sys.stderr)
         cpu_affinity_set=None
         if a.cpu_affinity and a.cpu_affinity != 'none':
-            if a.device!='cpu':
-                print('WARNING: --cpu-affinity only applies to --device cpu; ignored.', file=sys.stderr)
-            else:
-                cpu_affinity_set=sorted(p_core_set())
-                os.sched_setaffinity(0, cpu_affinity_set)
+            cpu_affinity_set=sorted(p_core_set())
+            os.sched_setaffinity(0, cpu_affinity_set)
         sensor=Sensor(a.device, legacy_cumulative=a.legacy_cumulative_counter,
                       concurrent_cpu_package=a.concurrent_cpu_package)
         import torch, torchvision

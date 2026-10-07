@@ -61,7 +61,7 @@
 
 * **Independently verified tonight:**
   * Multi-boundary harness telemetry (`gpu_energy_j`, `cpu_package_energy_j`, `system_energy_j`, `images_per_s`).
-  * P-core CPU affinity logging.
+  * P-core CPU affinity logging. *(Correction note 2026-10-07: Audit revealed that in initial Session 1, P-core pinning was applied and verified only for the 6 CPU conditions; the 24 GPU conditions ran with cpu_affinity="none" due to a runner script flag omission and pilot.py check. Patched in D19; initial Session 1 moved to main_session1_unpinned and re-run with all 30 conditions pinned).*
   * Full 30-condition test set accuracy predictions (including FP32-CPU reference arrays).
   * Runner script preflight guards and resume handling.
   * Stage 4b Session 1 execution: 30/30 conditions completed cleanly, verified with zero errors/interruptions.

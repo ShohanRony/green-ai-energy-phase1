@@ -669,7 +669,20 @@ no rerun of already-collected data.**
 - **Stage 4b measurement rationale:**
   - `_bnrecal` is included in the Stage 4b energy matrix (measuring 9 zero-finetune + 9 `_bnrecal` states). Both share identical pruned architectures. Measuring both tests whether energy draw differs across weight/stat values at fixed architecture.
   - If energy is equivalent (within ±5%), `_ft` energy is inferred from the measured architecture. If it differs, `_ft` will require explicit energy runs.
-  - `_ft` is designated as accuracy-only in Stage 4b.
+
+## D19. Stage 4b Session 1 CPU affinity miss and re-run
+
+- **What was found:** In an audit of `results_stage4b/main_session1/`, all 24 GPU-state runs had `cpu_affinity = "none"` in their `environment.json`. Only the 6 CPU-state runs (`int8` and `fp32_cpu`) were pinned to P-cores (`[0..11]`). Furthermore, the morning report (`docs/overnight-report-2026-10-07.md`) worded the verification as "P-core CPU affinity logging", which obscured that pinning had only been applied to the CPU-bound states and not to the GPU states.
+- **How the miss happened:** In `scripts/run_stage4b_session.sh`, the `--cpu-affinity pcores` flag was attached in `get_condition_args()` specifically to the `int8` and `fp32_cpu` cases rather than being included in the shared arguments across all runs. Additionally, `pilot.py` had a legacy guard (`if a.device != 'cpu': print(..., file=sys.stderr)`) that ignored `--cpu-affinity` on CUDA runs.
+- **Decision:**
+  1. Patch `pilot.py` to apply and log P-core CPU affinity across all devices (`cuda` and `cpu`).
+  2. Update `scripts/run_stage4b_session.sh` to include `--cpu-affinity pcores` in the shared harness arguments for all 30 conditions.
+  3. Rename `results_stage4b/main_session1` to `results_stage4b/main_session1_unpinned` via `git mv` and designate it as an exploratory/unpinned comparison dataset outside the confirmatory matrix.
+  4. Re-run Stage 4b Session 1 with all 30 conditions pinned to P-cores following a clean reboot.
+- **Fresh-boot guard:** The fresh-boot guard stayed at 30 minutes (`--max-uptime-min 30`).
+- **Timing:** AFTER — caught immediately post-run in audit before Session 2.
+- **Could this change the conclusions?** Prevents an unpinned/pinned CPU scheduling inconsistency between GPU and CPU conditions and across sessions.
+- **Status:** Harness patched, unpinned dataset moved to `results_stage4b/main_session1_unpinned/`, Session 1 slated for clean-boot re-run with all conditions pinned.
 
 ---
 
