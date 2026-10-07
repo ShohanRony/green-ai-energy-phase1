@@ -1,0 +1,6 @@
+========================================================================
+Starting Stage 4b Runner: kind=main session=999 at 2026-10-07T19:11:26Z
+Output directory: /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session999
+========================================================================
+[Preflight] Checking tracked files git status...
+Preflight Error: Uncommitted changes in tracked files!

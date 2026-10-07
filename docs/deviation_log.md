@@ -691,10 +691,12 @@ no rerun of already-collected data.**
 - **Decision:**
   1. Move the truncated datasets to `results_stage4b/main_session3_aborted` and `results_stage4b/main_session4_aborted` to preserve the aborted data without deleting it.
   2. Delete the stale `.power_state/stop` marker.
-  3. Update `scripts/run_stage4b_session.sh` to validate the row count of `windows.csv` (`expected_rows=$((REPEATS * 4 + 1))`) and the stop marker logic before advancing.
-  4. Re-run Sessions 3 and 4 tomorrow, each after a fresh reboot and about 2 minutes' wait, satisfying the 2-calendar-day spread constraint.
+  3. Update `scripts/run_stage4b_session.sh` to add a **preflight guard** that checks for and refuses to start if a stale `.power_state/stop` marker exists.
+  4. Update `scripts/run_stage4b_session.sh` to validate the row count of `windows.csv` (`expected_rows=$((REPEATS * 4 + 1))`) and appropriately handle exit logic.
+  5. Add a **1-hour wait cap** to the power interruption recovery loop in the runner script to prevent infinite stalls if power isn't restored.
+  6. Re-run Sessions 3 and 4, each after a fresh reboot and about 2 minutes' wait.
 - **Timing:** AFTER — Sessions 3 and 4 were run but data audit revealed truncation. Completed 2026-10-07.
-- **Status:** Runner script fixed, truncated folders renamed, stale marker deleted. Re-runs of Sessions 3 and 4 are pending for tomorrow.
+- **Status:** Runner script fully hardened (row count validation, preflight marker guard, wait cap), truncated folders renamed, stale marker deleted. Re-runs of Sessions 3 and 4 are pending.
 
 ---
 

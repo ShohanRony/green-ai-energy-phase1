@@ -105,6 +105,12 @@ if ! pgrep -fa power_watchdog >/dev/null; then
   sleep 1
 fi
 
+echo "[Preflight] Checking for stale power stop marker..."
+if [[ -f ".power_state/stop" ]]; then
+  echo "Preflight Error: Stale .power_state/stop marker found! Did you restart on AC without clearing it?" >&2
+  exit 1
+fi
+
 BOOT_TIME=$(uptime -s)
 UPTIME=$(cat /proc/uptime | awk '{print $1}')
 echo "[Preflight] System boot time: $BOOT_TIME, uptime: ${UPTIME}s"
@@ -264,16 +270,26 @@ run_condition() {
     echo "[$cond] Interrupted by power loss marker at $int_start. Waiting for AC power recovery..."
     INTERRUPTIONS+=("Power loss during $cond at $int_start")
 
+    local wait_elapsed=0
+    local max_wait=3600
     while true; do
       sleep 30
+      wait_elapsed=$((wait_elapsed + 30))
+      
       if [[ -f /sys/class/power_supply/ACAD/online ]] && [[ $(cat /sys/class/power_supply/ACAD/online) == "1" ]]; then
         echo "AC online detected. Waiting 10 minutes (600s) for power stabilization..."
         sleep 600
+        wait_elapsed=$((wait_elapsed + 600))
         if [[ $(cat /sys/class/power_supply/ACAD/online) == "1" ]]; then
           echo "AC power stable. Restoring governor..."
           sudo "$WRAPPER" performance || true
           break
         fi
+      fi
+      
+      if [[ $wait_elapsed -ge $max_wait ]]; then
+        echo "[$cond] Power interruption exceeded wait cap of ${max_wait}s. Aborting." >&2
+        return 1
       fi
     done
 

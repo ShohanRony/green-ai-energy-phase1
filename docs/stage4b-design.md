@@ -92,3 +92,33 @@ For each model (`resnet18`, `mobilenet_v3_small`, `efficientnet_b0`):
 * **Secondary / Follow-up passes (same harness version, not pooled):**
   * RQ1 CodeCarbon pass: 1 session, all 30 conditions with `--codecarbon`.
   * Batch=16 sensitivity pass: 1 session, all 30 conditions with `--batches 16`.
+
+---
+
+## 8. Amendments (Dated Additions)
+
+The following amendments reflect structural adjustments required to elevate Phase 1 to a Q1–Q2 publication standard, explicitly recorded prior to Stage 5 inferential analysis.
+
+### A4. Six Measurement Sessions (Added 2026-10-07)
+**Rationale:** Four sessions provide 3 degrees of freedom, requiring a 95% t-multiplier of 3.18 (resulting in wide intervals). Six sessions provide 5 degrees of freedom (t-multiplier 2.57), narrowing intervals by ~19%.
+**Change:** The confirmatory matrix is expanded from exactly four sessions to exactly six. The count is fixed at six prior to any inferential analysis (no stopping rule).
+- Sessions 1 and 2 (already run) are valid.
+- Sessions 3, 4, 5, and 6 will be run following the established fresh-boot and time protocols.
+- The six sessions must span at least 3 calendar days to capture real-world temporal variability.
+- Seeds for added sessions follow the existing logic: `1000 + session_number`.
+
+### A5. Proper Pruning Pipeline (Added 2026-10-07)
+**Rationale:** Pruning without fine-tuning, or with merely a 3-epoch recovery, rarely achieves deployable accuracy (99% of FP32).
+**Change:** The matrix includes a formal "prune + fine-tune" arm. For `pruned30` and `pruned50` states (with `pruned70` as optional), a 20–30 epoch fine-tuning run will be conducted. This replaces the preliminary 3-epoch recovery (`_ft`) arm and is explicitly labeled as not post-training. The energy of these fine-tuned models will be empirically measured in one additional measurement session once the models exist.
+
+### A6. Realistic-Regime Sensitivity Pass (Added 2026-10-07)
+**Rationale:** To preempt reviewer objections that 32×32 inputs at batch 1 on an RTX 3050 measure host/launch overhead rather than true model efficiency.
+**Change:** A separate, energy-only measurement pass using 224×224 inputs at batch sizes 1 and 16 will be run for the three architectures. This pass makes no accuracy claims (random or ImageNet weights are acceptable) and its data will **not** be pooled with the main 32×32 matrix.
+
+### A7. Physical Ground Truth (Added 2026-10-07)
+**Rationale:** NVML and RAPL are software models of power. Relying on them exclusively without wall-socket validation risks rejection on methodological grounds.
+**Change:** A plug-in power meter (logging at 1 Hz or faster) will be used to measure wall power on the charger during idle and sustained load (10 minutes per level). The correlation and offset against the software-reported system energy (NVML + RAPL) will be reported. Absolute equality is not claimed (due to PSU/fan/display losses).
+
+### A8. Pre-Registration via Zenodo (Added 2026-10-07)
+**Rationale:** Establishing a timestamp outside the project's control guarantees the design was fixed prior to analysis.
+**Change:** The registered design and amendments will be deposited on Zenodo to secure a DOI before any Stage 5 statistics are computed.
