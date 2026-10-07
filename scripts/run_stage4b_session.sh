@@ -105,8 +105,9 @@ if ! pgrep -fa power_watchdog >/dev/null; then
   sleep 1
 fi
 
+BOOT_TIME=$(uptime -s)
 UPTIME=$(cat /proc/uptime | awk '{print $1}')
-echo "[Preflight] System uptime: ${UPTIME}s"
+echo "[Preflight] System boot time: $BOOT_TIME, uptime: ${UPTIME}s"
 
 # --- Generate Order ---
 ORDER_FILE="$OUT_BASE/order.txt"
@@ -345,6 +346,7 @@ lines = []
 lines.append(f"# Stage 4b Session Log — $SESSION_DIR_NAME\n")
 lines.append(f"- **Start Time:** $START_TIME")
 lines.append(f"- **End Time:** $END_TIME")
+lines.append(f"- **Boot Time:** $BOOT_TIME")
 lines.append(f"- **Uptime Start:** ${UPTIME}s")
 lines.append(f"- **Total Planned Conditions:** {len(conditions)}")
 
