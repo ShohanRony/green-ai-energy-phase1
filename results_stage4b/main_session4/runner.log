@@ -1,0 +1,541 @@
+========================================================================
+Starting Stage 4b Runner: kind=main session=4 at 2026-10-07T12:29:40Z
+Output directory: /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4
+========================================================================
+[Preflight] Checking tracked files git status...
+[Preflight] Ensuring CPU governor is performance...
+[Preflight] Checking platform profile...
+[Preflight] Checking AC online...
+[Preflight] Checking foreign GPU processes...
+[Preflight] Checking power_watchdog...
+Starting power_watchdog in background...
+[Preflight] System boot time: 2026-10-07 18:27:21, uptime: 140.50s
+Generating presentation order for main session 4...
+Generated order with seed 1004: 30 conditions.
+------------------------------------------------------------------------
+[resnet18_pruned30_bnrecal] Starting at uptime 140.53s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned30_bnrecal
+[resnet18_pruned30_bnrecal] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned30] Starting at uptime 175.69s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned30
+[mobilenet_v3_small_pruned30] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_pruned50_bnrecal] Starting at uptime 209.92s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned50_bnrecal
+[efficientnet_b0_pruned50_bnrecal] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[resnet18_pruned70_bnrecal] Starting at uptime 244.19s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned70_bnrecal
+[resnet18_pruned70_bnrecal] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_pruned70] Starting at uptime 278.41s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned70
+[efficientnet_b0_pruned70] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_fp32_cpu] Starting at uptime 312.70s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_fp32_cpu
+[efficientnet_b0_fp32_cpu] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned70] Starting at uptime 346.72s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned70
+[mobilenet_v3_small_pruned70] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[resnet18_fp32_cpu] Starting at uptime 381.00s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_fp32_cpu
+[resnet18_fp32_cpu] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_int8] Starting at uptime 415.03s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_int8
+[mobilenet_v3_small_int8] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[resnet18_pruned30] Starting at uptime 449.04s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned30
+[resnet18_pruned30] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[resnet18_fp32] Starting at uptime 483.30s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_fp32
+[resnet18_fp32] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned30_bnrecal] Starting at uptime 517.60s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned30_bnrecal
+[mobilenet_v3_small_pruned30_bnrecal] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_int8] Starting at uptime 551.83s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_int8
+[efficientnet_b0_int8] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[resnet18_int8] Starting at uptime 585.90s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_int8
+[resnet18_int8] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_pruned30_bnrecal] Starting at uptime 619.89s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned30_bnrecal
+[efficientnet_b0_pruned30_bnrecal] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp16] Starting at uptime 654.23s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_fp16
+[mobilenet_v3_small_fp16] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[resnet18_pruned70] Starting at uptime 688.53s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned70
+[resnet18_pruned70] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[resnet18_fp16] Starting at uptime 722.77s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_fp16
+[resnet18_fp16] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp32] Starting at uptime 756.96s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_fp32
+[mobilenet_v3_small_fp32] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_pruned70_bnrecal] Starting at uptime 791.14s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned70_bnrecal
+[efficientnet_b0_pruned70_bnrecal] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[resnet18_pruned50_bnrecal] Starting at uptime 825.44s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned50_bnrecal
+[resnet18_pruned50_bnrecal] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_fp32] Starting at uptime 859.66s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_fp32
+[efficientnet_b0_fp32] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned50_bnrecal] Starting at uptime 893.89s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned50_bnrecal
+[mobilenet_v3_small_pruned50_bnrecal] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_fp16] Starting at uptime 928.12s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_fp16
+[efficientnet_b0_fp16] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_pruned30] Starting at uptime 962.44s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned30
+[efficientnet_b0_pruned30] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned70_bnrecal] Starting at uptime 996.77s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned70_bnrecal
+[mobilenet_v3_small_pruned70_bnrecal] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp32_cpu] Starting at uptime 1030.98s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_fp32_cpu
+[mobilenet_v3_small_fp32_cpu] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[efficientnet_b0_pruned50] Starting at uptime 1064.92s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned50
+[efficientnet_b0_pruned50] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[resnet18_pruned50] Starting at uptime 1099.27s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned50
+[resnet18_pruned50] Execution failed (exit code 0)!
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned50] Starting at uptime 1133.50s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 1/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned50
+[mobilenet_v3_small_pruned50] Execution failed (exit code 0)!
+========================================================================
+Re-running 30 failed condition(s) once...
+========================================================================
+Retrying resnet18_pruned30_bnrecal...
+------------------------------------------------------------------------
+[resnet18_pruned30_bnrecal] Starting at uptime 1167.76s...
+------------------------------------------------------------------------
+[resnet18_pruned30_bnrecal] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned30_bnrecal from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned30_bnrecal
+[resnet18_pruned30_bnrecal] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_pruned30...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned30] Starting at uptime 1201.96s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned30] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned30 from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned30
+[mobilenet_v3_small_pruned30] Execution failed (exit code 0)!
+Retrying efficientnet_b0_pruned50_bnrecal...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned50_bnrecal] Starting at uptime 1236.18s...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned50_bnrecal] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned50_bnrecal from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned50_bnrecal
+[efficientnet_b0_pruned50_bnrecal] Execution failed (exit code 0)!
+Retrying resnet18_pruned70_bnrecal...
+------------------------------------------------------------------------
+[resnet18_pruned70_bnrecal] Starting at uptime 1270.51s...
+------------------------------------------------------------------------
+[resnet18_pruned70_bnrecal] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned70_bnrecal from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned70_bnrecal
+[resnet18_pruned70_bnrecal] Execution failed (exit code 0)!
+Retrying efficientnet_b0_pruned70...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned70] Starting at uptime 1304.74s...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned70] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned70 from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned70
+[efficientnet_b0_pruned70] Execution failed (exit code 0)!
+Retrying efficientnet_b0_fp32_cpu...
+------------------------------------------------------------------------
+[efficientnet_b0_fp32_cpu] Starting at uptime 1339.00s...
+------------------------------------------------------------------------
+[efficientnet_b0_fp32_cpu] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_fp32_cpu from rep 1/7
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_fp32_cpu
+[efficientnet_b0_fp32_cpu] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_pruned70...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned70] Starting at uptime 1372.99s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned70] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned70 from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned70
+[mobilenet_v3_small_pruned70] Execution failed (exit code 0)!
+Retrying resnet18_fp32_cpu...
+------------------------------------------------------------------------
+[resnet18_fp32_cpu] Starting at uptime 1407.29s...
+------------------------------------------------------------------------
+[resnet18_fp32_cpu] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_fp32_cpu from rep 1/7
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_fp32_cpu
+[resnet18_fp32_cpu] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_int8...
+------------------------------------------------------------------------
+[mobilenet_v3_small_int8] Starting at uptime 1441.30s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_int8] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_int8 from rep 1/7
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_int8
+[mobilenet_v3_small_int8] Execution failed (exit code 0)!
+Retrying resnet18_pruned30...
+------------------------------------------------------------------------
+[resnet18_pruned30] Starting at uptime 1475.30s...
+------------------------------------------------------------------------
+[resnet18_pruned30] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned30 from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned30
+[resnet18_pruned30] Execution failed (exit code 0)!
+Retrying resnet18_fp32...
+------------------------------------------------------------------------
+[resnet18_fp32] Starting at uptime 1509.55s...
+------------------------------------------------------------------------
+[resnet18_fp32] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_fp32 from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_fp32
+[resnet18_fp32] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_pruned30_bnrecal...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned30_bnrecal] Starting at uptime 1543.86s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned30_bnrecal] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned30_bnrecal from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned30_bnrecal
+[mobilenet_v3_small_pruned30_bnrecal] Execution failed (exit code 0)!
+Retrying efficientnet_b0_int8...
+------------------------------------------------------------------------
+[efficientnet_b0_int8] Starting at uptime 1578.08s...
+------------------------------------------------------------------------
+[efficientnet_b0_int8] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_int8 from rep 1/7
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_int8
+[efficientnet_b0_int8] Execution failed (exit code 0)!
+Retrying resnet18_int8...
+------------------------------------------------------------------------
+[resnet18_int8] Starting at uptime 1612.18s...
+------------------------------------------------------------------------
+[resnet18_int8] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_int8 from rep 1/7
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_int8
+[resnet18_int8] Execution failed (exit code 0)!
+Retrying efficientnet_b0_pruned30_bnrecal...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned30_bnrecal] Starting at uptime 1646.16s...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned30_bnrecal] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned30_bnrecal from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned30_bnrecal
+[efficientnet_b0_pruned30_bnrecal] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_fp16...
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp16] Starting at uptime 1680.51s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp16] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_fp16 from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_fp16
+[mobilenet_v3_small_fp16] Execution failed (exit code 0)!
+Retrying resnet18_pruned70...
+------------------------------------------------------------------------
+[resnet18_pruned70] Starting at uptime 1714.78s...
+------------------------------------------------------------------------
+[resnet18_pruned70] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned70 from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned70
+[resnet18_pruned70] Execution failed (exit code 0)!
+Retrying resnet18_fp16...
+------------------------------------------------------------------------
+[resnet18_fp16] Starting at uptime 1748.99s...
+------------------------------------------------------------------------
+[resnet18_fp16] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_fp16 from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_fp16
+[resnet18_fp16] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_fp32...
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp32] Starting at uptime 1783.19s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp32] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_fp32 from rep 1/7
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_fp32
+[mobilenet_v3_small_fp32] Execution failed (exit code 0)!
+Retrying efficientnet_b0_pruned70_bnrecal...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned70_bnrecal] Starting at uptime 1817.41s...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned70_bnrecal] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned70_bnrecal from rep 1/7
+WARNING: System uptime is 30 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned70_bnrecal
+[efficientnet_b0_pruned70_bnrecal] Execution failed (exit code 0)!
+Retrying resnet18_pruned50_bnrecal...
+------------------------------------------------------------------------
+[resnet18_pruned50_bnrecal] Starting at uptime 1851.72s...
+------------------------------------------------------------------------
+[resnet18_pruned50_bnrecal] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned50_bnrecal from rep 1/7
+WARNING: System uptime is 31 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned50_bnrecal
+[resnet18_pruned50_bnrecal] Execution failed (exit code 0)!
+Retrying efficientnet_b0_fp32...
+------------------------------------------------------------------------
+[efficientnet_b0_fp32] Starting at uptime 1885.90s...
+------------------------------------------------------------------------
+[efficientnet_b0_fp32] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_fp32 from rep 1/7
+WARNING: System uptime is 31 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_fp32
+[efficientnet_b0_fp32] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_pruned50_bnrecal...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned50_bnrecal] Starting at uptime 1920.11s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned50_bnrecal] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned50_bnrecal from rep 1/7
+WARNING: System uptime is 32 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned50_bnrecal
+[mobilenet_v3_small_pruned50_bnrecal] Execution failed (exit code 0)!
+Retrying efficientnet_b0_fp16...
+------------------------------------------------------------------------
+[efficientnet_b0_fp16] Starting at uptime 1954.32s...
+------------------------------------------------------------------------
+[efficientnet_b0_fp16] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_fp16 from rep 1/7
+WARNING: System uptime is 33 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_fp16
+[efficientnet_b0_fp16] Execution failed (exit code 0)!
+Retrying efficientnet_b0_pruned30...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned30] Starting at uptime 1988.63s...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned30] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned30 from rep 1/7
+WARNING: System uptime is 33 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned30
+[efficientnet_b0_pruned30] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_pruned70_bnrecal...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned70_bnrecal] Starting at uptime 2022.89s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned70_bnrecal] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned70_bnrecal from rep 1/7
+WARNING: System uptime is 34 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned70_bnrecal
+[mobilenet_v3_small_pruned70_bnrecal] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_fp32_cpu...
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp32_cpu] Starting at uptime 2057.10s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp32_cpu] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_fp32_cpu from rep 1/7
+WARNING: System uptime is 34 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_fp32_cpu
+[mobilenet_v3_small_fp32_cpu] Execution failed (exit code 0)!
+Retrying efficientnet_b0_pruned50...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned50] Starting at uptime 2091.06s...
+------------------------------------------------------------------------
+[efficientnet_b0_pruned50] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned50 from rep 1/7
+WARNING: System uptime is 35 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/efficientnet_b0_pruned50
+[efficientnet_b0_pruned50] Execution failed (exit code 0)!
+Retrying resnet18_pruned50...
+------------------------------------------------------------------------
+[resnet18_pruned50] Starting at uptime 2125.39s...
+------------------------------------------------------------------------
+[resnet18_pruned50] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned50 from rep 1/7
+WARNING: System uptime is 35 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/resnet18_pruned50
+[resnet18_pruned50] Execution failed (exit code 0)!
+Retrying mobilenet_v3_small_pruned50...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned50] Starting at uptime 2159.61s...
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned50] Incomplete run found, resuming...
+Resuming /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned50 from rep 1/7
+WARNING: System uptime is 36 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+Power-loss stop requested after rep 2/7. Resume with: python3 pilot.py --resume /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/mobilenet_v3_small_pruned50
+[mobilenet_v3_small_pruned50] Execution failed (exit code 0)!
+Writing session log to /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session4/session_log.md...
+session_log.md created.
+Committing session results to git...
