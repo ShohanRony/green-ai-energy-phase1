@@ -684,6 +684,18 @@ no rerun of already-collected data.**
 - **Could this change the conclusions?** Prevents an unpinned/pinned CPU scheduling inconsistency between GPU and CPU conditions and across sessions.
 - **Status:** Harness patched, unpinned dataset moved to `results_stage4b/main_session1_unpinned/`, Session 1 re-run completed 2026-10-07.
 
+## D20. False power stop and incomplete reps in Sessions 3 and 4
+
+- **What was found:** Sessions 3 and 4 executed, but each condition stopped after 1 repetition (yielding 2 rows instead of 8 in `windows.csv`). The runner script falsely reported them as successful because the measurement harness exited with code 0.
+- **How the miss happened:** A stale `.power_state/stop` marker was left behind when Session 3 was previously interrupted while on battery. The `power_watchdog.py` only clears this marker on a strict transition from battery to AC; starting the watchdog while already on AC left the stale marker in place. `pilot.py` stops safely and returns exit code 0 when it encounters the stop marker, which bypassed the exit-code checks in `run_stage4b_session.sh`.
+- **Decision:**
+  1. Move the truncated datasets to `results_stage4b/main_session3_aborted` and `results_stage4b/main_session4_aborted` to preserve the aborted data without deleting it.
+  2. Delete the stale `.power_state/stop` marker.
+  3. Update `scripts/run_stage4b_session.sh` to validate the row count of `windows.csv` (`expected_rows=$((REPEATS * 4 + 1))`) and the stop marker logic before advancing.
+  4. Re-run Sessions 3 and 4 tomorrow, each after a fresh reboot and about 2 minutes' wait, satisfying the 2-calendar-day spread constraint.
+- **Timing:** AFTER — Sessions 3 and 4 were run but data audit revealed truncation. Completed 2026-10-07.
+- **Status:** Runner script fixed, truncated folders renamed, stale marker deleted. Re-runs of Sessions 3 and 4 are pending for tomorrow.
+
 ---
 
 ## Anomalies noted, not deviations

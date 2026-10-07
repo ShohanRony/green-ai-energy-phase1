@@ -257,7 +257,8 @@ run_condition() {
   "${cmd[@]}" || status=$?
 
   # Power interruption recovery loop
-  while [[ $status -ne 0 && -f ".power_state/stop" ]]; do
+  # pilot.py returns 0 when it stops safely on a power marker, so we check the marker directly.
+  while [[ -f ".power_state/stop" ]]; do
     local int_start
     int_start=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
     echo "[$cond] Interrupted by power loss marker at $int_start. Waiting for AC power recovery..."
@@ -282,8 +283,14 @@ run_condition() {
     "${cmd[@]}" || status=$?
   done
 
-  if [[ $status -ne 0 || ! -s "$cond_dir/summary.csv" ]]; then
-    echo "[$cond] Execution failed (exit code $status)!"
+  local expected_rows=$((REPEATS * 4 + 1))
+  local actual_rows=0
+  if [[ -f "$cond_dir/windows.csv" ]]; then
+    actual_rows=$(wc -l < "$cond_dir/windows.csv")
+  fi
+
+  if [[ $status -ne 0 || ! -s "$cond_dir/summary.csv" || $actual_rows -ne $expected_rows ]]; then
+    echo "[$cond] Execution failed (exit code $status, expected $expected_rows rows but got $actual_rows)!"
     return 1
   fi
 
