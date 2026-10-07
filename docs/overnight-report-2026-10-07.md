@@ -108,7 +108,7 @@ Each subsequent session requires a clean reboot:
 * **Runner script:** `scripts/run_stage4b_session.sh --kind main --session 1`
 * **Log location:** `results_stage4b/main_session1/runner.log`
 * **Session log:** `results_stage4b/main_session1/session_log.md`
-* **Timing:** Start: 2026-10-06T20:22:34Z, End: 2026-10-06T22:15:43Z (elapsed: 1h 53m 09s).
+* **Timing:** Start: 2026-10-07T04:35:23Z, End: 2026-10-07T06:28:31Z (elapsed: 1h 53m 08s).
 * **Conditions executed:** 30 / 30 completed cleanly.
-* **Results commit:** `d321598` (pushed to origin/master).
+* **Results commit:** `f574db5` (pushed to origin/master).
 * **Integrity verification:** All 30 conditions verified (28 window rows [7 repeats x 4 phases], governor=performance, affinity=pcores on CPU, system = gpu + package on CUDA, zero power anomalies).
