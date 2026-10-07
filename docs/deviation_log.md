@@ -680,9 +680,9 @@ no rerun of already-collected data.**
   3. Rename `results_stage4b/main_session1` to `results_stage4b/main_session1_unpinned` via `git mv` and designate it as an exploratory/unpinned comparison dataset outside the confirmatory matrix.
   4. Re-run Stage 4b Session 1 with all 30 conditions pinned to P-cores following a clean reboot.
 - **Fresh-boot guard:** The fresh-boot guard stayed at 30 minutes (`--max-uptime-min 30`).
-- **Timing:** AFTER — caught immediately post-run in audit before Session 2.
+- **Timing:** AFTER — caught immediately post-run in audit before Session 2. Completed 2026-10-07.
 - **Could this change the conclusions?** Prevents an unpinned/pinned CPU scheduling inconsistency between GPU and CPU conditions and across sessions.
-- **Status:** Harness patched, unpinned dataset moved to `results_stage4b/main_session1_unpinned/`, Session 1 slated for clean-boot re-run with all conditions pinned.
+- **Status:** Harness patched, unpinned dataset moved to `results_stage4b/main_session1_unpinned/`, Session 1 re-run completed 2026-10-07.
 
 ---
 
