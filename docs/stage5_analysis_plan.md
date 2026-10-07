@@ -539,3 +539,45 @@ Stage 4b design draft (`85d966c`) is superseded by the finalized Stage 4b specif
 substituting the 9 `_bnrecal` conditions for energy measurement and designating the 9 `_ft` recovery models as
 accuracy-only controls.
 
+**A4 — 2026-10-08. DRAFT, pending supervisor review.** Six confirmatory sessions instead of four
+(appended only; no registered text above is edited).
+- **Change:** the Stage 4b confirmatory matrix (`stage4b-design.md`) is set at **exactly six**
+  `main` sessions, not four. The count is fixed now. There is no stopping rule, so no session is
+  added or dropped based on results.
+- **Reason:** four sessions give 3 degrees of freedom (95% t-multiplier 3.18). Six give 5 (t = 2.57),
+  so intervals are about 19% narrower. The original "four" was set by a time budget, which no longer
+  applies.
+- **What has been looked at before this amendment:** only descriptive per-condition means in the
+  per-session `session_log.md` files (Sessions 1 and 2). No inferential statistic (test, interval,
+  equivalence bound) has been computed on Stage 4b data.
+- **Session status:** Session 1 (pinned re-run, D19) and Session 2 are valid. The first attempts at
+  Sessions 3 and 4 are void (D20; kept under `results_stage4b/main_session{3,4}_aborted/`). Sessions
+  3 and 4 are re-run, then 5 and 6 are added. Order seeds stay at `1000 + N`.
+- **Protocol:** each session runs after a fresh reboot, with no other use of the laptop. The six
+  sessions span **at least 3 calendar days**.
+
+**A5 — 2026-10-08. DRAFT, pending supervisor review.** A real prune + fine-tune arm.
+- **Change:** the zero-finetune arm and the `_bnrecal` arm are kept unchanged. The 3-epoch `_ft`
+  arm (A3: accuracy-only control) is superseded by one **20–30 epoch fine-tune from the pruned
+  weights** for `pruned30` and `pruned50` (`pruned70` optional) on all three architectures. It is
+  labelled "prune + fine-tune (not post-training)" everywhere it appears. Exact epochs/LR schedule are
+  fixed in the training script before training starts and logged; accuracy uses §6's rule unchanged.
+- **Energy:** measured, not inferred. One extra session runs once the models exist, with the same
+  harness and settings as `main`. It is reported as its own arm, not pooled into the six-session
+  matrix.
+- **Reason:** no pruned state currently reaches 99% of FP32 (D18), so the energy-vs-accuracy
+  comparison has no deployable pruned point to test.
+
+**A6 — 2026-10-08. DRAFT, pending supervisor review.** Realistic-regime sensitivity pass
+(energy only).
+- **Change:** a separately labelled pass at **224×224 input, batch 1 and batch 16**, for the same
+  three architectures and compression states where the format allows. Weights may be random or
+  ImageNet-initialised because energy does not depend on weight values. The pass makes **no accuracy
+  claims** and is **never pooled** with the 32×32 data.
+- **Reason:** 32×32 at batch 1 on an RTX 3050 may be launch- or host-bound. This pass tests whether
+  the energy ratios hold when the GPU is not.
+- **Analysis:** descriptive and exploratory under §9. It adds no confirmatory hypothesis.
+
+Planned but not yet written as amendments (each gets its own dated entry when done): wall-meter
+ground truth (supervisor D-E), Zenodo deposit of the registered design before any Stage 5 statistic
+(D-F), and the methodology-study framing of the thesis (D-A).
