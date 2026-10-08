@@ -6,21 +6,22 @@ U=shohan
 REPO=/home/$U/green-ai-research/green-ai-energy-phase1
 STATE=/home/$U/.stage4b_auto
 
-# 1. Narrow passwordless rule: only reboot and disabling this one service.
+# 1. Narrow passwordless rule: reboot and enable/disable this one service.
 cat > /tmp/stage4b-auto.sudoers <<EOF
-$U ALL=(root) NOPASSWD: /usr/bin/systemctl reboot, /usr/bin/systemctl disable stage4b-auto.service
+$U ALL=(root) NOPASSWD: /usr/bin/systemctl reboot, /usr/bin/systemctl disable stage4b-auto.service, /usr/bin/systemctl enable stage4b-auto.service
 EOF
 visudo -cf /tmp/stage4b-auto.sudoers
 install -m 0440 /tmp/stage4b-auto.sudoers /etc/sudoers.d/stage4b-auto
 
 # 2. Queue: session + not-before (UTC). S5/S6 gated so sessions span 3 days in both UTC and local time.
 mkdir -p "$STATE"
+if [[ ! -s "$STATE/queue" ]]; then
 cat > "$STATE/queue" <<EOF
-3 0
 4 0
 5 $(date -u -d 2026-10-08T00:00:00Z +%s)
 6 $(date -u -d 2026-10-09T00:00:00Z +%s)
 EOF
+fi
 rm -f "$STATE/HALTED"
 chown -R $U:$U "$STATE"
 
