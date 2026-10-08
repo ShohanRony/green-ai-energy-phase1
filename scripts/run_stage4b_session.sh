@@ -48,6 +48,7 @@ OUT_BASE="$REPO_ROOT/results_stage4b/$SESSION_DIR_NAME"
 mkdir -p "$OUT_BASE"
 RUNNER_LOG="$OUT_BASE/runner.log"
 
+exec 3>&1 4>&2
 exec > >(tee -a "$RUNNER_LOG") 2>&1
 
 echo "========================================================================"
@@ -414,6 +415,14 @@ with open(log_path, "w") as f:
 print("session_log.md created.")
 EOF
 
+echo "========================================================================"
+echo "Stage 4b Runner Completed: $SESSION_DIR_NAME at $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+echo "========================================================================"
+
+# Restore stdout and stderr so git commit/push does not write into runner.log
+exec 1>&3 2>&4 3>&- 4>&-
+sleep 1
+
 # --- Commit Session Results ---
 if [[ -z "$STAGE4B_DRYRUN" ]]; then
   echo "Committing session results to git..."
@@ -421,7 +430,3 @@ if [[ -z "$STAGE4B_DRYRUN" ]]; then
   git commit -m "Results: Stage 4b $KIND session $SESSION" || true
   git push origin master || echo "WARNING: Git push failed, commit left locally."
 fi
-
-echo "========================================================================"
-echo "Stage 4b Runner Completed: $SESSION_DIR_NAME at $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-echo "========================================================================"
