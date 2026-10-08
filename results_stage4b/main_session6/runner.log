@@ -1,0 +1,222 @@
+========================================================================
+Starting Stage 4b Runner: kind=main session=6 at 2026-10-08T17:16:18Z
+Output directory: /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session6
+========================================================================
+[Preflight] Checking tracked files git status...
+[Preflight] Ensuring CPU governor is performance...
+[Preflight] Checking platform profile...
+[Preflight] Checking AC online...
+[Preflight] Checking foreign GPU processes...
+[Preflight] Checking power_watchdog...
+Starting power_watchdog in background...
+[Preflight] Checking for stale power stop marker...
+[Preflight] System boot time: 2026-10-08 23:14:08, uptime: 131.49s
+Generating presentation order for main session 6...
+Generated order with seed 1006: 30 conditions.
+------------------------------------------------------------------------
+[resnet18_pruned50] Starting at uptime 131.53s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[resnet18_pruned50] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned30_bnrecal] Starting at uptime 358.78s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[mobilenet_v3_small_pruned30_bnrecal] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_int8] Starting at uptime 585.06s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[efficientnet_b0_int8] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_pruned70_bnrecal] Starting at uptime 811.17s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[efficientnet_b0_pruned70_bnrecal] Successfully finished.
+------------------------------------------------------------------------
+[resnet18_int8] Starting at uptime 1037.55s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[resnet18_int8] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_pruned50_bnrecal] Starting at uptime 1263.57s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[efficientnet_b0_pruned50_bnrecal] Successfully finished.
+------------------------------------------------------------------------
+[resnet18_pruned30_bnrecal] Starting at uptime 1489.99s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[resnet18_pruned30_bnrecal] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned70_bnrecal] Starting at uptime 1716.23s...
+------------------------------------------------------------------------
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[mobilenet_v3_small_pruned70_bnrecal] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_pruned30] Starting at uptime 1942.56s...
+------------------------------------------------------------------------
+WARNING: System uptime is 32 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[efficientnet_b0_pruned30] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_fp32_cpu] Starting at uptime 2168.85s...
+------------------------------------------------------------------------
+WARNING: System uptime is 36 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[efficientnet_b0_fp32_cpu] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned30] Starting at uptime 2394.92s...
+------------------------------------------------------------------------
+WARNING: System uptime is 40 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[mobilenet_v3_small_pruned30] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_pruned50] Starting at uptime 2621.28s...
+------------------------------------------------------------------------
+WARNING: System uptime is 44 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[efficientnet_b0_pruned50] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_fp32] Starting at uptime 2847.63s...
+------------------------------------------------------------------------
+WARNING: System uptime is 47 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[efficientnet_b0_fp32] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned50] Starting at uptime 3073.90s...
+------------------------------------------------------------------------
+WARNING: System uptime is 51 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[mobilenet_v3_small_pruned50] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp32_cpu] Starting at uptime 3300.17s...
+------------------------------------------------------------------------
+WARNING: System uptime is 55 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[mobilenet_v3_small_fp32_cpu] Successfully finished.
+------------------------------------------------------------------------
+[resnet18_pruned30] Starting at uptime 3526.17s...
+------------------------------------------------------------------------
+WARNING: System uptime is 59 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[resnet18_pruned30] Successfully finished.
+------------------------------------------------------------------------
+[resnet18_pruned70] Starting at uptime 3752.50s...
+------------------------------------------------------------------------
+WARNING: System uptime is 63 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[resnet18_pruned70] Successfully finished.
+------------------------------------------------------------------------
+[resnet18_fp32_cpu] Starting at uptime 3978.76s...
+------------------------------------------------------------------------
+WARNING: System uptime is 66 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[resnet18_fp32_cpu] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned50_bnrecal] Starting at uptime 4204.87s...
+------------------------------------------------------------------------
+WARNING: System uptime is 70 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[mobilenet_v3_small_pruned50_bnrecal] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_pruned70] Starting at uptime 4431.21s...
+------------------------------------------------------------------------
+WARNING: System uptime is 74 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[efficientnet_b0_pruned70] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_pruned30_bnrecal] Starting at uptime 4657.59s...
+------------------------------------------------------------------------
+WARNING: System uptime is 78 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[efficientnet_b0_pruned30_bnrecal] Successfully finished.
+------------------------------------------------------------------------
+[efficientnet_b0_fp16] Starting at uptime 4883.96s...
+------------------------------------------------------------------------
+WARNING: System uptime is 81 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[efficientnet_b0_fp16] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp32] Starting at uptime 5110.29s...
+------------------------------------------------------------------------
+WARNING: System uptime is 85 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[mobilenet_v3_small_fp32] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_int8] Starting at uptime 5336.53s...
+------------------------------------------------------------------------
+WARNING: System uptime is 89 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/measurement_env/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[mobilenet_v3_small_int8] Successfully finished.
+------------------------------------------------------------------------
+[resnet18_pruned50_bnrecal] Starting at uptime 5562.56s...
+------------------------------------------------------------------------
+WARNING: System uptime is 93 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[resnet18_pruned50_bnrecal] Successfully finished.
+------------------------------------------------------------------------
+[resnet18_fp32] Starting at uptime 5788.86s...
+------------------------------------------------------------------------
+WARNING: System uptime is 96 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[resnet18_fp32] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_pruned70] Starting at uptime 6015.16s...
+------------------------------------------------------------------------
+WARNING: System uptime is 100 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[mobilenet_v3_small_pruned70] Successfully finished.
+------------------------------------------------------------------------
+[resnet18_pruned70_bnrecal] Starting at uptime 6241.41s...
+------------------------------------------------------------------------
+WARNING: System uptime is 104 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[resnet18_pruned70_bnrecal] Successfully finished.
+------------------------------------------------------------------------
+[resnet18_fp16] Starting at uptime 6467.66s...
+------------------------------------------------------------------------
+WARNING: System uptime is 108 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[resnet18_fp16] Successfully finished.
+------------------------------------------------------------------------
+[mobilenet_v3_small_fp16] Starting at uptime 6693.94s...
+------------------------------------------------------------------------
+WARNING: System uptime is 112 min, over the 30-min fresh-boot threshold (stage4_preflight_findings.md: every observed power-regime dip happened in a long-uptime session; reboot before starting a real matrix run).
+/home/shohan/green-ai-research/green-ai-energy-phase1/pilot.py:64: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml as nv
+[mobilenet_v3_small_fp16] Successfully finished.
+Writing session log to /home/shohan/green-ai-research/green-ai-energy-phase1/results_stage4b/main_session6/session_log.md...
+session_log.md created.
+========================================================================
+Stage 4b Runner Completed: main_session6 at 2026-10-08T19:09:28Z
+========================================================================
