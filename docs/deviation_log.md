@@ -799,6 +799,18 @@ no rerun of already-collected data.**
   measurement session until closed.
 - **Mitigation:** none yet — blocked on sudo access; see `docs/incidents/2026-10-09/` for the
   full evidence trail and the exact remediation commands queued for the researcher to run.
+- **Appended 2026-10-09, remediated by the researcher directly:** at approximately 21:38-21:40,
+  the researcher disabled `p8-auto.service` and renamed its unit file to
+  `/etc/systemd/system/p8-auto.service.quarantined-20261009`, and renamed the `stage4b-auto`
+  sudoers rule to `/etc/sudoers.d/stage4b-auto.disabled-20261009` (the dotted filename takes it
+  outside sudoers' `#includedir` pattern, deactivating it without a `visudo` edit). Confirmed
+  from the quarantined unit file text directly: **`p8-auto.service` ran as `User=root`** — a
+  separate fact from `stage4b-auto.service`, which **runs as `User=shohan`**. The sudoers grant
+  removed (passwordless `systemctl reboot` / `enable`/`disable stage4b-auto.service`) governed
+  `stage4b-auto.service` specifically — since that unit runs as the normal user, the grant was a
+  no-password reboot/toggle convenience, not a path to a root shell by itself. It remains true,
+  independently, that `p8-auto.service` (now quarantined, not removed by this rename) did run as
+  root while it was enabled — these are two distinct facts, not one.
 
 ## D24. Both NVML interfaces, plus RAPL package-0 and psys, now logged as separate columns every window
 
