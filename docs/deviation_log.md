@@ -769,6 +769,26 @@ no rerun of already-collected data.**
   researcher action). Training is **not** being resumed as part of this review. Scripts committed
   unchanged in a dedicated commit (see that commit's message) so the historical record matches what
   actually ran; `docs/p8_spec.md` documents the campaign's design from code and logs only.
+- **Correction, appended 2026-10-10 (this entry's "still enabled" status line above is now stale,
+  left as-is per this log's append-only discipline):**
+  - **The fine-tune job did progress before the failure loop, and separately stopped cleanly.**
+    `ft_resnet18_30_1001` is not only "320+-restart failure loop" — on its most recent attempt it
+    reached **epoch 4 of 25** (logged train/val accuracy: epoch 1 0.9514/0.9080, epoch 2
+    0.9613/0.9104, epoch 3 0.9626/0.9022, epoch 4 **0.9653/0.9006**), then was stopped by a **clean,
+    explicit `systemctl stop` at 20:00:18** — confirmed from `journalctl -u p8-auto.service` for
+    that exact boot showing one `Started`/`Stopping`/`Deactivated successfully`/`Stopped` sequence,
+    no `FAILURE` exit code, no OOM-killer or segfault entry in the kernel log for that window. This
+    is a deliberate stop, not a continuation of the `weights_only` crash loop (full detail:
+    `docs/p8_spec.md` §"The fine-tune job that reached epoch 4").
+  - **"Still `enabled`" is stale.** `docs/incidents/2026-10-09/`'s Block A review found it enabled;
+    `D23`'s later append records that at approximately 21:38-21:40 the same day, the researcher
+    **disabled `p8-auto.service` directly and renamed its unit file to
+    `/etc/systemd/system/p8-auto.service.quarantined-20261009`** — a separate, later action than
+    this entry's original review. Re-checked directly, read-only, 2026-10-10: `systemctl is-enabled
+    p8-auto.service` returns `not-found` (the unit name no longer resolves, because the unit file
+    was renamed out from under it) and `systemctl is-active p8-auto.service` returns `inactive`.
+    **Current status: disabled and inactive, not enabled** — this entry's original "Status" line is
+    corrected by this paragraph, not edited in place.
 
 ## D23. Sudoers and reboot-automation exposure (containment review, Block A)
 

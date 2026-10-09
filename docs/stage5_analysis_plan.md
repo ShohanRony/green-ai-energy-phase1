@@ -677,3 +677,225 @@ TorchScript vs. a CUDA-Graphs-style compiled runtime matter further.
   never pooled with the main confirmatory matrix.
 - **Not executed as part of this review** — draft only, per the researcher's "no data collection"
   order.
+
+**A7r1 — 2026-10-10. Dated revision of A7 (A7 remains DRAFT; its text above is unchanged — this
+revision stands alongside it, per §12's own append-only rule, which this entry follows unlike A1/A2).
+No outcome statistic has been computed on Stage 4b data in drafting this revision — see (g) below.**
+
+**(a) GPU-block baseline is FP32-eager, not FP32-TorchScript, as actually collected — A7 point 2
+corrected for the GPU block only.** Checked directly: every `main_session1`-`main_session6` (and
+`main_session1_unpinned`, `main_session3_aborted`, `main_session4_aborted`) directory has only
+`{model}_fp32` conditions, no `{model}_fp32_ts` or equivalent — the x86-GPU block as actually run
+never collected a TorchScript GPU baseline. A7 point 2's "FP32-TorchScript, not FP32-eager" baseline
+registration is correct for the CPU blocks (each x86-CPU/M1-CPU session, per (e) below, explicitly
+includes its own FP32-TS condition) but was never true for the x86-GPU block's six sessions as they
+already exist. **Decision, effective immediately for the GPU block:**
+- GPU-block ratios use **FP32-eager** as the within-session baseline, every ratio for that block
+  labelled **runtime-confounded (the phase-1 audit's C1)** — the same caveat A7 was written to
+  resolve for the CPU blocks, still open for the supplementary GPU block.
+- A **bridged version** is also reported: `bridged ratio = eager-baseline ratio × (eager/TS factor
+  from series R)`, with the factor's own between-session uncertainty (A8r1 below) propagated into
+  the bridged ratio's interval (error propagation on the product of two independent ratios: relative
+  variances add).
+- **Decision rule D2** (full statement in (f) below) determines which version is primary for the GPU
+  block, once series R exists: if FP32-TS is within ±5% (TOST-equivalent) of FP32-eager, the confound
+  is bounded and the existing eager-baseline ratio stays primary with the bound noted; otherwise the
+  bridged version becomes primary for the GPU block.
+- CPU blocks are unaffected by this correction — they already carry their own FP32-TS baseline inside
+  every session (e), so no bridging is needed there regardless of what D2 concludes.
+
+**(b) Confirmatory family narrowed; Holm-Bonferroni over ~30 per-state contrasts removed — A7 point 6
+corrected.** A7 point 6 registered Holm-Bonferroni "across [the] full family" of compressed-vs-baseline
+ratios per block — in practice, roughly 30 per-state contrasts (CPU block: FP32-TS, FP32-eager, INT8,
+pruned30/50/70, `_bnrecal` variants, × 3 architectures). That is replaced:
+- **The confirmatory family is RQ2's H2 test (β < 1, see (d)) — one test per primary block (x86-CPU,
+  M1-CPU) — two tests total.** Holm-Bonferroni is applied across those two, not across per-state
+  contrasts. This is **decision rule D3** (full statement in (f)).
+- **Every per-state ratio (compressed state ÷ same-block baseline) is estimation, not hypothesis
+  testing:** reported as the geometric-mean ratio with its 95% t-interval (df = sessions − 1, per A7
+  point 3), no p-value attached, no multiplicity adjustment applied to it individually.
+- **The ±5% equivalence question** (used by D2 above, and anywhere else a state's ratio is checked
+  against a bound) is reported as **resolved** or **unresolved** only — whether the state's own
+  t-interval falls entirely inside ±5%, entirely outside, or straddles it — not as a p-value, and not
+  folded into the Holm-adjusted family.
+- x86-GPU (supplementary) is descriptive only throughout, consistent with A7 point 1 — it was never
+  part of the confirmatory family and still is not.
+
+**(c) Instrument axis: checked directly whether any session 1-6 artifact records the cumulative NVML
+counter — none does; A7 point 9 corrected for the affected data.**
+- Checked every `environment.json` under `results_stage4b/` (all 9 directories, all conditions):
+  `"codecarbon": false` on every single run — no CodeCarbon-paired reading exists anywhere in
+  sessions 1-6, confirming §3's existing "no CodeCarbon gap" finding still holds for this data too,
+  not just the earlier Stage 4 data it was originally checked against.
+  `results_stage4b/main_session5/resnet18_fp32/environment.json` and seven sibling files.
+- Checked the `windows.csv` **schema** for a pre-D24 session (`main_session1`) against a session that
+  ran before D24's commit but is otherwise representative (`main_session6`, last condition start
+  2026-10-08T19:05:42Z — D24 committed 2026-10-09T21:57:54+06:00, after every session 1-6 directory
+  was fully collected): identical 22-column header in both, with exactly one GPU-energy field
+  (`gpu_energy_j`) and no second NVML-interface column anywhere. **No session 1-6 artifact of any
+  kind — CodeCarbon or raw window data — records the cumulative NVML counter
+  (`nvmlDeviceGetTotalEnergyConsumption`).** D24's dual-interface logging genuinely applies to new
+  data only.
+- **A7 point 9 corrected:** its specification-curve "instrument axis... now possible for every GPU
+  condition without re-measuring, since D24 logs both NVML interfaces... every window already" is
+  true only for runs collected after D24's commit (`d82cd95`, 2026-10-09T21:57:54+06:00). For
+  sessions 1-6, the instrument axis of the specification curve cannot be computed post hoc — it
+  applies to new data collected under D26/D24 going forward, not retroactively to the existing
+  confirmatory matrix. This is **decision rule D1** (full statement in (f)).
+
+**(d) RQ2 model specification — A7 point 7 corrected: model is a FIXED effect, not random; β
+estimated from pruned states only; MAC counting stated.**
+- Corrected model: `log(r) ~ β·log(MAC ratio) + model + (1|session)`, **model as a fixed effect with
+  3 levels** (ResNet-18, MobileNetV3-Small, EfficientNet-B0), session random — not
+  `(1|model) + (1|session)` as A7 point 7 had it. With only 3 architectures, treating model as random
+  estimates a variance component from 3 groups, which is poorly identified; a fixed effect with 3
+  levels is the better-justified choice here and is what is actually registered now.
+- **β is estimated from the pruned states only** (pruned30/50/70, and their `_bnrecal` counterparts
+  where meaningful per (e)) — FP16 and INT8 are excluded from the β fit because their MAC ratio is
+  1.0 by construction (§5: MACs are identical across precision states at fixed architecture; only the
+  bit-width changes), which would contribute rows with zero variance on the predictor and distort the
+  slope estimate rather than inform it. FP16/INT8 are still reported (ratio, CI, equivalence call per
+  (b)) — just not used to fit β.
+- **How MACs are counted, stated here as the order requires:** the realised-MACs figures from
+  Stage 2's `torch-pruning` dependency-graph report (§5's table — e.g. ResNet-18 pruned30 = 51.6%
+  MACs reduction), not the nominal channel ratio and not a re-derivation — the same source §5 already
+  designates as authoritative for the FLOPs-ratio exclusion test, reused here for consistency rather
+  than computed a second way.
+- This is **decision rule D4** (full statement in (f)).
+
+**(e) Session counts fixed now, before any primary-block session is run — A7 point 12 resolved.**
+- **x86-CPU: 6 sessions. M1-CPU: 6 sessions. x86-GPU: 6 sessions** (already collected,
+  `main_session1`-`main_session6`). All three blocks now have a fixed count; none is open.
+- **Each CPU-block session (x86-CPU and M1-CPU) contains:** FP32-TorchScript (block baseline),
+  FP32-eager (collected specifically to let D2 be evaluated on the CPU blocks too, not just
+  bridged-via-GPU-series-R), INT8, and pruned30/50/70 — each pruned state paired with its `_bnrecal`
+  counterpart **where meaningful**, i.e. where `_bnrecal` recalibration is expected to change the
+  checkpoint's behavior at all (not for states already at or near chance accuracy regardless of
+  recalibration — carried over from the existing `_bnrecal` collapse findings,
+  `docs/bnrecal_cpu_equivalence.md`).
+- **No FP16 on CPU** — `docs/feasibility_x86_cpu_block.md`'s own feasibility finding (54-65× slower,
+  software-emulated, not a real CPU FP16 execution path) rules it out; this was already established,
+  restated here only so the fixed condition list in this amendment is self-contained.
+- **No conditional add/drop of sessions** — the count is fixed now, before any primary-block session
+  exists, matching A4's existing "no stopping rule" precedent for the GPU block.
+
+**(f) The audit's D1-D5 decision rules, written out in full.** A7 point 3 referenced "the phase-1
+audit's own upgraded analysis plan... its 'D1-D5' decision framework" as the source of the
+session-as-replicate-unit estimator, but no document in this repository has ever stated D1-D5 in
+full — they are written out here, synthesized from what A7/A7r1 and the researcher's own decisions
+establish, since the original external document is not part of this repository. **These are
+decision rules — pre-declared criteria that resolve a specific open methodological question once
+the relevant data exists — distinct from `deviation_log.md`'s own D-numbered entries (D1-D27),
+which record deviations/incidents, not decision rules. The name collision is inherited from the
+audit's own terminology, not introduced here.**
+- **D1 (instrument axis).** If the wall-derived energy delta (once the P1 wall-meter protocol exists,
+  (j) below) agrees within ±5% (after adapter efficiency) with `delta(NVML power-usage + RAPL
+  package)` — this project's existing validated backend — **keep the backend**, report the agreement
+  as the instrument-axis finding. If the cumulative NVML/RAPL-psys counter agrees with the wall meter
+  instead, **Stage 4b's GPU numbers need a rerun** on the cumulative interface. If **neither** agrees
+  within ±5%, **wall energy is primary** for any system-level claim going forward, and every
+  instrument this project uses is reported as a disclosed estimator of it, not as ground truth.
+  Applies to data collected after D24/D26 only, per (c) — cannot be evaluated on sessions 1-6.
+- **D2 (runtime confound).** If FP32-TorchScript is within ±5% (TOST equivalence, (f) of A8r1 below)
+  of FP32-eager, for a given block, the eager-vs-TS confound is bounded and the existing baseline for
+  that block stays primary (with the bound disclosed). Otherwise, the bridged ratio ((a) above) is
+  primary for that block. Evaluated once series R (A8/A8r1) exists; CPU blocks can also be checked
+  directly, since each CPU session carries both FP32-TS and FP32-eager itself (e).
+- **D3 (confirmatory family).** The confirmatory family is RQ2's H2 (β < 1) test, one per primary
+  block (x86-CPU, M1-CPU), Holm-Bonferroni across those two tests only. Every per-state ratio is
+  estimation (interval, no p-value); every ±5% equivalence check is reported resolved/unresolved,
+  not as a significance test. Full statement: (b) above.
+- **D4 (RQ2 model and MAC counting).** `log(r) ~ β·log(MAC ratio) + model + (1|session)`, model fixed
+  (3 levels), session random, β fit from pruned states only (MAC ratio ≡ 1 for FP16/INT8 by
+  construction, excluded from the fit), MACs from Stage 2's realised-MACs dependency-graph report.
+  Full statement: (d) above.
+- **D5 (block/platform scope) — the researcher's 2026-10-09 decision, restated here as the fifth
+  decision rule, not a new decision:** x86-CPU and M1-CPU are primary (confirmatory); x86-GPU is
+  supplementary/optional, descriptive only; **no M1-GPU block exists in this project at all** — M1
+  measurement (§10) is CPU-only via `powermetrics`, there was never a planned M1-GPU (MPS) energy
+  measurement arm. Matches A7 point 1 and `deviation_log.md`'s D5 update referenced there; stated in
+  full here per this block's instruction, not newly decided.
+
+**(g) "Looked at" statement, corrected and extended — A7 point 13 revised.** The researcher's own
+descriptive spot checks, not previously recorded in this plan, are added, and one prior claim is
+corrected:
+- **Added:** the researcher's descriptive energy spot check of Session 1 — pinned vs. unpinned mean
+  system J/image, **+0.6%**, range **−1.6% to +3.5%** across the compared conditions; and a
+  `_bnrecal`-vs-zero-finetune **energy** comparison, **~1% apart**. Both are descriptive spot checks
+  at the same quality-control level as everything else this statement already lists (per-condition
+  means, never an interval or test) — recorded here so the "what has been looked at" inventory is
+  complete, not because either changes the analysis-freeze status.
+- **Corrected:** A7 point 13 characterised the `_bnrecal`-vs-zero-finetune check as "an accuracy-only
+  comparison, no energy ratio involved" — **this was wrong.** The researcher's own spot check above
+  is an energy comparison between the two arms. The accuracy-only characterisation in A7 is left
+  as-is per §12's append-only rule (not edited in place); this paragraph is the correction of record.
+- **With this addition, the complete "looked at" inventory remains descriptive-only: per-condition
+  means in `session_log.md` files; the pinned-vs-unpinned data-quality check (D19); the
+  `_bnrecal`-vs-zero-finetune accuracy check (D18); and now the two spot checks above. No ratio,
+  interval, or hypothesis test has been computed on Stage 4b energy data at any point up to and
+  including this revision** — consistent with A7's and this block's standing order.
+
+**(h) Net-of-idle baseline, defined before any computation, per `pilot.py`'s actual implementation
+(`summarize()`, confirmed by reading the source directly, not re-derived):** for a given active-phase
+window (`a1` or `a2` of a given rep), idle power is the mean of that **same rep's own two flanking
+idle windows** (`idle_before` and `idle_after` — energy ÷ duration for each, then averaged), **not** a
+single session-wide idle baseline and **not** idle windows borrowed from a different rep. Net-of-idle
+energy for that active window = active-window gross energy − (idle power × active-window duration).
+This is computed per rep, per active phase, then averaged within a condition for the condition-level
+`above_idle_j_mean`/`above_idle_fraction_mean` figures already in every `summary.csv`. Stated here,
+before any net-of-idle computation under this revision, so the definition isn't chosen after seeing
+which one tells a cleaner story — the gross-vs-net sensitivity analysis (§9(b)) uses this exact
+definition as already implemented, no new computation invented for this revision.
+
+**(i) RQ3 backend note — A7 point 11 extended.** x86's INT8 states use the `fbgemm` backend; M1's
+INT8 states use `qnnpack` (`fbgemm` is x86-only, §10). The `state × platform` interaction test (A7
+point 11) therefore has its INT8 cell confounded with a backend change, not platform alone — stated
+here so the interaction test's INT8 result is read as "platform and quantization backend changed
+together," not attributed to platform (architecture) alone. No other state in the matrix carries this
+confound (FP32/FP16/pruned states use the same computational backend family on both platforms).
+
+**(j) Prerequisites for any new primary-block run, effective immediately.** Before any x86-CPU or
+M1-CPU primary-block session (or any new GPU-block session) is collected under this plan:
+1. **D26's AC guard** (`pilot.py`'s `check_ac_power()`) must be active in the harness used — already
+   true for the current `pilot.py`, stated here as a standing precondition, not a new build step.
+2. **The P1 wall-meter protocol must exist and be specified** before it can serve as D1's arbitration
+   reference. It does not exist yet — §12's own list already carries it as "planned but not yet
+   written" (wall-meter ground truth, supervisor D-E). This revision does not write that protocol; it
+   registers it as a gate: D1 cannot be evaluated, and no claim depending on D1's outcome can be made,
+   until it exists. No session is blocked on D1 having been *evaluated* — only on the harness-level
+   AC guard — but D1 itself stays open until the wall-meter protocol is written and run.
+
+**A8r1 — 2026-10-10. Dated revision of A8 (A8 remains DRAFT; its text above is unchanged — this
+revision stands alongside it). Fixes series R's session count and states the D2 equivalence
+computation. Not executed — draft only, per this block's "no data collection" order, same as A8
+itself.**
+
+- **Session count fixed: 4 fresh-boot sessions**, each running the full **33-condition** design A8
+  already specifies — (a) 6 conditions (FP32 eager/TorchScript × CPU/CUDA × 3 architectures) + (b) 27
+  conditions (3 architectures × {FP32, FP16, `pruned50_bnrecal`} × {eager, TorchScript, CUDA Graphs})
+  = 33, matching A8's own (a)+(b) breakdown exactly; A8 left the session count open, fixed here.
+  Seeds **2000 + N** for N = 1..4 (A8's existing seed-family convention, extended to a concrete count).
+- **Why 4, not more:** 4 sessions gives **3 degrees of freedom** for the between-session t-interval
+  on the eager-vs-TS log-ratio, which is what D2 (A7r1(f)) needs — the minimum that lets a
+  between-session SD and a t-based equivalence interval be computed at all (3 sessions would give
+  df=2, wider and more fragile; this follows the same reasoning A4 used to move from 4 to 6 main
+  sessions, applied here to the smaller series-R design instead of re-litigated from scratch).
+- **D2's TOST computation, stated in full:** per session, compute the mean `log(FP32-TS energy /
+  FP32-eager energy)` across that session's reps, for the relevant block (CPU or CUDA) and
+  architecture — this is the within-session replicate A7 point 3's estimator already uses elsewhere,
+  reused here. Across the 4 sessions, compute the mean and SD of these per-session log-ratios (n=4,
+  df=3). Equivalence margin: ±5%, i.e. ±ln(1.05) ≈ **±0.04879** in log units. **Two One-Sided Tests
+  (TOST):** construct the **90% CI** on the between-session mean log-ratio (90%, not 95% — the
+  standard TOST convention: two one-sided tests at α=0.05 each correspond to a 90% two-sided
+  interval), using `t(0.95, df=3) ≈ 2.3534`. **Declare equivalence (D2 "bounded") if this 90% CI
+  falls entirely within [−0.04879, +0.04879]; otherwise D2 concludes "not bounded"** and the bridged
+  ratio (A7r1(a)) becomes primary for that block/architecture.
+- **Between-session SD threshold for equivalence to even be detectable at n=4, stated before any
+  series-R data exists:** the 90% CI half-width is `t × SD / sqrt(n) = 2.3534 × SD / 2`. For this
+  half-width to fit inside the ±0.04879 margin, `SD ≤ 0.04879 × 2 / 2.3534 ≈ 0.0415` (about **4.1%**
+  in log units). **This is a precision/feasibility bound, not a prediction of the outcome:** if
+  series R's actual between-session SD of the log-ratio exceeds ~4.1%, the TOST cannot conclude
+  equivalence at n=4 even if the true mean ratio is exactly 1.0 — the interval would be too wide to
+  fit inside the margin regardless of where it's centred. This is disclosed now so a "not bounded"
+  result arising from insufficient precision (wide SD) is not misread as evidence of a real eager/TS
+  difference without checking which of the two actually happened.
