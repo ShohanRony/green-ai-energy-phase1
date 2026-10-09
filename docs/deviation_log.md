@@ -146,6 +146,11 @@ in these records, it is marked `TODO — not found in records` rather than guess
   been collected as of this log's writing.
 - **Mitigation:** Stage 1-M1, 3-M1, and 4-M1 now explicitly planned (`stage5_analysis_plan.md` §10),
   sequenced after x86 Stage 4, before any cross-platform (RQ3) analysis.
+- **Update, 2026-10-09, recorded as a change made by the researcher, not inferred:** the researcher
+  decided Paper 1 covers an x86-CPU block and an M1-CPU block as **primary** (same protocol), with
+  the x86-GPU block **supplementary**. This changes D5's practical weight — M1 data is no longer
+  only relevant to a secondary cross-platform question (RQ3), it is now needed for one of the two
+  primary blocks of the paper's main result. See `stage5_analysis_plan.md` amendment A7.
 
 ## D6. Batch size
 

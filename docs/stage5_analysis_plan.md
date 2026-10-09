@@ -581,3 +581,99 @@ accuracy-only controls.
 Planned but not yet written as amendments (each gets its own dated entry when done): wall-meter
 ground truth (supervisor D-E), Zenodo deposit of the registered design before any Stage 5 statistic
 (D-F), and the methodology-study framing of the thesis (D-A).
+
+**A7 — 2026-10-09. DRAFT, pending supervisor review. Analysis freeze, per the researcher's
+2026-10-09 Paper-1 framing decision.** No outcome statistic has been computed on Stage 4b data
+in drafting this amendment — see the "what has been looked at" statement below.
+
+1. **Blocks, per the researcher's 2026-10-09 decision (`deviation_log.md` D5 update):** **x86-CPU**
+   and **M1-CPU** are primary (same protocol on both); **x86-GPU** is supplementary. Comparisons
+   are made *within* a block; any comparison *across* blocks is descriptive only, never a
+   confirmatory claim — this directly addresses the phase-1 audit's C5 (RQ3 mixing CPU and GPU
+   devices inside one "ranking") by making the device boundary the block boundary itself, not an
+   afterthought.
+2. **Per-block baseline: FP32-TorchScript**, not FP32-eager. This directly addresses the audit's
+   C1 (baseline eager, compressed states traced, confounding runtime with compression) — every
+   ratio in every block now compares like-runtime to like-runtime. (A8, below, is the dedicated
+   check for whether this choice itself matters.)
+3. **Primary estimator: geometric mean, over sessions, of the within-session ratio `r`**
+   (compressed state ÷ same-block FP32-TorchScript baseline, both from the same session), with a
+   **95% t-interval on `log r`** (`df = sessions − 1`). **Session is the replicate unit** — not
+   the rep, not the window. This is the same estimator the phase-1 audit's own upgraded analysis
+   plan proposed (its "D1-D5" decision framework, `P0` step), adopted here directly rather than
+   re-derived.
+4. **Mann-Whitney U is within-session/exploratory only — never the primary cross-session test.**
+   This **resolves the direct contradiction the audit flagged as C3**: `stage5_analysis_plan.md`
+   §4 (D14) still names Mann-Whitney U on within-session reps as primary; `stage4b-design.md` §5
+   registered per-session ratios as primary instead, without ever reconciling the two. A7 is that
+   reconciliation: §4's Mann-Whitney registration is superseded by this amendment for every
+   confirmatory claim going forward (§4's text is left as-is per §12's append-only rule — this
+   paragraph is the correction of record, not an edit to §4 itself). Mann-Whitney stays useful
+   and reported, but strictly as a within-session repeatability description, consistent with how
+   D14 always reasoned about independence within one session.
+5. **Uptime covariate, pre-declared now, before any session's data is analyzed:** session uptime
+   at measurement time is included as a covariate in the mixed-model robustness check (point 8)
+   specifically because the randomised condition order (already registered) makes uptime a
+   source of unmodeled noise otherwise — pre-declaring it now means it can't be added or dropped
+   later based on whether it changes the result.
+6. **Multiplicity:** one confirmatory family — the compressed-vs-FP32-TorchScript ratios, per
+   block — with Holm-Bonferroni applied across it. Everything else in this plan is estimation,
+   reported without a multiplicity-adjusted p-value.
+7. **RQ2 model, per block:** `log(r) ~ β·log(MAC ratio) + (1|model) + (1|session)`, hypothesis
+   **H2: β < 1**. Run separately per block (x86-CPU, M1-CPU, and — supplementary — x86-GPU), not
+   pooled across blocks, consistent with point 1's within-block-only comparison rule.
+8. **Gross vs. net-of-idle energy: which is primary is declared here, before any session's data
+   is computed against it** — **gross** stays primary (unchanged from §3's existing registration),
+   net-of-idle remains a declared secondary decomposition, not chosen after seeing which one tells
+   a cleaner story.
+9. **Specification curve, reported for every primary ratio:** recomputed across instrument (now
+   possible for every GPU condition without re-measuring, since D24 logs both NVML interfaces and
+   both RAPL domains every window already), boundary (GPU-only / CPU-package / GPU+CPU, same D24
+   data), runtime (eager vs. TorchScript vs. CUDA Graphs — A8), regime, and gross/net. Presented
+   as a distribution against the compression effect, per the audit's own novelty-positioning
+   recommendation — this is the paper's actual differentiator, not a sensitivity-analysis
+   afterthought.
+10. **RQ1 split:** **RQ1a (coverage)** — how much of a wall-meter-derived (once available, P1 in
+    the audit's roadmap) or best-available system energy figure each tool/boundary actually
+    captures. **RQ1b (estimation mode)** — CodeCarbon with hardware counters available vs. forced
+    into its documented TDP/CPU-load fallback (`docs/feasibility_x86_cpu_block.md` §d confirms the
+    forcing mechanism exists and is supported) compared against the same reference. This directly
+    resolves the audit's C4 (RQ1 as previously specified compared a RAPL-backed counter against
+    itself) — RQ1b is where CodeCarbon is actually *estimating*, which is what the proposal's H1
+    is about.
+11. **RQ3, redefined to what can actually be answered:** a **within-CPU** interaction test,
+    `state × platform` (x86-CPU vs. M1-CPU), as primary — not a six-state ranking that silently
+    mixes CPU and GPU devices (the audit's C5). Kendall's tau across states remains descriptive
+    only, per the original plan's own n=6/model low-power caveat (§6(a) area).
+12. **Session count per block is stated here, before any block's data exists, and will not be
+    changed after looking:** carried over from Stage 4b's existing registration (6 sessions,
+    `main_session1`-`main_session6`) for the x86-GPU supplementary block. **x86-CPU and M1-CPU
+    primary-block session counts are not yet fixed** — this is listed as open, not silently
+    defaulted to 6, since no CPU-block session has been run yet (`docs/feasibility_x86_cpu_block.md`
+    §c: zero pruned/TorchScript-FP32 states have ever been measured on either CPU). Fixing this
+    count is a precondition for running any primary-block session, not an afterthought.
+13. **"What has been looked at" statement, in full, as the audit's own framework requires before
+    any amendment claiming an analysis freeze:** only descriptive per-condition means in each
+    session's own `session_log.md` (quality-control level, same discipline as every earlier stage);
+    the pinned-vs-`main_session1_unpinned` comparison (D19, a data-quality check, not an outcome
+    comparison); and the `_bnrecal`-vs-zero-finetune accuracy check (D18, an accuracy-only
+    comparison, no energy ratio involved). **No ratio, interval, or hypothesis test has been
+    computed on any Stage 4b energy data at any point before this amendment was drafted** —
+    consistent with this review's standing order.
+
+**A8 — 2026-10-09. DRAFT, pending supervisor review. Runtime-baseline series R.** Answers A7
+point 2 empirically: does the FP32-eager-vs-TorchScript choice actually matter, and does
+TorchScript vs. a CUDA-Graphs-style compiled runtime matter further.
+
+- **Design:** (a) FP32-eager vs. FP32-TorchScript, CPU and CUDA, all 3 architectures (6
+  conditions); (b) model × {FP32, FP16, `pruned50_bnrecal`} × {eager, TorchScript, CUDA Graphs}
+  (27 conditions). Matches the audit's own P3 "runtime ablation" step.
+- **Protocol:** fresh-boot sessions (same discipline as Stage 4b), seeds **2000 + N** (a third
+  seed family, distinct from this project's standing seed 2026 and the P8 campaign's
+  1001-1003 — chosen specifically so series R's provenance is never confusable with either),
+  **7 reps**, **randomised order**, same guards as the main matrix (governor, platform profile,
+  fresh-boot check, concurrent-GPU guard).
+- **Output location: `results_stage4b_R/`** — kept entirely separate from `results_stage4b/`,
+  never pooled with the main confirmatory matrix.
+- **Not executed as part of this review** — draft only, per the researcher's "no data collection"
+  order.
