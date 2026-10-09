@@ -844,6 +844,73 @@ no rerun of already-collected data.**
   was collected before this patch and does not have these columns; only future runs would. Does
   not change any already-reported number.
 - **Mitigation:** none needed — purely additive logging, primary boundary verified unchanged.
+- **Correction, appended 2026-10-10 (see D25 for full detail):** the two validation numbers quoted
+  above (174.94 J / 280.53 J, ratio 1.60) were run **on battery**, not AC — discovered during a
+  later power-outage review. They are superseded by a clean AC-confirmed re-validation (D25):
+  174.94 J → 299.57 J (power-usage), 280.53 J → 384.87 J (cumulative), ratio 1.29, matching this
+  project's established ~30% over-report finding closely. The validation's *purpose* (confirming
+  all four new columns populate and the primary boundary is unaffected by the flag) still holds
+  either way — only the specific numbers quoted as examples were non-representative.
+
+## D25. Power outage during the 2026-10-09 evening session — D24's validation runs were on battery
+
+- **Discovery:** while investigating a researcher-reported power outage, cross-referencing
+  `power_watchdog.log`, file timestamps, and kernel/systemd journal entries revealed the D24
+  validation runs (and likely other work in that session) ran on battery, not AC, and the laptop
+  most likely lost power entirely for a period that evening.
+- **Timeline, from independent (non-project) system evidence, not inferred:**
+  - **19:57:41** — kernel: `ACPI: AC: AC Adapter [ACAD] (on-line)` — AC confirmed connected.
+  - **21:08:44** — `apt-daily.service` skipped, `ConditionACPower=true` unmet — **on battery**.
+  - **21:30:05** — `anacron.service` skipped, same condition unmet — **on battery**, confirmed a
+    second time.
+  - **22:15:16** — every AC-gated systemd timer (`anacron.timer`, `apt-daily.timer`,
+    `apt-daily-upgrade.timer`, `dpkg-db-backup.timer`, `fstrim.timer`) shows "Deactivated
+    successfully" / "Stopped" simultaneously — the signature of a shutdown, not a graceful
+    AC-restore event (a restore would not stop these timers).
+  - **00:07:02 (next day)** — system boots fresh; kernel logs `AC Adapter [ACAD] (on-line)` again
+    as part of boot-time hardware enumeration.
+  - **Most likely reading of this evidence: the battery ran out and the machine powered off
+    around 22:15, then was rebooted at 00:07 after AC was reconnected.** Not independently
+    confirmed beyond what's listed — no shutdown-reason log survives a power-loss event by
+    definition.
+  - `power_watchdog.log` itself is uninformative here: it only ever logged one line ("starting,
+    on_ac=True") and belongs to the P8 campaign's own watchdog instance (`auto_p8.sh` starts its
+    own), not a general-purpose monitor running continuously through this window — `pilot.py`
+    itself never starts a watchdog, it only passively checks a stop-marker file
+    (`power_state.py`). This project has no continuous AC-status log independent of whichever
+    script happened to start a watchdog at the time.
+- **The two D24 validation runs almost certainly happened on battery.** They ran shortly before
+  the D24 commit (`d82cd95`, 21:57:54), in the same window as the researcher's p8-auto/sudoers
+  remediation (~21:38-21:40, D23's appended note) — squarely inside the confirmed-battery period
+  (21:08:44-21:30:05, extending until the apparent 22:15 power loss). `pilot.py` has no guard
+  checking AC status before a run (unlike its governor/platform-profile/fresh-boot guards) — this
+  is itself a gap, not just an explanation for this one incident.
+- **Confirmed by a clean re-validation on AC** (2026-10-10, AC verified via
+  `/sys/class/power_supply/ACAD/online` before and after, `resnet18_fp32`, 3 reps, scratch dirs
+  deleted after — no measurement retained):
+
+  | | battery (original, mislabeled) | AC (re-validated) |
+  |---|---|---|
+  | `nvml_power_usage_energy_j` (5.005s window) | 174.94 J (≈35.0 W) | 299.57 J (≈59.85 W) |
+  | `nvml_cumulative_energy_j` | 280.53 J (≈56.1 W) | 384.87 J (≈76.9 W) |
+  | cumulative/power_usage ratio | **1.60** | **1.29** |
+
+  The AC figures match this project's own established baseline closely: ~60W is the normal
+  enforced "pinned" cap for `resnet18_fp32` seen throughout Stage 4/4b; the ~1.29 ratio matches
+  the "~76-81W vs ~60W, ratio ~1.3" reference figure the researcher cited almost exactly. **Not
+  interpreted further than that** — this is reported as the fact pattern, not a claim about what
+  it means for the cumulative-counter over-report finding generally.
+- **Could this change the conclusions?** Confirms D24's own mechanism (both columns populate,
+  primary boundary unaffected by the flag) was never in question — only the two specific example
+  numbers were non-representative, now corrected in place in D24's own entry (appended, not
+  edited). Separately and more importantly: **no guard exists anywhere in this harness against
+  running on battery**, and this incident shows it can happen without being noticed during the
+  run itself. Any `results_stage4b/` session's own AC status has not been independently checked
+  by this entry — those sessions are not re-examined here, this entry covers only the two D24
+  validation runs it was asked to check.
+- **Mitigation:** none yet beyond the re-validation above and this disclosure. A
+  `check_ac_power()`-style guard (mirroring `check_platform_profile()`'s pattern) is not yet
+  built; flagged as a gap for a future harness patch, not implemented in this read-only review.
 
 ---
 
