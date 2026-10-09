@@ -37,13 +37,20 @@ def find_rapl_domain(name):
 class Sensor:
     def __init__(self, device, legacy_cumulative=False, concurrent_cpu_package=False):
         self.device = device
+        self.concurrent_cpu_package = concurrent_cpu_package and device == 'cuda'
         self.concurrent_rapl_path = None
         self.concurrent_rapl_range = None
-        if device == 'cuda' and concurrent_cpu_package:
+        self.concurrent_rapl_psys_path = None
+        self.concurrent_rapl_psys_range = None
+        if self.concurrent_cpu_package:
             self.concurrent_rapl_path, self.concurrent_rapl_range = find_rapl_domain('package-0')
             if self.concurrent_rapl_path is None:
                 print('WARNING: --concurrent-cpu-package requested but no package-0 RAPL domain '
-                      'found; proceeding without it.', file=sys.stderr)
+                      'found; that column will be logged as null.', file=sys.stderr)
+            self.concurrent_rapl_psys_path, self.concurrent_rapl_psys_range = find_rapl_domain('psys')
+            if self.concurrent_rapl_psys_path is None:
+                print('WARNING: --concurrent-cpu-package requested but no psys RAPL domain found; '
+                      'that column will be logged as null.', file=sys.stderr)
         if device == 'cpu':
             paths = glob.glob('/sys/class/powercap/intel-rapl:*/energy_uj')
             self.paths = [Path(p) for p in paths if Path(p).parent.name.count(':') == 1]
@@ -61,27 +68,40 @@ class Sensor:
             self.power_cap_w = None
         else:
             self.domain_names = None
+            self.legacy_cumulative = legacy_cumulative
             import pynvml as nv
             self.nv = nv; nv.nvmlInit(); self.handle = nv.nvmlDeviceGetHandleByIndex(0)
             self.power_cap_w = nv.nvmlDeviceGetEnforcedPowerLimit(self.handle) / 1000
             # Default is nvmlDeviceGetPowerUsage (sampled power, trapezoidal-integrated): validated
             # 2026-10-03 against live telemetry to within -0.02W (results/active_power_baseline_investigation.md).
             # nvmlDeviceGetTotalEnergyConsumption (cumulative counter) over-reports active-phase power
-            # by ~30% on this GPU -- kept only behind --legacy-cumulative-counter for reproducing old numbers.
-            if legacy_cumulative:
-                try:
-                    nv.nvmlDeviceGetTotalEnergyConsumption(self.handle)
-                    self.backend = 'NVML cumulative energy (legacy, --legacy-cumulative-counter)'; self.ranges = [None]
-                except nv.NVMLError_NotSupported:
-                    self.backend = 'NVML sampled power'; self.ranges = []
-            else:
-                self.backend = 'NVML sampled power'; self.ranges = []
+            # by ~30% on this GPU -- primary stays nvmlDeviceGetPowerUsage unless --legacy-cumulative-counter
+            # asks for the old pre-correction primary. Both interfaces are now ALWAYS sampled and logged
+            # (one primary, one secondary) regardless of this flag -- it only picks which is primary.
+            try:
+                nv.nvmlDeviceGetTotalEnergyConsumption(self.handle)
+                self.cumulative_supported = True
+            except nv.NVMLError_NotSupported:
+                self.cumulative_supported = False
+            if legacy_cumulative and not self.cumulative_supported:
+                raise RuntimeError('--legacy-cumulative-counter requested but nvmlDeviceGetTotalEnergyConsumption '
+                                    'is not supported on this GPU.')
+            self.backend = ('NVML cumulative energy (legacy, --legacy-cumulative-counter; '
+                             'nvmlDeviceGetPowerUsage also logged, secondary)' if legacy_cumulative else
+                             'NVML sampled power (nvmlDeviceGetTotalEnergyConsumption also logged, secondary)')
+            self.ranges = [None] if legacy_cumulative else []  # drives integrate() for the PRIMARY column only
     def read(self):
         if self.device == 'cpu': return [float(p.read_text()) / 1e6 for p in self.paths]
-        val = [self.nv.nvmlDeviceGetTotalEnergyConsumption(self.handle) / 1000] if self.ranges \
-            else [self.nv.nvmlDeviceGetPowerUsage(self.handle) / 1000]
-        if self.concurrent_rapl_path is not None:
-            val.append(float(self.concurrent_rapl_path.read_text()) / 1e6)  # index 1: CPU package-0, concurrent
+        val = [self.nv.nvmlDeviceGetPowerUsage(self.handle) / 1000]  # index 0: power usage, W (trapezoidal)
+        val.append(self.nv.nvmlDeviceGetTotalEnergyConsumption(self.handle) / 1000 if self.cumulative_supported
+                    else None)  # index 1: cumulative energy, J (delta-sum)
+        if self.concurrent_cpu_package:
+            # Fixed 2 columns whenever this flag is set, null if that specific domain wasn't found --
+            # avoids index ambiguity between package-0-only and psys-only availability.
+            val.append(float(self.concurrent_rapl_path.read_text()) / 1e6
+                        if self.concurrent_rapl_path is not None else None)  # index 2: CPU package-0
+            val.append(float(self.concurrent_rapl_psys_path.read_text()) / 1e6
+                        if self.concurrent_rapl_psys_path is not None else None)  # index 3: CPU psys
         return val
 
 def check_interval_floor(device_matches, interval, floor, override, flag_name, reason):
@@ -143,6 +163,10 @@ def check_fresh_boot(max_uptime_s, override, flag_name):
     print(f'WARNING: {reason}', file=sys.stderr)
     return uptime_s
 
+def _col(trace, idx):
+    """Extract one sample column as its own single-value trace, for integrate()'s scalar path."""
+    return [(t, [v[idx]]) for t, v in trace]
+
 def integrate(trace, ranges, names=None):
     """names=None: single scalar (GPU NVML, one value per sample). names given (CPU RAPL,
     D16): sum each domain's delta separately, keyed by domain name, instead of blindly
@@ -199,16 +223,23 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
         if 'psys' in per_domain:
             extra['cpu_psys_energy_j']=per_domain['psys']
     else:
-        energy=integrate(trace,sensor.ranges)  # uses index 0 only; a concurrent RAPL column (index 1,
-        # if present) is ignored here and integrated separately below -- it's a monotonic cumulative
-        # counter needing delta-sum+wraparound, not the GPU's trapezoidal sampled-power integration.
+        # GPU: read() always samples both NVML interfaces (index 0 = power usage, W, trapezoidal;
+        # index 1 = cumulative energy, J, delta-sum) plus, if --concurrent-cpu-package, RAPL
+        # package-0 (index 2) and psys (index 3) -- both logged every window regardless of which
+        # NVML interface is primary. Primary boundary (energy_j/gpu_energy_j) is unchanged: power
+        # usage unless --legacy-cumulative-counter.
+        power_usage_j=integrate(_col(trace,0),[])
+        cumulative_j=integrate(_col(trace,1),[None]) if sensor.cumulative_supported else None
+        energy=cumulative_j if sensor.legacy_cumulative else power_usage_j
+        extra['nvml_power_usage_energy_j']=power_usage_j
+        extra['nvml_cumulative_energy_j']=cumulative_j
         pkg_e=0.
-        if sensor.concurrent_rapl_path is not None:
-            for (t0,x0),(t1,x1) in zip(trace,trace[1:]):
-                d=x1[1]-x0[1]
-                if d<0: d+=sensor.concurrent_rapl_range
-                pkg_e+=d
-            extra['cpu_package_energy_j']=pkg_e
+        if sensor.concurrent_cpu_package:
+            if sensor.concurrent_rapl_path is not None:
+                pkg_e=integrate(_col(trace,2),[sensor.concurrent_rapl_range])
+                extra['cpu_package_energy_j']=pkg_e
+            if sensor.concurrent_rapl_psys_path is not None:
+                extra['cpu_psys_energy_j']=integrate(_col(trace,3),[sensor.concurrent_rapl_psys_range])
         extra['gpu_energy_j']=energy
         extra['system_energy_j']=energy+pkg_e
     if energy <= 0: raise RuntimeError('Nonpositive energy: stale or unavailable sensor; reject window')

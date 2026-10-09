@@ -795,6 +795,39 @@ no rerun of already-collected data.**
 - **Mitigation:** none yet — blocked on sudo access; see `docs/incidents/2026-10-09/` for the
   full evidence trail and the exact remediation commands queued for the researcher to run.
 
+## D24. Both NVML interfaces, plus RAPL package-0 and psys, now logged as separate columns every window
+
+- **What changed:** `pilot.py`'s GPU `Sensor` previously sampled exactly one NVML interface per
+  run (`nvmlDeviceGetPowerUsage` by default, or `nvmlDeviceGetTotalEnergyConsumption` under
+  `--legacy-cumulative-counter`) — whichever was primary was the only one read. It now **always**
+  samples both every poll, integrates each with its correct method (power usage: trapezoidal;
+  cumulative: delta-sum, hard-fails on a negative delta exactly as the old legacy path did — no
+  wraparound tolerance added, since this matches existing behavior), and logs both as separate
+  columns every window: `nvml_power_usage_energy_j`, `nvml_cumulative_energy_j`. When
+  `--concurrent-cpu-package` is also set, RAPL `package-0` and `psys` are likewise always both
+  sampled and logged separately (`cpu_package_energy_j`, `cpu_psys_energy_j`), each independently
+  null-safe if that specific domain isn't found (no index-position ambiguity between the two).
+- **Primary boundary unchanged, confirmed by validation run:** `energy_j`/`gpu_energy_j` still
+  equal `nvml_power_usage_energy_j` by default, and switch to equal `nvml_cumulative_energy_j`
+  under `--legacy-cumulative-counter` — exactly the prior behavior, just with the non-primary
+  value now also recorded instead of discarded.
+- **Why:** requested for the pre-analysis review so that a later wall-meter arbitration pass (the
+  phase-1 audit's C2/P1) can compare both NVML interfaces against a physical reference without
+  needing to re-run anything — the data will already be there once collected.
+- **Tests:** 3 new unit tests (`tests/test_pilot.py::DualNvmlRaplColumnTests`) covering
+  trapezoidal-vs-delta-sum column independence, RAPL secondary wraparound, and the `_col()`
+  column-extraction helper — 45/45 project tests passing.
+- **Validated 2026-10-09** with two short GPU runs (`resnet18_fp32`, 3 reps each, one default and
+  one `--legacy-cumulative-counter`, `/tmp` scratch dirs, deleted after): confirmed all four new
+  columns populate with sane, distinct values (e.g. `nvml_power_usage_energy_j`=174.94 J,
+  `nvml_cumulative_energy_j`=280.53 J, `cpu_package_energy_j`=124.54 J, `cpu_psys_energy_j`=391.34 J
+  for one window), and confirmed the legacy flag correctly swaps which one `energy_j` equals.
+  **Not a measurement — no result data was collected or retained.**
+- **Could this change the conclusions?** No retroactive effect — existing `results_stage4b/` data
+  was collected before this patch and does not have these columns; only future runs would. Does
+  not change any already-reported number.
+- **Mitigation:** none needed — purely additive logging, primary boundary verified unchanged.
+
 ---
 
 ## Anomalies noted, not deviations

@@ -2,7 +2,7 @@ import os, subprocess, sys, tempfile, time, types, unittest
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from pilot import Sensor, integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile, flag_implausible_power, classify_power_regime, check_fresh_boot, find_rapl_domain, p_core_set
+from pilot import Sensor, integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile, flag_implausible_power, classify_power_regime, check_fresh_boot, find_rapl_domain, p_core_set, _col
 
 class MathTests(unittest.TestCase):
     def test_wrap(self):
@@ -191,5 +191,24 @@ class Stage4bHarnessTests(unittest.TestCase):
         pkg_e = 12.8
         sys_e = gpu_e + pkg_e
         self.assertAlmostEqual(sys_e - (gpu_e + pkg_e), 0.0, places=9)
+
+class DualNvmlRaplColumnTests(unittest.TestCase):
+    """Both NVML interfaces + RAPL package-0/psys logged as separate columns, primary unchanged.
+    4-column GPU trace: [power_usage_W, cumulative_J, rapl_package_J, rapl_psys_J]."""
+    def test_power_usage_is_trapezoidal_cumulative_is_delta_sum(self):
+        trace = [(0.0, [10.0, 100.0, 5.0, 20.0]), (1.0, [20.0, 140.0, 8.0, 27.0])]
+        power_usage_j = integrate(_col(trace, 0), [])
+        cumulative_j = integrate(_col(trace, 1), [None])
+        self.assertAlmostEqual(power_usage_j, (10.0 + 20.0) / 2)  # trapezoid, dt=1 -> 15.0
+        self.assertAlmostEqual(cumulative_j, 40.0)  # delta: 140-100, a different method/value
+    def test_rapl_secondary_columns_independent_with_wraparound(self):
+        trace = [(0.0, [10.0, 100.0, 990.0, 20.0]), (1.0, [20.0, 115.0, 5.0, 27.0])]  # package wraps
+        pkg_j = integrate(_col(trace, 2), [1000.0])
+        psys_j = integrate(_col(trace, 3), [1000.0])
+        self.assertAlmostEqual(pkg_j, 5.0 + (1000.0 - 990.0))
+        self.assertAlmostEqual(psys_j, 7.0)
+    def test_col_extracts_single_column_unchanged_shape(self):
+        trace = [(0.0, [1.0, 2.0, 3.0]), (1.0, [4.0, 5.0, 6.0])]
+        self.assertEqual(_col(trace, 1), [(0.0, [2.0]), (1.0, [5.0])])
 
 if __name__=='__main__': unittest.main()
