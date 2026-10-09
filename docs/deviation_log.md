@@ -698,6 +698,103 @@ no rerun of already-collected data.**
 - **Timing:** AFTER — Sessions 3 and 4 were run but data audit revealed truncation. Completed 2026-10-07.
 - **Status:** Runner script fully hardened (row count validation, preflight marker guard, wait cap), truncated folders renamed, stale marker deleted. Re-runs of Sessions 3 and 4 are pending.
 
+## D21. Amendment A4 (six sessions) executed before supervisor review — marked ADOPTED, with the realised calendar spread corrected
+
+- **What happened:** `stage5_analysis_plan.md` amendment A4 ("six confirmatory sessions instead of
+  four") was written 2026-10-08 and explicitly marked "DRAFT, pending supervisor review." Real
+  data collection for all six sessions had already completed by the time that review happened —
+  confirmed directly from commit timestamps: `d321598`/`f574db5` (Session 1, pinned re-run per
+  D19) 2026-10-07 04:15/12:28, through `2949492` (Session 6) 2026-10-09 01:09.
+- **Realised calendar spread vs. the amendment's own stated protocol:** A4 states "the six
+  sessions span at least 3 calendar days." The actual elapsed time from the first valid (pinned)
+  Session 1 commit to the Session 6 commit is **2026-10-07 04:15 to 2026-10-09 01:09 — about 1
+  day 21 hours, under 2 full calendar days** (it touches three date-stamps, Oct 7/8/9, only
+  because session boundaries fall close to midnight, not because of genuine multi-day spacing).
+  This is short of the "at least 3 calendar days" A4 itself registered as part of the design.
+- **Could this change the conclusions?** Reduces how independent the six sessions can be assumed
+  to be from each other as a between-session variance estimate — less elapsed time between
+  sessions means less opportunity for whatever drives D17's between-session drift (not yet
+  identified) to vary, which could understate the true between-session variance if that driver has
+  a timescale longer than ~2 days. Not fatal, but a real deviation from the registered protocol,
+  not a redundant restatement of it.
+- **Decision:** A4 is marked **ADOPTED** (not rescinded) given the session data already exists and
+  is sound on its own terms (D19/D20 both show careful execution and self-caught bug fixing), but
+  the calendar-spread shortfall is logged here rather than silently treated as met. No data is
+  discarded or re-collected on this basis alone.
+- **Timing:** AFTER — this entry documents a gap between what A4 specified and what was executed,
+  discovered during the 2026-10-09 containment/pre-analysis review.
+- **Mitigation:** none beyond disclosure; future session-count amendments should not be executed
+  before their own "pending supervisor review" status is resolved.
+
+## D22. P8 training campaign ran as an untracked root systemd service before amendment A5 was adopted
+
+- **What happened:** a training campaign (`train_p8.py`, `prune_models_p8.py`,
+  `scripts/auto_p8.sh`, installed via `scripts/install_p8_service.sh` as the systemd unit
+  `p8-auto.service`) began running 2026-10-09 03:41, before any of its three driving scripts were
+  committed to git (confirmed: all three remain untracked, `git status --short` shows `??`, as of
+  this entry) and before amendment A5 (the draft proposing a real 20-30 epoch fine-tune arm, which
+  this campaign closely matches — 25 epochs, lr=0.01) was marked adopted. A5 remains **DRAFT,
+  pending supervisor review** in `stage5_analysis_plan.md` as of this entry.
+- **How it ran:** `p8-auto.service`, `User=root`, `Restart=on-failure`, `WantedBy=multi-user.target`
+  (auto-starts on every boot). Full evidence captured 2026-10-09 in `docs/incidents/2026-10-09/`
+  (containment review, "Block A"): `systemctl cat`/`status` output, full `journalctl` history,
+  `p8_auto.log`, checkpoint listing.
+- **What it actually did, confirmed from `p8_auto.log` and `checkpoints_p8/` file listing/mtimes:**
+  trained 9 fresh FP32 baselines (3 architectures × 3 seeds, 1001/1002/1003, 45k/5k train/val
+  split per `docs/p8_spec.md`), pruned one checkpoint (`resnet18_pruned30_1001.pt`), then entered
+  a 320+-restart failure loop on the first fine-tune job (`ft_resnet18_30_1001`) — root cause: a
+  `torch.load()` call in `train_p8.py` missing `weights_only=False`, incompatible with PyTorch
+  2.6+'s changed default, loading a full pickled model object. 100% reproducible, not transient;
+  training never progressed past this point. Full detail: `docs/incidents/2026-10-09/` and
+  `docs/p8_spec.md`.
+- **No energy data or outcome statistic was affected.** This campaign trains and fine-tunes
+  checkpoints only — it never ran `pilot.py`, never touched `results_stage4b/` or any other energy
+  result directory, and the supervisor's explicit order for this review states no outcome
+  statistic is to be computed on Stage 4b data regardless. Confirmed by checking every file this
+  campaign wrote: all are under `checkpoints_p8/`, `.p8_state/`, or `p8_auto.log`, none under any
+  `results_*` directory.
+- **Could this change the conclusions?** Not directly — no measurement data exists from this
+  campaign. It is logged because: (1) it executed a draft amendment's design before that amendment
+  was adopted, the same pattern as D21; (2) it ran unattended, as root, auto-starting on every
+  boot, which is itself a process/safety issue independent of what it computed (D23); (3) any
+  checkpoints it eventually produces should not be used for accuracy or energy claims without this
+  entry being updated to reflect that review happened.
+- **Status:** `p8-auto.service` is still `enabled` as of this entry (disabling it requires sudo
+  credentials not available non-interactively — see `docs/incidents/2026-10-09/`, item 2, pending
+  researcher action). Training is **not** being resumed as part of this review. Scripts committed
+  unchanged in a dedicated commit (see that commit's message) so the historical record matches what
+  actually ran; `docs/p8_spec.md` documents the campaign's design from code and logs only.
+
+## D23. Sudoers and reboot-automation exposure (containment review, Block A)
+
+- **What was found, 2026-10-09 (full evidence: `docs/incidents/2026-10-09/`):** passwordless sudo
+  (`/etc/sudoers.d/`) includes `systemctl reboot` with no argument restriction, and
+  `systemctl enable`/`disable stage4b-auto.service` — meaning any process running as the project's
+  user account can reboot this physical machine with no interactive confirmation at any point, and
+  can toggle at least one project systemd unit's boot-persistence. `p8-auto.service` (D22) is a
+  second, separately-installed unit not covered by the passwordless grant but was itself enabled
+  via `sudo systemctl enable` at some point when an interactive password **was** available (not
+  reconstructable from current evidence which specific session did this).
+- **Why it matters for this project specifically:** this harness's own standing operating
+  procedure (`stage4-implementation-brief.md` §5) depends on controlled, deliberate reboots
+  immediately before measurement sessions, with `uptime` manually verified fresh. Passwordless,
+  unrestricted `systemctl reboot` plus an enabled, auto-starting root training service means a
+  future reboot — including one taken for a legitimate measurement session — can silently also
+  restart a root-owned, GPU/CPU-competing training job in the background, contaminating whatever
+  is measured in that same boot, undetected unless someone checks `systemctl status` by hand.
+- **Current state (sudoers edit blocked, not yet remediated):** the researcher's order to remove
+  only the `systemctl reboot` / `enable`/`disable` rules while keeping harness-required rules
+  (RAPL access, governor) could not be completed — editing `/etc/sudoers.d/*` requires sudo, and no
+  password is available non-interactively in this review session. Rule files are confirmed to
+  exist (`green-ai-governor`, `stage4b-auto`, both `440 root:root`, contents unread) but the keep/
+  remove diff has not been produced. Pending the researcher's own shell access.
+- **Could this change the conclusions?** Not directly a data-validity issue by itself, but it is
+  the mechanism that made D22's unattended, uncommitted P8 campaign possible to run across
+  multiple reboots unattended in the first place, and remains open as a risk to any future
+  measurement session until closed.
+- **Mitigation:** none yet — blocked on sudo access; see `docs/incidents/2026-10-09/` for the
+  full evidence trail and the exact remediation commands queued for the researcher to run.
+
 ---
 
 ## Anomalies noted, not deviations
