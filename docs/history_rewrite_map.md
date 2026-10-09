@@ -160,3 +160,17 @@ and new trees.
 - No tool name or attribution line found in the current working tree.
 - Only two author/committer identities exist anywhere in the history: the
   researcher's two own name/email pairs. No third identity of any kind.
+
+## Revision, 2026-10-10: local backup tag renamed
+
+The local-only git tag flagged as a residual tool-name hit in the prior review
+(its old name contained the coding assistant's name) was renamed to
+`backup-pre-history-rewrite-20261010` (`git tag new old; git tag -d old` —
+preserves the commit it points to, only the ref name changes). It points to
+`3421250a88c4eb707d16395ef6dd3bc3781f4a5d` (the "D25" commit) — same commit as
+before the rename, unchanged. That commit's own message and full tree content
+were checked directly and contain no attribution line or tool name (consistent
+with every other commit in this rewritten history). The tag remains local
+only — confirmed not present on `origin` (`git ls-remote --tags origin` lists
+only `stage4b-registered`) — and was never pushed, before or after this
+rename.

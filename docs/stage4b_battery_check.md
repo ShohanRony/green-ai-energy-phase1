@@ -86,3 +86,78 @@ clearly lower than the AC-pinned cap used as Signal 2's reference here — the s
 agreement, pointing the other way. Both signals are shown to detect real events when they occur, which
 is part of why their combined silence/consistency here is meaningful rather than just an absence of
 data.
+
+## Revision, 2026-10-10 (previous grading above is kept as-is, not edited)
+
+**(a) When the grading rule was written relative to when the 9 sessions' power data was looked at —
+disclosed plainly, because this matters for whether the rule can be trusted.** It was **not**
+written blind. The sequence, honestly: the `resnet18_fp32` regime and wattage for all 9 sessions was
+checked first; all 9 came back `pinned` at ~59.9 W, uniformly consistent with the known AC-pinned
+cap; the two-signal "Evidenced" grading rule was written *after* seeing that result, in the same
+revision. **This is a real order-of-operations problem** — a rule constructed after seeing data that
+happens to support it is weaker evidence than a rule pre-registered blind, even if the rule itself is
+reasonable. This revision's response is not to pretend otherwise, but to run the rule against a case
+whose outcome is already independently known and different — D25's battery run — below. If the rule
+cannot correctly flag a known-battery run as *not* evidenced, the rule would be shown unreliable
+regardless of how it was derived; if it does correctly flag it, that is real (if limited, see (d))
+evidence the rule has discriminating power, not just a restatement of what it was built to show.
+
+**(b) How dip-regime sessions are graded, given that dip power is below the cap on AC too.** Checked
+directly (`classify_power_regime`, `pilot.py`): `pinned` requires `implied_w >= 0.9 * power_cap_w`
+(54.0 W at this machine's 60 W cap); anything below is `dip`. **Dip is the normal, expected AC
+behaviour for lightly-loaded conditions** (heavily pruned states at batch=1 — `stage5_analysis_plan.md`
+§7's own carve-out) — so a `dip` reading on a condition that is *expected* to dip on AC anyway carries
+no signal either way, battery or AC. It is only diagnostic for a condition with an established,
+exceptionless AC-only pattern: `resnet18_fp32` is `pinned` in **9 of 9** known-AC sessions checked
+here, with zero dip readings — that track record, not the reading in isolation, is what makes `dip`
+on `resnet18_fp32` specifically a meaningful departure. **Rule, stated for any future session
+(including conditions this check hasn't covered): if the diagnostic condition's own regime is `dip`,
+Signal 2 is uninformative for that session, Signal 1 alone is not sufficient (established in the
+previous revision above), and the session is graded "weakly evidenced" — not upgraded to "Evidenced"
+by assuming the dip is benign.** None of the 9 sessions below need this downgrade — all 9 show
+`pinned` for `resnet18_fp32` — but the rule is stated so it's not read as never applying.
+
+**(c) The D25 battery run, graded by the identical rule — the rule's own falsification check.**
+D25's quoted validation window: `nvml_power_usage_energy_j = 174.94 J` over a `5.005 s` window,
+`resnet18_fp32` — implied power `174.94 / 5.005 = 34.95 W`. Against this machine's 60 W cap,
+`classify_power_regime`'s own threshold (`0.9 × 60 = 54.0 W`) classifies this as **`dip`**
+(`34.95 < 54.0`), **not** `pinned`. Because `resnet18_fp32` has never once shown `dip` in any of the
+9 known-AC sessions below, this dip reading is a genuine departure from the established AC-only
+pattern — the rule from (b) above applies directly, and this run grades **not evidenced** (worse than
+"weakly evidenced": the diagnostic condition's own regime contradicts the AC pattern, it does not
+merely fail to confirm it). **The rule passes its own check: it correctly separates a run already
+known, by independent kernel/systemd evidence (D25's Signal 1 transition timeline), to have been on
+battery.**
+
+**(d) D25 is one battery observation.** The 34.95 W figure comes from a single quoted example window
+(`D24`'s validation entry says "e.g. ... for one window"); the full per-rep distribution (mean, min,
+across the validation run's 3 reps × 2 runs) was never retained — those directories were scratch,
+deleted after use, per that entry's own disclosure. **This check in (c) is therefore one data point
+confirming the rule doesn't fail its one known test case, not a characterisation of what battery
+power looks like in general** on this machine — no claim is made here about battery-power variance,
+only that this one observed instance fails the pinned threshold clearly (34.95 W vs. a 54.0 W floor
+is not a close call).
+
+## Per-session table, with mean/min GPU power and window counts (new in this revision)
+
+All figures from `resnet18_fp32`, the diagnostic condition per (b) above. "Windows" = active-phase
+(`a1`/`a2`) reps with a valid duration, same reps the existing `summary.csv` pairing uses.
+
+| Directory | Regime | Mean GPU power | Min GPU power | Windows | Watchdog coverage | Grade |
+|---|---|---|---|---|---|---|
+| `main_session1_unpinned` | `pinned` | 59.91 W | 59.86 W | 14 | none (predates watchdog's only log line) | **Evidenced** |
+| `main_session1` | `pinned` | 59.92 W | 59.88 W | 14 | none | **Evidenced** |
+| `main_session2` | `pinned` | 59.92 W | 59.88 W | 14 | none | **Evidenced** |
+| `main_session3_aborted` | `pinned` | 59.94 W | 59.92 W | 4 (short, aborted session) | none | **Evidenced** (smaller n) |
+| `main_session4_aborted` | `pinned` | 59.91 W | 59.88 W | 4 (short, aborted session) | none | **Evidenced** (smaller n) |
+| `main_session3` | `pinned` | 59.91 W | 59.89 W | 14 | none | **Evidenced** |
+| `main_session4` | `pinned` | 59.90 W | 59.87 W | 14 | none | **Evidenced** |
+| `main_session5` | `pinned` | 59.94 W | 59.90 W | 14 | none | **Evidenced** |
+| `main_session6` | `pinned` | 59.94 W | 59.92 W | 14 | none | **Evidenced** |
+| *(control)* D25 battery run | `dip` | 34.95 W | *(not retained, (d))* | 1 (one quoted example) | none | **Not evidenced** |
+
+**No session among the 9 is downgraded to "weakly evidenced" under this revision** — every one shows
+`pinned` with mean/min both clustered tightly around 59.9-60.0 W (never below the 54.0 W pinned floor,
+and never more than ~0.15 W off the cap, i.e. no partial-dip or borderline reading in the set). The
+control row confirms the rule can and does produce a different grade when the underlying condition is
+actually different, which is the main thing (a)'s disclosure asked this revision to check for.

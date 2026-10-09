@@ -899,3 +899,138 @@ itself.**
   fit inside the margin regardless of where it's centred. This is disclosed now so a "not bounded"
   result arising from insufficient precision (wide SD) is not misread as evidence of a real eager/TS
   difference without checking which of the two actually happened.
+
+**A7r2 — 2026-10-10. Dated revision correcting A7r1(f)'s D1-D5 wording (A7r1's text above is
+unchanged — this stands alongside it, per §12's append-only rule).**
+
+**Provenance, for each of D1-D5 as A7r1(f) wrote them, stated honestly:** A7r1(f) said plainly that
+it was "synthesized from what A7/A7r1 and the researcher's own decisions establish, since the
+original external document is not part of this repository" — **all five were this session's own
+reconstruction. None were quoted from any audit document (none exists in this repository) or from
+the exact wording of any prior supervisor block.** That disclosure was accurate as far as it went,
+but the reconstruction itself was checked against the audit's actual wording (given directly in this
+block) and found to diverge — in two different ways:
+- **D1, D2, D5: right topic, wrong or incomplete branch content.** The reconstruction correctly
+  identified what each decision rule was *about*, but got specific branch outcomes wrong (D1), used a
+  mechanism the audit didn't specify (D2's "bridged ratio" instead of a direct baseline switch), or
+  reframed the question as already-resolved instead of stating the original conditional gate (D5).
+- **D3, D4: wrong topic entirely.** The reconstruction substituted this block's own open questions —
+  confirmatory-family scope (A7r1(b)) and the RQ2 model specification (A7r1(d)) — for what the
+  audit's actual D3 and D4 cover (weight-dependence of pruned-state energy, and 224×224-regime
+  generalisation respectively). These are real, useful decision rules in their own right — restated
+  below as this project's own rules, not the audit's D3/D4 — but they were never D3/D4.
+
+**Collision note:** A7r1(b) and A7r1(d) each contain a cross-reference reading "This is decision
+rule D3" / "This is decision rule D4" — those cross-references are now known to point to the wrong
+label. A7r1's own text is left unedited per §12; the correction is: **A7r1(b)'s confirmatory-family
+rule and A7r1(d)'s RQ2-model rule are this project's own pre-registered decision rules, not part of
+the audit's D1-D5 framework.** They are referred to from here on as **P-CF** (confirmatory family,
+A7r1(b)) and **P-MAC** (RQ2 model/MAC counting, A7r1(d)) to avoid further collision with the
+corrected D3/D4 below. Both remain fully in force exactly as A7r1(b)/(d) stated them — only the
+label changes.
+
+**Corrected D1-D5, using the audit's wording as given in this block, verbatim where quoted:**
+
+- **D1r1 (wall meter).** *"Does `delta(NVML power-usage + RAPL package)` agree with the
+  wall-derived system delta within ±5% after adapter efficiency?"*
+  - **YES:** keep the backend, report the agreement as **validation** (A7r1(f)'s D1 said "report
+    the agreement as the instrument-axis finding" — corrected to the audit's own word,
+    "validation").
+  - **NO, and the cumulative counter agrees instead:** Stage 4b's GPU numbers need a rerun on the
+    cumulative interface. **Raw traces store one API per window — both-API logging must exist
+    before any such rerun.** For data collected after D24's commit, this prerequisite is already
+    satisfied (D24 logs both NVML interfaces as separate columns every window). Sessions 1-6
+    predate D24 and store only the power-usage interface in their raw traces — a rerun for them
+    would be a fresh collection, not a reprocessing of existing logs.
+  - **NO, and neither agrees:** wall energy is the primary boundary for system-level claims; every
+    instrument this project uses is reported as a disclosed estimator relative to it.
+  - **Correction from A7r1(f):** the earlier text mentioned "RAPL-psys" as part of the cumulative
+    counter — **wrong axis.** D1 is about the GPU's NVML interface choice (power-usage vs.
+    cumulative-energy counter); RAPL package-vs-psys is a separate, already-resolved CPU-side
+    question (D16), not part of D1 at all. The "psys" mention is dropped entirely here.
+- **D2r1 (runtime).** *"Is FP32-TorchScript within ±5% (TOST) of FP32-eager?"*
+  - **YES:** keep eager-baseline ratios, with disclosure.
+  - **NO:** use FP32-TorchScript as the baseline for every ratio; report runtime as a factor in the
+    specification curve (A7 point 9) — **corrected from A7r1(f)'s "bridged ratio" formulation**,
+    which invented a multiplicative correction mechanism the audit does not specify. The audit's
+    actual NO branch is a direct baseline switch, not a correction factor.
+  - **Practical note, not part of the audit's own wording — needed because of a real data gap this
+    project has:** the x86-GPU block's six main sessions never measured FP32-TorchScript
+    directly (A7r1(a)) — there is no direct GPU-block FP32-TS baseline to switch to. **For the GPU
+    block only, if D2 resolves NO, the baseline switch uses FP32-TorchScript sourced from series R
+    (A8/A8r1)** — not a multiplicative bridge applied to the eager ratio, but the TS baseline
+    itself, taken from the one place it was actually measured. CPU blocks are unaffected: each
+    CPU-block session already measures its own FP32-TS directly (A7r1(e)), so switching requires no
+    substitute source there.
+- **D3r1 (weight dependence) — the audit's actual D3; A7r1(f)'s "D3" was a different rule,
+  renamed P-CF above.** *"Are `_bnrecal` and zero-finetune energies within ±5% at the same
+  architecture?"*
+  - **YES:** infer A5's fine-tuned (`_ft`) models' energy from architecture (reuse the
+    zero-finetune/`_bnrecal` figures for that architecture as a stand-in), with disclosure that this
+    is an inference, not a direct measurement.
+  - **NO:** measure A5's fine-tuned models' energy directly (A5's own design, a dedicated extra
+    session); report data-dependent power (energy depending on the actual trained weight values, not
+    just architecture/sparsity pattern) as a finding in its own right — this would mean the
+    project's standing working assumption, that energy tracks FLOPs/architecture and not weight
+    values, does not universally hold.
+  - **Relevant existing data, read-only, not a ±5% computation (a Stage 4b-style ratio/interval is
+    out of scope for this block):** A7r1(g)'s "looked at" statement already records the
+    researcher's own descriptive spot check — `_bnrecal`-vs-zero-finetune energies ~1% apart, for
+    the one comparison already looked at. Well inside the ±5% band D3r1 asks about, but this is one
+    architecture's descriptive spot check, not the full per-architecture ±5% check D3r1 specifies —
+    suggestive, not a resolution.
+- **D4r1 (regime, 224×224) — the audit's actual D4; A7r1(f)'s "D4" was a different rule, renamed
+  P-MAC above.** *"Do ratios keep the 32×32 ordering and the same β < 1 conclusion?"*
+  - **YES:** RQ2 generalises across regimes — the 32×32 finding is not an artifact of an
+    unrealistically small input size.
+  - **NO:** regime-dependence is the headline finding itself; both the 32×32 and 224×224 regimes are
+    reported as primary, neither subordinate to the other.
+  - **Status, checked against A6 as currently drafted:** A6 ("Realistic-regime sensitivity pass,"
+    `stage5_analysis_plan.md`) is explicitly registered as "descriptive and exploratory under §9...
+    adds no confirmatory hypothesis." D4r1 requires A6's data to be run through the same β<1 model
+    as RQ2/P-MAC a second time, at 224×224 — a confirmatory use A6 does not currently register. This
+    gap is noted, not resolved, here; A6 itself is left as-is per §12.
+- **D5r1 (scope, original gate) — restated in full per this block's instruction, then superseded.**
+  *"Can the M1-CPU arm plus the x86-CPU arm finish within approximately 4 weeks?"*
+  - **YES:** one paper (all RQs, cross-platform, combined).
+  - **NO:** **Paper 1** = x86 measurement sensitivity + RQ2 + RQ1a; **Paper 2** = cross-platform
+    RQ3 + RQ1b. No placeholder RQ3 in Paper 1.
+  - **Superseded, 2026-10-09, not by the gate's own YES/NO mechanics:** the researcher's decision
+    (`deviation_log.md` D5 update; A7 point 1) directly supersedes this time-budget gate: **M1-CPU
+    is in Paper 1**, **x86-GPU is supplementary**, **no M1-GPU arm exists at all** (never planned,
+    not a casualty of the time budget).
+  - **Fallback if the M1-CPU arm cannot be completed — recorded per this block's explicit
+    instruction, decided by the researcher if and when it arises, not triggered automatically by
+    session-count or scheduling issues:** the fallback is the **original D5r1 NO branch** — Paper 1
+    narrows to x86 measurement sensitivity + RQ2/P-MAC + RQ1a (dropping M1-CPU and RQ3 from Paper
+    1), cross-platform RQ3 + RQ1b deferred to a Paper 2. Recorded now, before any such incompleteness
+    has occurred or been found — nothing in this review indicates the M1-CPU arm is at risk.
+
+**A8r2 — 2026-10-10. Dated revision adding a pre-registered sentence to A8r1's D2 discussion
+(A8r1's text above is unchanged — this stands alongside it).**
+
+**Pre-registered now, before series R exists:** if the between-session SD of the log(FP32-TS ÷
+FP32-eager) ratio exceeds **0.0415** (the best-case bound: true difference = 0, 90% CI, df = 3),
+equivalence cannot be concluded, and this is treated directly as **D2r1's NO branch — a mechanical
+consequence of the threshold, not a judgment call made after seeing the data.** Consequence, per
+D2r1 above: **bridged version primary for the GPU block** (TS sourced from series R itself, applied
+via A7r1(a)'s bridging construction, since the GPU block has no main-session TS baseline to switch
+to directly); **FP32-TorchScript as the direct baseline for the CPU blocks** (each CPU-block session
+already measures its own FP32-TS, A7r1(e), so no bridging is needed there).
+
+**Derivation:** the 90% CI half-width at df = 3 is `t(0.95, 3) × SD / sqrt(4)`. For this half-width
+to fit inside the ±5% equivalence margin (`ln(1.05) ≈ 0.04879` in log units) even in the best case —
+centred exactly on 0, i.e. no bias to overcome:
+
+```
+t(0.95,3) × SD / sqrt(4) ≤ ln(1.05)
+2.3534 × SD / 2 ≤ 0.04879
+SD ≤ 0.04879 × 2 / 2.3534
+SD ≤ 0.04146  ≈  0.0415
+```
+
+Any observed between-session SD above `0.0415` makes a 90% CI that cannot fit inside ±5% no matter
+where it is centred — the NO branch follows mechanically from the SD alone, independent of where the
+mean actually falls. This is the same number A8r1 already derived descriptively ("about 4.1%"); this
+revision's addition is pre-registering it as a direct trigger for D2r1's NO branch, not merely a
+precision caveat to weigh after the fact.
