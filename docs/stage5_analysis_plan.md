@@ -865,6 +865,11 @@ M1-CPU primary-block session (or any new GPU-block session) is collected under t
    until it exists. No session is blocked on D1 having been *evaluated* — only on the harness-level
    AC guard — but D1 itself stays open until the wall-meter protocol is written and run.
 
+**Appended 2026-10-10 (BLOCK J):** if the 224×224 regime pass (A6/D4r1) is not run, regime
+dependence is stated as a limitation and no generalisation claim is made — RQ2's 32×32 finding is
+reported as established only for 32×32, with 224×224 generalisation left explicitly open, not
+assumed, until D4r1 is actually evaluated.
+
 **A8r1 — 2026-10-10. Dated revision of A8 (A8 remains DRAFT; its text above is unchanged — this
 revision stands alongside it). Fixes series R's session count and states the D2 equivalence
 computation. Not executed — draft only, per this block's "no data collection" order, same as A8
@@ -1034,3 +1039,11 @@ where it is centred — the NO branch follows mechanically from the SD alone, in
 mean actually falls. This is the same number A8r1 already derived descriptively ("about 4.1%"); this
 revision's addition is pre-registering it as a direct trigger for D2r1's NO branch, not merely a
 precision caveat to weigh after the fact.
+
+**Appended 2026-10-10 (BLOCK J):** the `0.0415` threshold is a **necessary condition for
+equivalence, not a sufficient one** — it is the best-case bound (true difference = 0) on how small
+the between-session SD must be for a 90% CI to even fit inside ±5%. An observed SD at or below
+`0.0415` does **not** by itself establish equivalence; it only means equivalence remains possible —
+the actual 90% CI (centred on the observed mean, not assumed to be 0) must still be computed and
+checked against the ±5% margin per D2r1 before concluding YES. SD above `0.0415` is sufficient to
+conclude NO (as already stated above); SD at or below it is not sufficient to conclude YES.
