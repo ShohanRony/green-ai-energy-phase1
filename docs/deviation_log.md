@@ -912,6 +912,53 @@ no rerun of already-collected data.**
   `check_ac_power()`-style guard (mirroring `check_platform_profile()`'s pattern) is not yet
   built; flagged as a gap for a future harness patch, not implemented in this read-only review.
 
+## D26. AC-power guard added to `pilot.py`, closing the D25 gap
+
+- **What changed:** `check_ac_power()` finds the Mains-type power supply under
+  `/sys/class/power_supply/*` (matched by its `type` file, not a hardcoded device name — this
+  machine's happens to be `ACAD`, confirmed `type=Mains`, but the check doesn't assume that name)
+  and reads its `online` state. Raises if no Mains supply exists at all, rather than silently
+  assuming AC.
+  - **At condition start:** called alongside the existing `check_platform_profile()`/
+    `check_fresh_boot()` preflight checks; if AC is offline, raises immediately — no override
+    flag, consistent with this being a hard, uncontested precondition (unlike `--allow-stale-boot`,
+    there's no legitimate reason to run a confirmatory measurement on battery).
+  - **Mid-run:** `window()`'s `sample()` function (already polled every `--interval` for the
+    energy sensor) now also checks AC on every poll. A drop mid-window is routed through the
+    *same* error-propagation path sensor-read failures already use (`errors.append(...)`;
+    `stop.set()`), which raises `RuntimeError` after the window ends, bubbles up through `main()`'s
+    existing outer exception handler, writes `failure.txt`, and exits non-zero — exactly the
+    "clear non-zero exit and a log line" the researcher asked for.
+  - **Logged:** `ac_online` in `environment.json` (confirmed-True-at-start) and as a field on
+    every completed window row in `raw.jsonl`/`windows.csv` (also always `True` for a *completed*
+    row, by construction — a `False` mid-window never reaches the row-write step, it raises
+    instead). Both are new, additive fields; nothing existing changed shape.
+- **Deliberately did NOT reuse the `.power_state/stop`/`restored` marker filenames.** The
+  researcher's instruction said to reuse that convention "if sensible" — judged not sensible here:
+  those markers carry specific semantics already relied on by `power_state.stop_requested()`
+  (checked only *between* reps, exits 0, not an error) and by D20's hard-won fix (the preflight
+  guard against a *stale* marker, the row-count validation in `run_stage4b_session.sh`). Writing
+  to the same files for a different condition (AC loss, checked *mid*-window, wants a non-zero
+  exit) risked exactly the kind of stale-marker confusion D20 already cost real measurement time
+  to fix. This guard is a fully separate code path; D20's guard behavior is untouched — confirmed
+  by re-reading `power_state.py`/the `stop_requested()` call site, neither modified by this patch.
+- **Tests:** 4 new (`tests/test_pilot.py::AcPowerGuardTests`) — Mains-online, Mains-offline,
+  no-Mains-supply-raises (all via a temp-directory fake `/sys/class/power_supply`, same pattern as
+  the existing `PlatformProfileGuardTests`), plus one integration check against this real machine.
+  49/49 project tests passing.
+- **Validated 2026-10-10** with one short GPU run (`resnet18_fp32`, 3 reps, `/tmp` scratch dir,
+  deleted after, AC confirmed via `/sys/class/power_supply/ACAD/online` before running): confirmed
+  `ac_online=True` in both `environment.json` and a sample window row. Battery/mid-run-loss paths
+  were not exercised (would require physically unplugging the machine mid-measurement, out of
+  scope for a scratch validation) — the guard logic itself is covered by the 3 mocked unit tests
+  instead.
+- **Could this change the conclusions?** No retroactive effect on `results_stage4b/` — the field
+  doesn't exist in any run collected before this patch (D25 found no evidence of AC loss during
+  that data's collection, by the separate journal-based method). Closes the gap for every future
+  run.
+- **Mitigation:** none needed beyond the guard itself — this entry *is* the mitigation for D25's
+  flagged gap.
+
 ---
 
 ## Anomalies noted, not deviations

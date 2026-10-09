@@ -120,6 +120,19 @@ def check_no_concurrent_gpu(sensor, allow=False):
     if not allow: raise RuntimeError(msg+' Pass --allow-concurrent-gpu to proceed anyway.')
     print(f'WARNING: {msg}', file=sys.stderr)
 
+def check_ac_power(base=Path('/sys/class/power_supply')):
+    """D25: no guard anywhere checked AC power before this -- a battery-powered run (GPU power
+    cap and governor behavior both differ from AC) went uncaught and had to be found after the
+    fact. Finds the Mains-type supply under /sys/class/power_supply/* (not a hardcoded name --
+    this machine's is 'ACAD', but that's not guaranteed elsewhere) and reads its online state.
+    Raises if no Mains supply exists at all, rather than silently assuming AC."""
+    mains = [p for p in base.glob('*')
+             if (p / 'type').exists() and (p / 'type').read_text().strip() == 'Mains']
+    if not mains:
+        raise RuntimeError(f'No Mains-type power supply found under {base}/; '
+                            'cannot verify AC status (D25).')
+    return any((p / 'online').read_text().strip() == '1' for p in mains)
+
 def check_platform_profile(path=Path('/sys/firmware/acpi/platform_profile')):
     """Checklist item 14: abort if the ACPI platform power profile isn't locked to performance."""
     if not path.exists():
@@ -196,6 +209,8 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
     sync(); trace=[]; errors=[]; stop=threading.Event()
     def sample():
         try:
+            if not check_ac_power():
+                errors.append('AC power lost mid-run (D25) -- aborting.'); stop.set(); return
             start=time.perf_counter(); value=sensor.read(); end=time.perf_counter()
             trace.append(((start+end)/2,value))
         except Exception as e: errors.append(str(e)); stop.set()
@@ -249,6 +264,8 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
                 trace=trace,backend=sensor.backend,
                 plausibility_flag=flag_implausible_power(sensor.device, energy/duration, sensor.power_cap_w),
                 power_regime=classify_power_regime(sensor.device, energy/duration, sensor.power_cap_w),
+                ac_online=True,  # D25: a completed window only exists because every sample()
+                                 # call confirmed AC; any False mid-window aborts before this return.
                 **extra)
 
 def summarize(rows):
@@ -396,6 +413,11 @@ def main():
             f'--interval {a.interval}s exceeds the RAPL/perf-events sampling ceiling (100Hz / 0.01s, plan checklist item 4).')
         platform_profile=check_platform_profile()
         uptime_s=check_fresh_boot(a.max_uptime_min*60, a.allow_stale_boot, '--allow-stale-boot')
+        ac_online=check_ac_power()
+        if not ac_online:
+            raise RuntimeError('AC power is not connected (D25) -- refusing to start. GPU power cap '
+                                'and governor behavior both differ on battery; every measurement in '
+                                'this project assumes AC.')
         if a.device=='cuda' and a.legacy_cumulative_counter:
             print('WARNING: --legacy-cumulative-counter selected; nvmlDeviceGetTotalEnergyConsumption is '
                   'known to over-report active-phase power by ~30% on this GPU (see '
@@ -432,6 +454,7 @@ def main():
                    gpu_power_cap_w=sensor.power_cap_w,
                    cpu_governors=sorted({Path(p).read_text().strip() for p in gov_paths}) if gov_paths else None,
                    platform_profile=platform_profile,uptime_s=uptime_s,cpu_affinity=cpu_affinity_set,
+                   ac_online=ac_online,
                    weights='checkpoint' if a.checkpoint else 'seeded random weights: timing pilot only')
         (out/'environment.json').write_text(json.dumps(env,indent=2))
         with torch.inference_mode():

@@ -116,3 +116,47 @@ by the P8 code — it is marked here as draft intent, not as what will happen.
   (edited 10:50, after the original bug was found) — **this review does not claim they are bug-free
   or validated**, only that they are what currently exists and were committed unchanged from
   what last ran, per the researcher's order.
+
+## P8 recipe vs. the registered recipe, side by side (2026-10-10)
+
+**[from code]**, `train_p8.py` vs. `train_baseline.py` and `checkpoints/*_fp32.json`:
+
+| | Registered (`train_baseline.py` / `*_fp32.json`) | P8 (`train_p8.py` / `auto_p8.sh`) |
+|---|---|---|
+| Optimizer | SGD, lr=0.1, momentum=0.9, weight_decay=5e-4, nesterov=True | **identical** |
+| LR schedule | `CosineAnnealingLR(T_max=epochs)` | **identical** (`T_max=a.epochs`, resets per job) |
+| Batch size | 128 | 128 (`train_p8.py` default, not overridden in `auto_p8.sh`) |
+| Augmentation | `RandomCrop(32, padding=4)` + `RandomHorizontalFlip` | **identical** |
+| Seed | **2026**, one fixed seed throughout | **1001 / 1002 / 1003**, three seeds — this is P8's actual new contribution (multi-seed) |
+| Train/val split | none (train on full 50k, test set used once at the end) | **45,000 / 5,000**, new — P8's other actual new contribution |
+| Epochs — ResNet-18 | **30** | **30** — matches |
+| Epochs — MobileNetV3-Small | **60** (retrained after the original 30-epoch run was found not plateaued, `stage2_retrain_report.md`) | **30** — confirmed directly from every `fp32_mobilenet_v3_small_*` job line in `auto_p8.sh` (`--epochs 30`, all three seeds) — **does NOT match; re-introduces the exact 30-epoch undercooked baseline this project already found inadequate and fixed** |
+| Epochs — EfficientNet-B0 | **60** (same reason) | **30** — same divergence, confirmed from `auto_p8.sh`'s `fp32_efficientnet_b0_*` job lines, all three seeds |
+
+**Answering the question directly: P8's MobileNetV3-Small and EfficientNet-B0 FP32 baselines used
+30 epochs, not 60.** This is a real recipe mismatch against the registered convergence depth for
+those two architectures specifically, not a difference the campaign disclosed or seems aware of —
+nothing in `train_p8.py`/`auto_p8.sh` references the 60-epoch retrain decision or
+`stage2_retrain_report.md` at all.
+
+## The fine-tune job that reached epoch 4
+
+**[from code/logs]** `ft_resnet18_30_1001` — `train_p8.py --arch resnet18 --epochs 25 --lr 0.01
+--seed 1001 --finetune-from checkpoints_p8/resnet18_pruned30_1001.pt --out
+checkpoints_p8/resnet18_p30_ft_1001.pt` (`auto_p8.sh`'s fine-tune job template). Logged accuracy
+at each epoch reached (from `p8_auto.log`, final attempt): epoch 1 train/val 0.9514/0.9080, epoch
+2 0.9613/0.9104, epoch 3 0.9626/0.9022, epoch 4 0.9653/0.9006.
+
+**Why it stopped: a clean, explicit service stop, not a crash.** `journalctl -u p8-auto.service`
+for this exact boot (`27625af78f4a4efcb33001f10565a355`, 19:57:41-22:15:20) shows exactly one
+start/stop pair: `Started` 19:57:44, then `Stopping... / Deactivated successfully / Stopped` at
+**20:00:18** — systemd's signature for an externally-requested stop (e.g. `systemctl stop`), not
+a failure exit (no "Main process exited, code=...FAILURE" line, which appears elsewhere in this
+same log for the earlier `weights_only` crash loop). No OOM-killer or segfault entry exists in the
+kernel log for this window either (checked directly). The service never restarted for the rest of
+that boot — consistent with a deliberate stop (`Restart=on-failure` doesn't trigger after a clean
+stop). `p8_auto.log`'s last write (`20:00:17`) matches this timestamp. This is a separate, earlier
+event from the researcher's later ~21:38-21:40 quarantine/disable action (D23) — by 21:38 the
+service was already inactive (stopped at 20:00:18), so quarantining it then didn't need to stop
+anything already-stopped, consistent with no further `Stopping`/`Stopped` journal lines appearing
+later in the same boot.

@@ -2,7 +2,7 @@ import os, subprocess, sys, tempfile, time, types, unittest
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from pilot import Sensor, integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile, flag_implausible_power, classify_power_regime, check_fresh_boot, find_rapl_domain, p_core_set, _col
+from pilot import Sensor, integrate, summarize, check_interval_floor, check_no_concurrent_gpu, check_platform_profile, flag_implausible_power, classify_power_regime, check_fresh_boot, find_rapl_domain, p_core_set, _col, check_ac_power
 
 class MathTests(unittest.TestCase):
     def test_wrap(self):
@@ -210,5 +210,32 @@ class DualNvmlRaplColumnTests(unittest.TestCase):
     def test_col_extracts_single_column_unchanged_shape(self):
         trace = [(0.0, [1.0, 2.0, 3.0]), (1.0, [4.0, 5.0, 6.0])]
         self.assertEqual(_col(trace, 1), [(0.0, [2.0]), (1.0, [5.0])])
+
+class AcPowerGuardTests(unittest.TestCase):
+    """D25: check_ac_power() -- find the Mains-type supply by type, not a hardcoded name."""
+    def _fake_supply_dir(self, entries):
+        """entries: list of (name, type_str, online_str_or_None) tuples."""
+        d = Path(tempfile.mkdtemp())
+        for name, type_str, online in entries:
+            sub = d / name
+            sub.mkdir()
+            (sub / 'type').write_text(type_str)
+            if online is not None:
+                (sub / 'online').write_text(online)
+        self.addCleanup(lambda: __import__('shutil').rmtree(d, ignore_errors=True))
+        return d
+    def test_mains_online(self):
+        d = self._fake_supply_dir([('ACAD', 'Mains', '1'), ('BAT1', 'Battery', None)])
+        self.assertTrue(check_ac_power(base=d))
+    def test_mains_offline(self):
+        d = self._fake_supply_dir([('ACAD', 'Mains', '0'), ('BAT1', 'Battery', None)])
+        self.assertFalse(check_ac_power(base=d))
+    def test_no_mains_supply_raises(self):
+        d = self._fake_supply_dir([('BAT1', 'Battery', None)])
+        with self.assertRaises(RuntimeError):
+            check_ac_power(base=d)
+    def test_real_machine_has_mains_online(self):
+        # Integration check against this actual machine, since every validated run here is on AC.
+        self.assertTrue(check_ac_power())
 
 if __name__=='__main__': unittest.main()
