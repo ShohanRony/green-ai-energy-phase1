@@ -961,6 +961,32 @@ no rerun of already-collected data.**
 
 ---
 
+## D27. Full-history commit rewrite: attribution trailers removed, tool names replaced with neutral wording
+
+- **What changed:** per the researcher's explicit order, every one of this repository's 94 commits
+  was rewritten to strip attribution trailers from commit messages, and the few prose references to
+  the coding assistant's tool name — in commit messages and in 5 documentation/report files — were
+  replaced with neutral wording ("the coding assistant"). Author/committer name, email, commit
+  subjects, commit count, commit order, and parent relationships are all unchanged; only the trailer
+  lines and the tool-name prose differ.
+- **Mapping recorded:** `docs/history_rewrite_map.md` — old commit hash → new commit hash for all 94
+  commits (matched unambiguously by exact author-date timestamp, cross-checked against subject line;
+  zero ambiguous matches), plus the list of the 5 files whose content differs between the old and new
+  trees. One commit exists only in the new history (authored after the rewrite, not part of the
+  mapping — new work, not a rewritten commit).
+- **Verification:** no attribution-trailer line or tool name found in any commit message or any
+  historical diff content across all reachable refs after the rewrite; none in the current working
+  tree; only the researcher's two own author/committer identities appear anywhere in the history.
+- **Going forward:** per the researcher's standing instruction, all new commits, documentation, and
+  deviation entries in this repository use neutral wording for the coding assistant and do not name
+  any specific AI tool. This entry itself follows that rule.
+- **Scope of this entry:** records the rewrite that already happened. No further history rewrite was
+  performed or is proposed here — a separate residual-name scan was run across the current tree and
+  all tags/branches and reported hits (if any) to the researcher directly, per the explicit
+  instruction not to rewrite anything further without sign-off.
+
+---
+
 ## Anomalies noted, not deviations
 
 These are flagged discrepancies that remain unresolved but were not themselves decisions that changed
