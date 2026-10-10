@@ -1562,3 +1562,68 @@ state)` combination occurs more than once in the input, rather than silently acc
 implicitly mis-weighting) rep-level data. Rep-level aggregation into one `log_ratio` per
 `(session, model, state)` is a precondition for calling this function, not something it performs
 itself.
+
+**A7r8 — 2026-10-10. Dated revision (A7/A7r1-A7r7's text above is unchanged — this stands alongside
+them). Registers a curvature and slope-heterogeneity diagnostic for RQ2, before the freeze.**
+
+**The primary RQ2 model and its decision rule are unchanged by this entry.** The primary fit
+stays exactly as A7r3(f)/A7r7(e) register it: `log(r) ~ β·log(MAC ratio) + model (fixed, 3
+levels) + (1|session)`, REML, Satterthwaite df, one-sided left-tail test of H2 (β < 1) on
+zero-finetune pruned states only. Nothing below changes that model or that test.
+
+**(a) Definition of β, stated precisely because the simulation evidence below shows why it
+matters:** **β is the pooled log-linear slope of log-ratio on log-MAC-ratio, over the observed
+range of the zero-finetune pruned states — it is not a power-law exponent**, and is not claimed
+to be constant outside that observed range or across architectures. **Methods and Abstract text
+must say so explicitly** wherever β is reported — e.g. "the fitted log-linear slope over the
+pruned-state MAC-ratio range studied," not "the scaling exponent of energy with FLOPs." This
+definition is not a new restriction on what β means; it states precisely what A7r3(f)'s linear
+specification always implied, now made explicit because the diagnostics below quantify the
+consequence of treating it as something stronger.
+
+**(b) The two diagnostics (`analysis/rq2_diagnostics.R`) are sensitivity analyses, never
+confirmatory tests.** `fit_curvature_diagnostic()` adds a quadratic term
+(`log_ratio ~ log_mac + I(log_mac^2) + model + (1|session)`, REML, Satterthwaite CI on the
+quadratic coefficient, plus a likelihood-ratio test of the quadratic term from ML refits of the
+model with and without it). `fit_heterogeneity_diagnostic()` lets the log_mac slope vary by
+architecture (per-architecture slopes with their own Satterthwaite CIs, plus a likelihood-ratio
+test of the interaction from ML refits). **No multiplicity adjustment applies to either** — they
+are not part of the Holm-adjusted confirmatory family (P-CF, A7r1(b)) — and **neither diagnostic
+ever changes the H2 verdict**: the primary fit's p-value and CI are reported exactly as the
+primary model produces them, regardless of what the diagnostics find. Both diagnostics use the
+same converged/singular definitions as the primary fit (A7r6(a)/A7r7).
+
+**(c) Interpretation rule, fixed now, before any real data exists:**
+- **If the quadratic coefficient's 95% CI includes 0 AND the three per-architecture slope CIs
+  are mutually consistent** (the interaction LRT is not significant at α = 0.05) — **report the
+  pooled β as is**, no caveat beyond (a)'s standing definition.
+- **Otherwise** (the quadratic CI excludes 0, or the interaction LRT is significant, or both) —
+  **report the primary β with a mandatory caveat sentence**: *"slope over the observed range
+  only; not constant across range/architectures."* **Lead the Results section with the
+  per-architecture slope estimates and the quadratic estimate**, before presenting the pooled β —
+  the pooled number is still reported (it is still the primary, decision-rule-bearing estimate),
+  but it does not get to stand alone as the first number a reader sees once either diagnostic has
+  flagged a real departure from the pooled-linear picture.
+
+**(d) Conservative type I error and power when architecture slopes differ, with simulation
+evidence (`analysis/simulate_rq2_diagnostics.R`, full table:
+`docs/analysis_environment.md`).** When true per-architecture slopes diverge, **the pooled H2
+test can be very conservative** — in the simulated heterogeneous scenario with true slopes
+0.9/1.0/1.1 (pooled mean 1.0, at the H2 null boundary), the primary test's rejection rate was
+**0.3%**, far below the nominal 5%, because the pooled fit's own uncertainty inflates to absorb
+the unmodeled across-architecture variation rather than concentrating around a single value.
+**Pooled-test power therefore depends on how similar the true per-architecture slopes are, not
+just on how far the pooled mean sits from 1** — a result that would look like a weak effect from
+the p-value alone can instead be architecture-level heterogeneity masquerading as noise. The
+interaction LRT diagnostic is what actually surfaces this: it detected both simulated
+heterogeneous cases in **100% of replicates** (`docs/analysis_environment.md`'s table), including
+the near-null pooled-1.0 case where the primary test itself was essentially blind to the effect.
+Separately, the curvature diagnostic's simulation rows show the complementary finding for
+nonlinearity: `beta_hat` is essentially unbiased against the population best-linear-projection
+slope (the primary model's actual estimand) at every curvature level tested, while being badly
+biased (up to -0.18) and having zero coverage against the underlying nonlinear truth's own
+coefficient — the practical reason (a)'s definition insists β is a slope-over-the-observed-range,
+not a power-law exponent. Both LRTs showed a mild, not severe, excess over the nominal 5% false-
+positive rate in their respective null cases (quadratic: 6.6% at γ=0; interaction: 7.5% in the
+homogeneous-null scenario) — disclosed, not treated as invalidating either diagnostic's use as a
+sensitivity check.
