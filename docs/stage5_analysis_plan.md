@@ -1047,3 +1047,221 @@ the between-session SD must be for a 90% CI to even fit inside ±5%. An observed
 the actual 90% CI (centred on the observed mean, not assumed to be 0) must still be computed and
 checked against the ±5% margin per D2r1 before concluding YES. SD above `0.0415` is sufficient to
 conclude NO (as already stated above); SD at or below it is not sufficient to conclude YES.
+
+**A7r3 — 2026-10-10. Dated revision (A7/A7r1/A7r2's text above is unchanged — this stands alongside
+them).**
+
+**(a) GPU-block D2 NO branch: one construction only — the bridged ratio.** A7r2's D2r1 "practical
+note" (*"the baseline switch uses FP32-TorchScript sourced from series R... not a multiplicative
+bridge... but the TS baseline itself"*) is **superseded by this entry** for the GPU block. The
+**only** construction used for the GPU block's D2 NO branch, from here on, is:
+
+```
+bridged ratio = ratio_eager × (eager/TS factor from series R)
+```
+
+with the eager/TS factor's own between-session uncertainty propagated into the bridged ratio's
+interval (relative variances add, since the two factors are independent ratios from different
+measurement sources).
+
+- **Reason this supersedes A7r2's practical note:** that note proposed substituting series R's own
+  FP32-TS reading *directly* as the GPU block's baseline — i.e. dividing a main-session eager
+  measurement by a *different session's* TS measurement. That constructs a **cross-session ratio**,
+  which D17 (`deviation_log.md`) already found unsafe in this exact setting: between-session drift
+  on this GPU, measured directly, ranges from **−12.20% to +3.70%** on repeated conditions — larger
+  than D2's own ±5% equivalence margin. A cross-session substitution could introduce more noise than
+  the runtime confound it was meant to fix. The bridged-ratio construction avoids this: the eager/TS
+  *factor* from series R is a **ratio of two conditions measured within series R's own sessions**,
+  and is then applied multiplicatively to the GPU block's own within-session eager ratio — drift
+  affects the factor's own uncertainty (propagated, disclosed) rather than silently contaminating
+  the GPU block's numerator with a foreign session's value.
+- **This is an adaptation for the GPU block, not the audit's own wording** — restated plainly, same
+  disclosure A7r2 already made for the practical note it replaces: the audit's literal D2 NO branch
+  (*"use FP32-TorchScript as the baseline for every ratio"*) is a direct baseline switch, which
+  works for the CPU blocks (own within-session TS, (b) below) but not for the GPU block (no
+  within-session TS to switch to). The bridged ratio is this project's own bridging solution for
+  that specific gap, not a transcription of the audit.
+- **A8r2's consequence line is also superseded accordingly:** A8r2 already described the GPU
+  consequence as "applied via A7r1(a)'s bridging construction," which is consistent with this entry,
+  not A7r2's "TS sourced from series R itself" framing — A8r2's wording stands as the correct one;
+  A7r2's practical-note sentence is what this entry withdraws.
+
+**(b) CPU blocks: FP32-TS stays the primary baseline regardless of D2's outcome — A7 point 2
+reaffirmed.** D2 is still evaluated on the CPU blocks, but for **disclosure only** — it does not
+change which baseline is primary there (unlike the GPU block, where D2's outcome is decision-
+relevant per (a)).
+- **Degrees of freedom: 5** (6 sessions − 1, per the CPU blocks' fixed 6-session count, A7r1(e)).
+- **SD limit for the CPU blocks' own D2 check:** `ln(1.05) × sqrt(6) / t(0.95, 5)`. Computed:
+  `0.04879 × 2.4495 / 2.0150 ≈ 0.0593` — **about 0.059** (in log units, ≈5.9%), looser than the GPU
+  block's 4-session 0.0415 bound, as expected with one more degree of freedom and one more
+  replicate.
+- **D2 is evaluated per architecture, not pooled across the three** — each CPU-block session
+  already measures FP32-TS and FP32-eager for all three architectures (A7r1(e)), giving three
+  separate per-architecture equivalence checks per block. **A block counts as "bounded" only if all
+  three architectures are** — a single architecture's disagreement is enough to call the block's D2
+  result "not bounded" overall, disclosed per-architecture rather than averaged away.
+
+**(c) "Looked at" statement — attribution and scope corrected, A7r1(g) revised.** Two corrections:
+- **Attribution:** A7r1(g) (and A7 point 13 before it) attributed the Session 1 spot checks (pinned
+  vs. unpinned mean system J/image, **+0.6%**, range **−1.6% to +3.5%**; `_bnrecal`-vs-zero-finetune,
+  **~1% apart**) to "the researcher." **This was wrong — both were run by the supervisor review, not
+  the researcher.** Corrected here; A7r1(g)'s text is left as-is per §12.
+- **Scope:** both spot checks are **comparisons of energy between runs**, not merely per-condition
+  means as A7r1(g)'s surrounding language implied — stated precisely so "looked at" isn't read as
+  weaker than it actually was.
+- **Added to the inventory:** the battery-check work (`docs/stage4b_battery_check.md`) looked at,
+  per-session, the mean and minimum GPU power and power-regime classification of `resnet18_fp32` in
+  all 9 session directories, plus inspection of `windows.csv`'s column schema and
+  `environment.json`'s recorded fields (confirming no power-source field exists pre-D26). **None of
+  this constitutes a state-vs-baseline ratio, interval, or hypothesis test** — it is single-condition
+  (`resnet18_fp32` only, not compared against any other state) descriptive power/regime inspection,
+  for a data-integrity purpose (AC-vs-battery corroboration), not an outcome comparison. Stated
+  explicitly so the "looked at" inventory remains complete and accurate after this review's own work
+  is folded in.
+
+**(d) D3r1, computation specified in full. Marked: proposal pending researcher confirmation.**
+- **Per architecture and prune level** (9 combinations: 3 architectures × {30, 50, 70}): per
+  CPU-block session, compute `log(bnrecal energy / zero-finetune energy)` for that architecture and
+  prune level, using that session's own paired measurements (both conditions exist in every
+  CPU-block session, A7r1(e)).
+- **Mean over the 6 sessions**, **90% interval** (TOST-equivalent, same convention as D2), **df = 5**
+  (6 sessions − 1) — same session-as-replicate-unit logic as every other confirmatory/decision-rule
+  estimator in this plan.
+- **Margin: ±5%** (log units, `ln(1.05) ≈ 0.04879`), same convention as D1/D2.
+- **Added, a scope clarification not previously stated:** regardless of what D3r1 concludes, **A5's
+  fine-tuned models' energy is measured directly in every case** — D3r1 is not a substitute for
+  measuring A5's energy, because `_bnrecal` only changes BatchNorm statistics (a handful of
+  parameters, no gradient-based weight update) while fine-tuning changes **all** weights; the two
+  are not the same kind of post-pruning intervention, and D3r1's YES branch's own "infer from
+  architecture" language (A7r2) is read narrower than it may have first appeared: **D3r1 informs the
+  discussion of whether weight-dependent power effects exist at all, it does not license skipping
+  A5's own direct measurement.**
+- **Marked: proposal pending researcher confirmation** — the per-architecture/prune-level
+  computation above is specified so it is ready to run once CPU-block data exists; it is not itself
+  confirmed as the final method by the researcher as of this entry.
+
+**(e) D4r1: inactive unless A6 is amended. Marked: proposal pending researcher confirmation.**
+Restated sharper than A7r2's "status" note: **D4r1 is inactive** — not evaluated, not a pending
+computation waiting on data — **unless A6 is itself amended first**, by a **dated revision, written
+before any 224×224 data exists**, that explicitly registers the β<1 model (RQ2/P-MAC) as a
+confirmatory test to run against A6's 224×224 pass, not merely the "descriptive and exploratory...
+adds no confirmatory hypothesis" use A6 currently registers. **Until that amendment exists, D4r1 is
+not evaluated at all, and A7r1(j)'s appended limitation sentence applies** (regime dependence stated
+as a limitation, no generalisation claim made) — this is the default, active state of this plan
+right now, not a fallback contingent on a future negative result. **Marked: proposal pending
+researcher confirmation.**
+
+**(f) RQ2 primary β fit: zero-finetune pruned states only; `_bnrecal` is a sensitivity fit —
+P-MAC (A7r1(d)) corrected.** A7r1(d)'s model pooled pruned30/50/70 **and** their `_bnrecal`
+counterparts into one β fit. Corrected: **the primary fit uses the zero-finetune pruned states
+only** (pruned30/50/70, one MAC-ratio value per architecture/ratio pair). The `_bnrecal` states are
+excluded from the primary fit and instead form a **separate sensitivity fit**, because a `_bnrecal`
+state has the **identical MAC ratio** to its zero-finetune counterpart (recalibration changes no
+weight shapes, no channels — `_bnrecal` is BatchNorm-statistics-only, (d) above) — pooling both into
+one fit would **double-count** each architecture/ratio pair's MAC-ratio value under two different
+energy observations, inflating the effective sample size on the predictor axis without adding an
+independent data point.
+- **The test, stated precisely:** a **one-sided test of H2: β < 1** (not β ≠ 0 — the hypothesis is
+  about the slope being below unity, i.e. energy under-reduces relative to MACs, not merely nonzero).
+- **Software and degrees-of-freedom method, named:** fit in **R**, via **`lme4`/`lmerTest`**
+  (`lmerTest::lmer`, REML), with **Satterthwaite-approximated degrees of freedom** for the fixed
+  effect — the standard small-sample df correction for mixed models, and the reason R is named here
+  rather than this project's existing Python toolchain: no equivalent Satterthwaite/Kenward-Roger
+  implementation exists in this project's current Python dependencies (`statsmodels.MixedLM` does
+  not provide one). This is a disclosed, additional piece of analysis tooling, separate from the
+  measurement harness itself (which stays Python/`pilot.py`, unchanged).
+- **One-sided p-value, computed explicitly (not read directly off `lmerTest`'s default output,
+  which tests against 0, not against 1):** test statistic `t = (β̂ − 1) / SE(β̂)`, left-tailed
+  p-value against the Satterthwaite df `lmerTest` reports for that fixed effect.
+- **Reported: β̂ with its 95% CI** (symmetric t-interval, same Satterthwaite df), alongside the
+  one-sided p-value above — both the point estimate/interval and the directional test, not the test
+  alone.
+
+**(g) Specification-curve headline metric, defined before any data exists. Marked: descriptive.**
+A7 point 9 names the specification-curve's axes (instrument, boundary, runtime, regime, gross/net)
+but never defined a single summary number for "how much the ratio moves across those axes." Defined
+here, for a given compressed state, against the set `{log r_s}` of log-ratios computed under every
+specification combination `s`:
+
+```
+SD_spec = standard deviation of {log r_s} across all specification combinations
+
+headline_1 = SD_spec / w*      (w* = half-width of the primary ratio's own 95% log-r interval)
+headline_2 = SD_spec / |log r*|  (r* = the primary-specification ratio itself)
+```
+
+- `headline_1` compares the across-specification spread to the primary estimate's own sampling
+  uncertainty — a value well above 1 means specification choice moves the ratio more than ordinary
+  sampling noise would.
+- `headline_2` compares the spread to the effect size itself — a value well above 1 means the
+  specification-dependence is large enough to plausibly flip the qualitative conclusion (not just
+  add noise around an otherwise-stable effect).
+- **Marked descriptive** — consistent with A7 point 9's own framing ("presented as a distribution...
+  not a sensitivity-analysis afterthought," never registered as a hypothesis test); no p-value or
+  significance threshold is attached to either headline number.
+
+**(h) Void-and-rerun criteria, pre-declared, independent of outcomes.** For any x86-CPU or M1-CPU
+primary-block session (not yet run):
+1. **AC guard abort** (D26's `check_ac_power()` raising, at condition start or mid-run) — **void the
+   entire session**, rerun entirely on a fresh boot. Consistent with D26's own no-override design:
+   an AC loss is treated as a session-level integrity failure, not a single-condition exclusion.
+2. **Crash** (any `pilot.py` invocation exiting non-zero for a reason other than an AC abort —
+   unhandled exception, OOM, killed process) — **void and rerun that condition only**, unless the
+   crash's cause itself implies session-wide contamination (e.g. the concurrent-GPU guard tripped,
+   §8), in which case void the whole session.
+3. **Thermal-throttle flag, a measurable definition proposed for each platform (neither currently
+   implemented in the harness — disclosed, not assumed built):**
+   - **x86:** mean P-core `scaling_cur_freq` during an active window falls below **80% of
+     `cpuinfo_max_freq`** despite the `performance` governor being active (mirrors the GPU's own
+     `classify_power_regime` convention — a threshold against a known maximum, not an absolute
+     number invented from nothing). **Not yet implemented** — §8 currently has no thermal-throttle
+     exclusion category for x86 at all; this is a new gap this entry identifies, not a pre-existing
+     guard being restated.
+   - **M1:** `pmset -g therm` reporting above `nominal`, **or** a clock-frequency drop relative to
+     that session's own early-rep baseline exceeding a threshold **not yet calibrated** (needs a
+     real throttle event captured first, per `docs/m1_harness_design.md` §4's own disclosure — this
+     entry proposes the *comparative* structure of the check, not a calibrated number). Extends
+     §10's existing "thermal/throttle logging (fanless machine)" mention, which named the logging
+     requirement but never a measurable flag.
+   - **Both:** void and rerun the affected condition only, not the whole session, consistent with
+     crash handling above (a throttle event is condition-local, not a session-wide integrity
+     failure the way an AC loss is).
+4. **Interrupted session** (process killed externally, machine rebooted mid-session, or any power
+   loss not caught by the AC guard, e.g. a battery-swap edge case) — **void the entire session**,
+   rerun entirely.
+- **Consistency with §8:** §8's existing exclusions (plausibility-guard trips, governor-not-
+  performance, concurrent-GPU-detected, cold-start rep, M1 swapped-memory) predate D26 and the CPU
+  blocks; they remain exclusion criteria (data points dropped from analysis) for the already-
+  collected GPU block, where A4's "no conditional add/drop of sessions" rule means no rerun ever
+  follows an exclusion there. For the **new** CPU blocks, the criteria above are **additional**,
+  not a replacement — §8's existing list still applies as exclusions where a rerun criterion above
+  doesn't independently apply (e.g. a cold-start rep is still simply excluded, not void-and-rerun).
+- **Consistency with §10:** M1's swapped-memory exclusion (§10, `vm_stat` monitoring) is unchanged
+  and is an exclusion, not a void-and-rerun trigger, by the same logic — swapping degrades one
+  condition's numbers without indicating a session-wide integrity failure.
+- **Seeds, assigned here:** **x86-CPU: `3000 + N`**; **M1-CPU: `4000 + N`** — two new families,
+  each distinct from every other seed family this project uses (2026, 1001-1003, 2000+N for series
+  R), so no session-order seed is ever confusable with another family's provenance. (`3000+N` is
+  already the condition-order seed implemented in `scripts/run_cpu_block_session.py`, confirmed
+  consistent with this assignment, not a new choice contradicting existing code.)
+
+**(i) Stale cross-references fixed, dated correction, not an in-place edit:**
+- **A7r1(j) point 2** said the P1 wall-meter protocol "does not exist yet." **Stale** — it now
+  exists in draft form, `docs/p1_wall_meter_protocol.md` (written since A7r1 was drafted). Current,
+  accurate status: **the protocol document exists; no meter has been chosen; the protocol has not
+  been run.** D1 remains unevaluated for the same reason as before (no meter, no data), just via an
+  updated status, not the original "doesn't exist" gap.
+- **A7 point 5** cross-references "the mixed-model robustness check (point 8)" — **wrong point
+  number.** The mixed-model robustness check is **point 7** (the RQ2 model); point 8 is the
+  gross-vs-net-of-idle primary-outcome declaration, an unrelated point. A7's own text is left as-is
+  per §12; this is the correction of record.
+
+**(j) Disclosure: prospective registration status differs by block.** The **x86-GPU block's** six
+sessions (`main_session1`-`main_session6` and the unpinned/aborted directories) were **collected
+before A7 existed** (A7 is dated 2026-10-09; the GPU sessions' collection dates are earlier,
+`docs/stage4b_battery_check.md`'s own per-session timestamps, 2026-10-06 through 2026-10-08) — **the
+GPU block's data are not prospectively registered**, regardless of how its analysis is now specified
+post hoc. **The two CPU blocks (x86-CPU, M1-CPU) are prospectively registered** — their conditions,
+session counts, seeds, and void-and-rerun criteria are all fixed in this plan before any session has
+been run. This distinction is stated plainly because it affects how strong a confirmatory claim each
+block's results can support, independent of anything else this plan registers about them.
