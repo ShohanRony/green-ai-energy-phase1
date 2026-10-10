@@ -1,0 +1,5 @@
+"scenario_id","label","gamma","beta_true","blp_slope","session_sd","residual_sd","n_reps","bias_vs_beta_true","bias_vs_blp_slope","coverage_vs_beta_true","coverage_vs_blp_slope","rejection_rate","quad_lrt_detection_rate","n_fit_failed","n_nonconverged","n_singular","diag_n_nonconverged","diag_n_singular"
+200,"curvature_sweep",0,0.8,0.8,0.04,0.02,1000,5.24164580084641e-05,5.24164580084641e-05,0.951,0.951,1,0.066,0,0,0,0,0
+201,"curvature_sweep",0.01,0.8,0.770555483532248,0.04,0.02,1000,-0.0293265393864286,0.000117977081323661,0,0.95,1,0.219,0,0,0,0,0
+202,"curvature_sweep",0.03,0.8,0.711666450596743,0.04,0.02,1000,-0.0882897000012395,4.3849402017182e-05,0,0.964,1,0.905,0,0,1,0,0
+203,"curvature_sweep",0.06,0.8,0.623332901193487,0.04,0.02,1000,-0.176617880049475,4.92187570384495e-05,0,0.992,1,1,0,0,1,0,0

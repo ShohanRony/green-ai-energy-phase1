@@ -1,0 +1,4 @@
+"scenario_id","label","beta_true","session_sd","residual_sd","n_reps","bias","coverage","rejection_rate","interaction_lrt_detection_rate","n_fit_failed","n_nonconverged","n_singular","diag_n_nonconverged","diag_n_singular"
+204,"heterogeneous_pooled_0.8",0.8,0.04,0.02,1000,-0.0194646316441293,1,1,1,0,0,531,0,1
+205,"heterogeneous_pooled_1.0",1,0.04,0.02,1000,-0.0102062725337982,1,0.003,1,0,0,51,0,1
+206,"homogeneous_null",1,0.04,0.02,1000,2.37313685627072e-05,0.948,0.053,0.075,0,0,1,0,1
