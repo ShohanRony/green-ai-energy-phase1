@@ -1627,3 +1627,66 @@ not a power-law exponent. Both LRTs showed a mild, not severe, excess over the n
 positive rate in their respective null cases (quadratic: 6.6% at γ=0; interaction: 7.5% in the
 homogeneous-null scenario) — disclosed, not treated as invalidating either diagnostic's use as a
 sensitivity check.
+
+**A7r9 — 2026-10-10. Dated revision (A7/A7r1-A7r8's text above is unchanged — this stands
+alongside them). Closes three gaps found in a final review.**
+
+**(a) Operational definition of "fails to converge" for A7r6(b), and implementation status.**
+A7r6(b) registered a fallback ("the same model with `session` as a fixed factor") for when
+`lmerTest`/`lme4` "fails to converge," without stating precisely what triggers it. **Stated now:
+the fallback triggers if `fit_rq2_model()` raises an error, OR returns `converged == FALSE`.
+Singularity alone never triggers it** — a singular-but-converged fit stays on the primary
+(`lmer`) path, exactly as A7r6(a) already requires. **The fallback is now implemented**, in
+`analysis/rq2_fallback.R`'s `fit_rq2_with_fallback()`, which wraps `fit_rq2_model()` without
+modifying it, refits `log_ratio ~ log_mac + model + session` via ordinary least squares
+(`lm()`, session as a fixed factor, not a random effect) on the trigger condition above, and
+reports the same columns as the primary fit plus `model_used` ("lmer" or "lm_fixed_session") and
+a `complete_design` flag (c, below). **Tested** on synthetic data: the normal path correctly
+stays on `lmer`; a forced failure (via an injectable primary-fit function, so the error path is
+tested deterministically rather than by engineering fragile pathological data) correctly falls
+back, with `df = 45` — confirmed directly against `lm()`'s own reported residual degrees of
+freedom for the full 54-row registered design, matching A7r6(b)'s own stated figure; a real
+singular-but-converged fit (near-zero between-session variance) correctly stays on `lmer`, not
+the fallback.
+
+**(b) Correction of record to A7r6(d)'s heterogeneity bullet — A7r6(d)'s original text is left
+exactly as written, per this plan's append-only rule; this is the correction, not an edit.**
+A7r6(d) reported the heterogeneous-slope simulation scenarios' gap from the simple pooled mean
+(-0.0195 for the 0.6/0.8/1.0 scenario, -0.0102 for the 0.9/1.0/1.1 scenario, both figures
+restated here to the precision now computed) as `beta_hat`'s **bias**. **This was the wrong
+framing. These figures are not estimation bias — they are the registered pooled estimator's own
+design weighting, operating exactly as specified.** By Frisch-Waugh-Lovell, the primary model's
+pooled log_mac coefficient, when true per-architecture slopes differ, is **not** the simple
+arithmetic mean of those slopes — it is a weighted average, with each architecture's weight equal
+to its own within-architecture sum-of-squared log-MAC-ratio deviations, divided by the total
+across all three architectures. Computed directly from the registered design
+(`analysis/check_pooled_slope_weights.R`):
+
+| Architecture | Weight |
+|---|---|
+| ResNet-18 | **0.4088** |
+| EfficientNet-B0 | 0.3100 |
+| MobileNetV3-Small | 0.2812 |
+
+**The pooled β is an architecture-weighted average dominated by ResNet-18** (largest MAC-ratio
+span across its three pruned states, hence the largest within-architecture variance in log_mac,
+hence the largest Frisch-Waugh weight) — not an equally-weighted average of the three
+architectures' own slopes. The implied weighted slope for the two simulated scenarios:
+0.6/0.8/1.0 → **0.780245**; 0.9/1.0/1.1 → **0.990123**. **These match the actual simulated mean
+`beta_hat`** (0.780196 and 0.989959 respectively — differences of -0.00005 and -0.00016, ordinary
+1000-replicate sampling noise, not a real discrepancy) far more closely than the simple pooled
+means (0.8, 1.0) did — confirming the gap A7r6(d) called "bias" is the design weighting, not
+estimator error. **Methods text must report the pooled β as a design-weighted average of the
+per-architecture slopes (stating the weights or pointing to where they are computed), alongside
+the per-architecture slope estimates themselves** (`analysis/rq2_diagnostics.R`'s
+`fit_heterogeneity_diagnostic()`, A7r8(b)) — never the pooled number alone, once per-architecture
+slopes are known to differ.
+
+**(c) `complete_design`, now a reported field, not a silent assumption.** `fit_rq2_with_fallback()`
+(a, above) computes and returns `complete_design` (`TRUE` only if `n_obs == n_sessions ×
+n_models × 3`, the registered design's full cell count) on every call, for both the primary and
+fallback paths. **An incomplete design (a missing session/architecture/prune-level cell) is
+fit and reported, not silently treated as if it were the full registered design** — consistent
+with A7r3(h)'s void-and-rerun criteria, which can legitimately leave a session with fewer than
+the full condition count after a voided-and-not-yet-rerun condition. `complete_design == FALSE`
+is a disclosure flag for the researcher to see, not an error condition this function raises.
