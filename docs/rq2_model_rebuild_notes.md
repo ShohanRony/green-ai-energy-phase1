@@ -74,3 +74,12 @@ For scenarios where true mean d = 0 (prop_c1, hetero_mean0, ctrl_prop1.0, prop1.
 - **prop1.0_noise3**: FAIL (Rej: 0.030 pass, Cov: 0.972 FAIL, SE/SD: 1.061 pass)
 
 **Overall Acceptance Criteria: FAILED**
+
+## Convergence Diagnosis and Fallback Rule Decision
+A convergence diagnosis was run on 300 replicates each for three scenarios (`prop_c1`, `floor_f0.3`, `hetero_floor`). Among the 900 fits, 125 were flagged as `converged == FALSE` (all with singular fits and degenerate Hessians with a negative eigenvalue).
+
+When refitting these flagged cases with `bobyqa` and comparing against the default optimizer and the session-mean t-test, the default estimates and standard errors agreed within 1% of the `bobyqa` results in 82.4% of cases. However, they agreed within 1% of the session-mean t-test standard errors in only 4.0% of cases.
+
+**Decision**: Because the agreement rate with the alternatives was below the required 95% threshold, the current trigger is retained. A gradient/Hessian warning alone remains a hard trigger for the fallback.
+
+**Fallback Frequency**: Under the current trigger, across the full simulation grid of 1000 replicates per scenario, the fallback fires between roughly 10% and 16% of the time (e.g., 98 times for `prop_c1.25`, 164 times for `hetero_floor`).
