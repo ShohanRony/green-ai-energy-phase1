@@ -136,9 +136,13 @@ def run_session(session_n, architectures, out_base, checkpoints_dir,
                 if 'thermal_flag' not in reader.fieldnames:
                     raise RuntimeError(f"thermal_flag column missing from {csv_path}")
                 for row in reader:
-                    if int(row['repeat']) > 0 and row.get('thermal_flag', 'False') == 'True':
-                        flagged = True
-                        break
+                    if row.get('phase') in {"a1", "a2"} and int(row['repeat']) > 0:
+                        flag_val = row.get('thermal_flag', '')
+                        if not flag_val:
+                            raise RuntimeError(f"Evaluation missing (empty thermal_flag) in {csv_path}")
+                        if flag_val == 'True':
+                            flagged = True
+                            break
             
         if crashed or flagged:
             void_log['voids'].append({'condition': f'{arch}_{condition}', 'crashed': crashed, 'thermal_flagged': flagged})

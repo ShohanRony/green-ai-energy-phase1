@@ -263,11 +263,27 @@ class ThermalGuardTests(unittest.TestCase):
         mock_exists.return_value = False
         self.assertIsNone(pilot.read_thermal_thresholds('cuda'))
 
+    @patch('pilot.Path.exists', return_value=True)
+    @patch('pilot.Path.read_text')
+    def test_invalid_thresholds_raises(self, mock_read, mock_exists):
+        import pilot
+        mock_read.return_value = '{"rule_version": "v1", "source": "test"}' # no T_mhz
+        with self.assertRaisesRegex(RuntimeError, "Invalid or missing T_mhz"):
+            pilot.read_thermal_thresholds('cpu')
+            
+        mock_read.return_value = '{"T_mhz": 2000, "source": "test"}' # no rule_version
+        with self.assertRaisesRegex(RuntimeError, "Invalid or missing rule_version"):
+            pilot.read_thermal_thresholds('cpu')
+            
+        mock_read.return_value = '{"T_mhz": 2000, "rule_version": "v1"}' # no source
+        with self.assertRaisesRegex(RuntimeError, "Invalid or missing source"):
+            pilot.read_thermal_thresholds('cpu')
+
     @patch('pilot.read_thermal_thresholds')
     @patch('pilot.p_core_set')
     def test_missing_cpu_throttle_raises(self, mock_pcore, mock_read):
         import pilot
-        mock_read.return_value = {'T_mhz': 2000}
+        mock_read.return_value = {'T_mhz': 2000, 'rule_version': 'v1', 'source': 'test'}
         mock_pcore.return_value = {0, 1}
         # Do not create thermal_throttle directories
         with self.assertRaisesRegex(RuntimeError, "require thermal_throttle/core_throttle_count on all P-cores"):
@@ -277,7 +293,7 @@ class ThermalGuardTests(unittest.TestCase):
     @patch('pilot.p_core_set')
     def test_thermal_guard_flags(self, mock_pcore, mock_read):
         import pilot
-        mock_read.return_value = {'T_mhz': 2000}
+        mock_read.return_value = {'T_mhz': 2000, 'rule_version': 'v1', 'source': 'test'}
         mock_pcore.return_value = {0, 1}
 
         # Setup sysfs
@@ -304,8 +320,12 @@ class ThermalGuardTests(unittest.TestCase):
             ([1800, 1800], 0, 0, 0, 40.0),
             ([1800, 1800], 0, 0, 0, 40.0)
         ]
-        res = guard.evaluate(trace)
+        res = guard.evaluate(trace, active=True)
         self.assertTrue(res['thermal_flag']) # 1800 < 2000
+        
+        # Test idle window at low frequency -> None
+        res_idle = guard.evaluate(trace, active=False)
+        self.assertIsNone(res_idle['thermal_flag'])
         
         # Test counter increase flag
         trace2 = [

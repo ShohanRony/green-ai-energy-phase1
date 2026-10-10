@@ -229,7 +229,18 @@ def read_thermal_thresholds(device):
         if device == 'cpu':
             raise RuntimeError('CPU runs require config/thermal_thresholds.json for thermal guard.')
         return None
-    return json.loads(path.read_text())
+    data = json.loads(path.read_text())
+    if device == 'cpu':
+        t_mhz = data.get('T_mhz')
+        version = data.get('rule_version')
+        source = data.get('source')
+        if not (isinstance(t_mhz, (int, float)) and t_mhz > 0):
+            raise RuntimeError("Invalid or missing T_mhz in thermal_thresholds.json")
+        if version != "v1":
+            raise RuntimeError("Invalid or missing rule_version in thermal_thresholds.json (must be 'v1')")
+        if not (isinstance(source, str) and source):
+            raise RuntimeError("Invalid or missing source in thermal_thresholds.json")
+    return data
 
 class ThermalGuard:
     def __init__(self, device, sysfs_root='/sys'):
@@ -291,7 +302,7 @@ class ThermalGuard:
             
         return (freqs, core_throttle, pkg_throttle, pkg_throttle_ms, temp)
 
-    def evaluate(self, trace):
+    def evaluate(self, trace, active=True):
         if not trace: return {}
         all_freqs = [f for smp in trace for f in smp[0]]
         mean_freq = sum(all_freqs)/len(all_freqs) if all_freqs else 0
@@ -304,12 +315,15 @@ class ThermalGuard:
         max_temp = max(temps) if temps else None
         
         flag = False
-        if self.thresholds:
-            T = self.thresholds.get('T_mhz', 0)
-            if mean_freq < T: flag = True
-            
-        if self.has_throttle and c_th_delta is not None and c_th_delta > 0:
-            flag = True
+        if not active:
+            flag = None
+        else:
+            if self.thresholds:
+                T = self.thresholds.get('T_mhz', 0)
+                if mean_freq < T: flag = True
+                
+            if self.has_throttle and c_th_delta is not None and c_th_delta > 0:
+                flag = True
             
         return dict(
             thermal_pcore_mean_freq_mhz=mean_freq,
@@ -386,7 +400,7 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
                 power_regime=classify_power_regime(sensor.device, energy/duration, sensor.power_cap_w),
                 ac_online=True,  # D25: a completed window only exists because every sample()
                                  # call confirmed AC; any False mid-window aborts before this return.
-                **extra, **thermal_guard.evaluate(thermal_trace))
+                **extra, **thermal_guard.evaluate(thermal_trace, active=(work is not None)))
 
 def summarize(rows):
     # Independently paired A/A differences estimate the noise relevant to a future A/B comparison.

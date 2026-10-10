@@ -20,9 +20,9 @@ def stub_runner(calls):
             out_dir.mkdir(parents=True, exist_ok=True)
             import csv
             with open(out_dir / 'windows.csv', 'w', newline='') as f:
-                w = csv.DictWriter(f, fieldnames=['repeat', 'thermal_flag'])
+                w = csv.DictWriter(f, fieldnames=['repeat', 'phase', 'thermal_flag'])
                 w.writeheader()
-                w.writerow({'repeat': 0, 'thermal_flag': 'False'})
+                w.writerow({'repeat': 0, 'phase': 'a1', 'thermal_flag': 'False'})
         class _Result:
             returncode = 0
         return _Result()
@@ -173,14 +173,14 @@ class ThermalVoidRerunTests(unittest.TestCase):
                 out_dir.mkdir(parents=True, exist_ok=True)
                 if 'fp32_eager' in str(args) and flag_count == 0:
                     self._write_csv(out_dir, [
-                        {'repeat': 0, 'thermal_flag': 'False'},
-                        {'repeat': 1, 'thermal_flag': 'True'}
+                        {'repeat': 0, 'phase': 'a1', 'thermal_flag': 'False'},
+                        {'repeat': 1, 'phase': 'a1', 'thermal_flag': 'True'}
                     ])
                     flag_count += 1
                 else:
                     self._write_csv(out_dir, [
-                        {'repeat': 0, 'thermal_flag': 'False'},
-                        {'repeat': 1, 'thermal_flag': 'False'}
+                        {'repeat': 0, 'phase': 'a1', 'thermal_flag': 'False'},
+                        {'repeat': 1, 'phase': 'a1', 'thermal_flag': 'False'}
                     ])
 
             log = runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
@@ -201,8 +201,8 @@ class ThermalVoidRerunTests(unittest.TestCase):
                 out_dir = Path(args[args.index('--out') + 1])
                 out_dir.mkdir(parents=True, exist_ok=True)
                 self._write_csv(out_dir, [
-                    {'repeat': 0, 'thermal_flag': 'True'},
-                    {'repeat': 1, 'thermal_flag': 'False'}
+                    {'repeat': 0, 'phase': 'a1', 'thermal_flag': 'True'},
+                    {'repeat': 1, 'phase': 'a1', 'thermal_flag': 'False'}
                 ])
 
             log = runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
@@ -216,7 +216,7 @@ class ThermalVoidRerunTests(unittest.TestCase):
             def runner(pilot_py, python_exe, args):
                 out_dir = Path(args[args.index('--out') + 1])
                 out_dir.mkdir(parents=True, exist_ok=True)
-                self._write_csv(out_dir, [{'repeat': 0, 'some_other_col': 'False'}])
+                self._write_csv(out_dir, [{'repeat': 0, 'phase': 'a1', 'some_other_col': 'False'}])
 
             with self.assertRaisesRegex(RuntimeError, "thermal_flag column missing"):
                 runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
@@ -228,10 +228,42 @@ class ThermalVoidRerunTests(unittest.TestCase):
             def runner(pilot_py, python_exe, args):
                 out_dir = Path(args[args.index('--out') + 1])
                 out_dir.mkdir(parents=True, exist_ok=True)
-                self._write_csv(out_dir, [{'repeat': 1, 'thermal_flag': 'True'}])
+                self._write_csv(out_dir, [{'repeat': 1, 'phase': 'a1', 'thermal_flag': 'True'}])
 
             with self.assertRaisesRegex(RuntimeError, "Session voided: more than 2 voided conditions"):
                 runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+    @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
+    def test_runner_ignores_low_frequency_idle_row(self, _ac):
+        import tempfile, json
+        with tempfile.TemporaryDirectory() as td:
+            def runner(pilot_py, python_exe, args):
+                out_dir = Path(args[args.index('--out') + 1])
+                out_dir.mkdir(parents=True, exist_ok=True)
+                self._write_csv(out_dir, [
+                    {'repeat': 0, 'phase': 'a1', 'thermal_flag': 'False'},
+                    {'repeat': 1, 'phase': 'a1', 'thermal_flag': 'False'},
+                    {'repeat': 1, 'phase': 'idle_before', 'thermal_flag': 'True'}
+                ])
+
+            log = runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+            void_log = json.loads((Path(td) / 'void_log.json').read_text())
+            self.assertEqual(len(void_log['voids']), 0)
+
+    @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
+    def test_runner_raises_on_active_warm_row_with_empty_thermal_flag(self, _ac):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            def runner(pilot_py, python_exe, args):
+                out_dir = Path(args[args.index('--out') + 1])
+                out_dir.mkdir(parents=True, exist_ok=True)
+                self._write_csv(out_dir, [
+                    {'repeat': 0, 'phase': 'a1', 'thermal_flag': 'False'},
+                    {'repeat': 1, 'phase': 'a1', 'thermal_flag': ''}
+                ])
+
+            with self.assertRaisesRegex(RuntimeError, "Evaluation missing"):
+                runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+
 class SessionGovernorCheckTests(unittest.TestCase):
     def test_failing_governor_check_stops_session(self):
         def fake_governor_check():
