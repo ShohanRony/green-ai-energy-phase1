@@ -60,9 +60,10 @@ simulate_one <- function(beta, session_sd, residual_sd, gamma = 0) {
   rows
 }
 
-run_scenario <- function(label, beta, beta_true_for_test, session_sd, residual_sd, gamma,
-                          seed, n_reps) {
-  set.seed(seed)
+run_scenario <- function(scenario_id, label, beta, beta_true_for_test, session_sd, residual_sd,
+                          gamma, n_reps) {
+  set.seed(9000 + scenario_id)  # A7r7/BLOCK Q seed convention; continues simulate_rq2.R's
+  # scenario_id 1-18 at 19, so the two scripts' seeds never collide
   beta_hats <- numeric(n_reps)
   covered <- logical(n_reps)
   rejected <- logical(n_reps)
@@ -89,6 +90,7 @@ run_scenario <- function(label, beta, beta_true_for_test, session_sd, residual_s
   }
 
   data.frame(
+    scenario_id = scenario_id,
     label = label,
     beta_true = beta_true_for_test,
     session_sd = session_sd,
@@ -105,7 +107,7 @@ run_scenario <- function(label, beta, beta_true_for_test, session_sd, residual_s
 }
 
 results <- list()
-seed_base <- 2000  # distinct range from simulate_rq2.R's 1000+scenario_id, no seed collision
+next_id <- 19  # continues simulate_rq2.R's scenario_id 1-18
 
 # --- (a) near-boundary scenarios: beta_true in {0.90, 0.95}, session_sd=0.04,
 #     residual_sd in {0.02, 0.05} ---
@@ -113,11 +115,12 @@ near_boundary <- expand.grid(beta_true = c(0.90, 0.95), residual_sd = c(0.02, 0.
 for (i in seq_len(nrow(near_boundary))) {
   bt <- near_boundary$beta_true[i]; rsd <- near_boundary$residual_sd[i]
   results[[length(results) + 1]] <- run_scenario(
-    label = "near_boundary", beta = bt, beta_true_for_test = bt,
-    session_sd = 0.04, residual_sd = rsd, gamma = 0,
-    seed = seed_base + i, n_reps = n_reps
+    scenario_id = next_id, label = "near_boundary", beta = bt, beta_true_for_test = bt,
+    session_sd = 0.04, residual_sd = rsd, gamma = 0, n_reps = n_reps
   )
-  cat(sprintf("near_boundary done: beta_true=%.2f, residual_sd=%.2f\n", bt, rsd))
+  cat(sprintf("near_boundary done: beta_true=%.2f, residual_sd=%.2f (scenario_id=%d)\n",
+              bt, rsd, next_id))
+  next_id <- next_id + 1
 }
 
 # --- (b) heterogeneous slopes, two cases, session_sd=0.04, residual_sd=0.02 (representative) ---
@@ -126,16 +129,20 @@ het_high <- c(resnet18 = 0.9, mobilenet_v3_small = 1.0, efficientnet_b0 = 1.1)  
 stopifnot(abs(mean(het_low) - 0.8) < 1e-10, abs(mean(het_high) - 1.0) < 1e-10)
 
 results[[length(results) + 1]] <- run_scenario(
-  label = "heterogeneous_pooled_0.8", beta = het_low, beta_true_for_test = mean(het_low),
-  session_sd = 0.04, residual_sd = 0.02, gamma = 0, seed = seed_base + 10, n_reps = n_reps
+  scenario_id = next_id, label = "heterogeneous_pooled_0.8", beta = het_low,
+  beta_true_for_test = mean(het_low), session_sd = 0.04, residual_sd = 0.02, gamma = 0,
+  n_reps = n_reps
 )
-cat("heterogeneous (0.6,0.8,1.0), pooled mean 0.8, done\n")
+cat(sprintf("heterogeneous (0.6,0.8,1.0), pooled mean 0.8, done (scenario_id=%d)\n", next_id))
+next_id <- next_id + 1
 
 results[[length(results) + 1]] <- run_scenario(
-  label = "heterogeneous_pooled_1.0", beta = het_high, beta_true_for_test = mean(het_high),
-  session_sd = 0.04, residual_sd = 0.02, gamma = 0, seed = seed_base + 11, n_reps = n_reps
+  scenario_id = next_id, label = "heterogeneous_pooled_1.0", beta = het_high,
+  beta_true_for_test = mean(het_high), session_sd = 0.04, residual_sd = 0.02, gamma = 0,
+  n_reps = n_reps
 )
-cat("heterogeneous (0.9,1.0,1.1), pooled mean 1.0, done\n")
+cat(sprintf("heterogeneous (0.9,1.0,1.1), pooled mean 1.0, done (scenario_id=%d)\n", next_id))
+next_id <- next_id + 1
 
 # --- (c) mild curvature: gamma justified from the range of the real MAC ratios ---
 # log_mac spans [-2.408, -0.629] (resnet18 pruned70 to mobilenet_v3_small pruned30);
@@ -146,11 +153,11 @@ cat("heterogeneous (0.9,1.0,1.1), pooled mean 1.0, done\n")
 # residual_sd=0.02) for direct comparability against the linear-only result.
 gamma_curv <- 0.03
 results[[length(results) + 1]] <- run_scenario(
-  label = "curvature", beta = 0.8, beta_true_for_test = 0.8,
-  session_sd = 0.04, residual_sd = 0.02, gamma = gamma_curv,
-  seed = seed_base + 20, n_reps = n_reps
+  scenario_id = next_id, label = "curvature", beta = 0.8, beta_true_for_test = 0.8,
+  session_sd = 0.04, residual_sd = 0.02, gamma = gamma_curv, n_reps = n_reps
 )
-cat(sprintf("curvature done: gamma=%.2f\n", gamma_curv))
+cat(sprintf("curvature done: gamma=%.2f (scenario_id=%d)\n", gamma_curv, next_id))
+next_id <- next_id + 1
 
 summary_df <- do.call(rbind, results)
 write.csv(summary_df, file.path(out_dir, "summary_block_p.csv"), row.names = FALSE)

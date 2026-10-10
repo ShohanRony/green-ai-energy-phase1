@@ -1503,3 +1503,62 @@ about real Stage 4b data:**
   simulated data built from fixed, known-true parameters.** It is a validation of the fitting and
   testing pipeline, not a finding about real compressed-model energy data, which has not been
   touched by this code.
+
+**A7r7 — 2026-10-10. Dated revision (A7/A7r1-A7r6's text above is unchanged — this stands alongside
+them).**
+
+**(a) Two conditional specification-curve axes, defined now, used only once the relevant data
+exist.** Neither changes A7r4(a)'s grid table today — both are additive, activating automatically
+once their precondition is met, not requiring a further amendment to switch on:
+- **(i) Wall-meter boundary** (package / psys / wall) — a third level on top of whatever
+  boundary axis already exists for a block, available **once the P1 wall-meter protocol
+  (`docs/p1_wall_meter_protocol.md`) has actually been run**, not merely drafted. Until then this
+  axis contributes nothing to any block's grid.
+- **(ii) Estimator** (hardware counters / CodeCarbon native / CodeCarbon forced fallback) — for
+  whichever block the RQ1b pass (A7 point 10) is eventually collected on. Until RQ1b data exists
+  for a block, this axis contributes nothing to that block's grid either.
+- **Grid sizes restated with these two axes explicitly excluded, so A7r4(a)'s table isn't misread
+  as already including them:** without (i)/(ii), the **M1 grid has 4 points** (Runtime × Gross/net,
+  2×2, per A7r4(a)'s table — Instrument and Boundary are both NOT AVAILABLE for M1) and the
+  **x86-CPU grid has about 8 points** (Instrument × Runtime × Gross/net, 2×2×2 — Boundary is NOT
+  APPLICABLE for a CPU-only block). **`SD_spec` on grids this small is descriptive only** — stated
+  as a limitation, not merely implied by A7r4(a)'s existing "equal weighting" disclosure: a 4- or
+  8-point spread carries far less information about genuine specification-sensitivity than the
+  GPU block's larger (and, once series R and post-D24 data exist, larger still) grid, and should
+  not be read as comparably precise.
+
+**(b) Clarification: the Welch-Satterthwaite inputs in A7r4(e) are variances of the means.**
+Restated precisely, matching `analysis/helpers.R`'s own `bridged_ratio()` documentation (added
+this entry's same day, BLOCK Q): `var_r_eager` and `var_factor` in A7r4(e)'s formula are the
+**variances of the sample mean log-ratios** (`sample_variance_of_per_session_values / n`, the
+square of the standard error of the mean) — **not** the raw per-session sample variances
+themselves. A7r4(e)'s original text did not state this distinction explicitly; this is a
+precision correction, not a formula change — the formula itself (`Var(log(bridged)) =
+Var(log(ratio_eager)) + Var(log(factor))`, Welch-Satterthwaite on `df1`/`df2`) is unchanged.
+
+**(c) Correction to A7r4(g): the analysis environment now exists.** A7r4(g) registered the
+*requirement* to record R/`lme4`/`lmerTest` versions at freeze time and stated "none of this
+exists yet" as of 2026-10-10 (A7r4's own date). **That status line is now stale** — the
+environment was installed later the same day (BLOCK O) and is recorded in
+`docs/analysis_environment.md`: **R 4.3.3 (2024-02-29), lme4 1.1.35.1, lmerTest 3.1.3**. A7r4(g)'s
+text is left as-is per this plan's append-only rule; this is the correction of record.
+
+**(d) Correction to a mislabelled source in A7r5(c).** A7r5(c)'s second bullet attributes the
+empirically-established expected-to-pin condition set to *"A7r1's 'Block M' investigation"* — **this
+is a mislabel.** The expected-to-pin classification (9/9 sessions, zero exceptions, per condition)
+was established by the **2026-10-10 integrity investigation** (the UPower/journal/per-condition-
+timeline work, the same investigation A7r5 as a whole registers the findings of) — it has no
+connection to "A7r1," which is an earlier, unrelated dated revision about the GPU-block baseline
+and confirmatory-family corrections. A7r5(c)'s text is left as-is per this plan's append-only
+rule; this is the correction of record.
+
+**(e) The registered RQ2 input unit, stated explicitly and now enforced in code.** A7 point 3
+already establishes "session is the replicate unit" for this plan's estimators generally; stated
+here specifically for RQ2's fitting function: **the registered input unit is exactly one row per
+`(session, model, state)`** — one already-summarised `log_ratio`/`log_mac` value per session per
+architecture per prune level, not one row per repetition within a session. `analysis/rq2_model.R`'s
+`fit_rq2_model()` now **enforces this directly**: it raises an error if any `(session, model,
+state)` combination occurs more than once in the input, rather than silently accepting (and
+implicitly mis-weighting) rep-level data. Rep-level aggregation into one `log_ratio` per
+`(session, model, state)` is a precondition for calling this function, not something it performs
+itself.

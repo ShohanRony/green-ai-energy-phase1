@@ -41,11 +41,24 @@ sd_threshold <- function(n, margin = log(1.05)) {
 #' Var(log(bridged)) = Var(log(ratio_eager)) + Var(log(factor)). Degrees of freedom for the
 #' combined interval via Welch-Satterthwaite (A7r4(e)).
 #'
-#' @param log_r_eager log of the within-session eager-baseline ratio.
-#' @param var_r_eager variance of log_r_eager, estimated with df1 degrees of freedom.
+#' IMPORTANT, stated explicitly because mixing the two up is an easy off-by-a-factor-of-n error:
+#' `var_r_eager` and `var_factor` are the **variances of the estimates** (i.e. of the sample
+#' *mean* log-ratio across sessions: `sample_variance_of_per_session_values / n`, the square of
+#' the usual standard error of the mean) -- **not** the raw per-session sample variances
+#' themselves. If `log_r_eager` is `mean(per_session_log_ratios)` over `df1 + 1` sessions, then
+#' `var_r_eager = var(per_session_log_ratios) / (df1 + 1)`, and likewise for `var_factor` over
+#' `df2 + 1` sessions. Passing a raw sample variance instead of a mean's variance here silently
+#' inflates `var_bridged`, `se_bridged`, and the resulting interval width by whatever factor of n
+#' was omitted.
+#'
+#' @param log_r_eager log of the within-session eager-baseline ratio (a sample mean across
+#'   sessions).
+#' @param var_r_eager variance **of that sample mean** (sample variance / n, not the sample
+#'   variance itself), estimated with df1 degrees of freedom.
 #' @param df1 degrees of freedom backing var_r_eager (GPU block: 5, from 6 sessions).
-#' @param log_factor log of the eager/TS factor from series R.
-#' @param var_factor variance of log_factor, estimated with df2 degrees of freedom.
+#' @param log_factor log of the eager/TS factor from series R (a sample mean across sessions).
+#' @param var_factor variance **of that sample mean** (sample variance / n, not the sample
+#'   variance itself), estimated with df2 degrees of freedom.
 #' @param df2 degrees of freedom backing var_factor (series R: 3, from 4 sessions).
 #' @param conf confidence level for the reported interval, default 0.95.
 #' @return list(log_bridged, var_bridged, se_bridged, df_eff, ci_lower, ci_upper).

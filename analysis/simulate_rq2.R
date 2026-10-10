@@ -66,7 +66,9 @@ raw_rows <- list()
 
 for (i in seq_len(nrow(scenarios))) {
   sc <- scenarios[i, ]
-  set.seed(1000 + sc$scenario_id)  # fixed, scenario-specific seed -- reproducible
+  set.seed(9000 + sc$scenario_id)  # fixed, scenario-specific seed -- reproducible (A7r7/BLOCK Q);
+  # scenario_id runs 1-18 here; simulate_rq2_block_p.R continues from 19 so the two scripts'
+  # seeds never collide
   beta_hats <- numeric(n_reps)
   covered <- logical(n_reps)
   rejected <- logical(n_reps)

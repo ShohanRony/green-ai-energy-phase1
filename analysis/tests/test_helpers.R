@@ -46,6 +46,22 @@ check(br$ci_lower < br$log_bridged && br$log_bridged < br$ci_upper,
 check(inherits(tryCatch(bridged_ratio(0, 0, 5, 0, 0.01, 3), error = function(e) e), "error"),
       "bridged_ratio: must error on non-positive variance")
 
+# --- bridged_ratio: inputs are variances OF THE MEAN (sample var / n), demonstrated with
+#     different n for the two sides, since mixing this up is an easy off-by-n error ---
+per_session_1 <- c(0.10, 0.12, 0.09, 0.11, 0.08, 0.13)  # n1 = 6 sessions (GPU block)
+per_session_2 <- c(0.02, -0.01, 0.015, 0.00)              # n2 = 4 sessions (series R)
+n1 <- length(per_session_1); n2 <- length(per_session_2)
+mean_log_r_eager <- mean(per_session_1)
+mean_log_factor <- mean(per_session_2)
+var_of_mean_1 <- var(per_session_1) / n1   # variance of the SAMPLE MEAN, not var(per_session_1)
+var_of_mean_2 <- var(per_session_2) / n2
+br2 <- bridged_ratio(mean_log_r_eager, var_of_mean_1, n1 - 1,
+                      mean_log_factor, var_of_mean_2, n2 - 1)
+check(abs(br2$var_bridged - (var_of_mean_1 + var_of_mean_2)) < 1e-10,
+      "bridged_ratio: with different n1!=n2, var_bridged is the sum of the two means' variances")
+check(abs(br2$var_bridged - (var(per_session_1) + var(per_session_2))) > 1e-6,
+      "bridged_ratio: raw sample variances instead of mean-variances give a different (wrong) answer")
+
 # --- spec_curve_metrics ---
 sc <- spec_curve_metrics(c(0.1, 0.1, 0.1, 0.1), w_star = 0.05, log_r_star = 0.1)
 check(abs(sc$sd_spec - 0) < 1e-10, "spec_curve_metrics: zero spread for identical inputs")

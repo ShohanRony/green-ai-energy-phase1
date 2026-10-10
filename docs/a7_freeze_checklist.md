@@ -214,3 +214,31 @@ code that will eventually run against real data was registered, not just the pro
 here — written for when the freeze actually happens. `docs/analysis_environment.md` records the
 analysis scripts' own pre-freeze/synthetic-only status and the requirement that any post-freeze
 change needs a dated amendment; this section is the freeze-checklist-side counterpart of that.
+
+## 8. Dated section, 2026-10-10: resolving §6(iii)'s flagged tag-push tension
+
+§6(iii) flagged, but did not resolve, an apparent conflict between "backup branches and tags stay
+local" and §2's own command to push the freeze tag. **Resolved here, explicitly:**
+
+- **The freeze tag IS pushed.** It is not a "housekeeping/backup" tag — it is the citable
+  registration artifact the entire freeze process exists to produce, and an unpushed tag cannot
+  serve that purpose (§1's own stated reasoning). "Stay local, never pushed" in §6(iii) refers
+  only to genuinely local housekeeping refs (backup branches made during unrelated git-history
+  work, and the renamed local backup tag) — never to the freeze tag itself.
+- **Exact command sequence, named push only — no wildcard ref-pushing command is ever used:**
+  ```
+  git push origin master
+  git push origin stage5-a7-frozen-<YYYY-MM-DD>
+  ```
+  Two separate, explicitly-named pushes — `master`, then the one named tag. **Never**
+  `git push origin --all`, `git push origin --mirror`, or `git push origin --tags` — all three
+  would push every local branch/tag indiscriminately, including the backup branch and the local
+  backup tag this checklist explicitly keeps local. A wildcard push is exactly the mistake this
+  two-step, explicitly-named sequence is designed to make structurally impossible, not just
+  procedurally discouraged.
+- **Backup branch and backup tag stay local, unchanged from §6(iii):** e.g.
+  `backup-pre-blockj-foldfix-20261010` (branch) and `backup-pre-history-rewrite-20261010` (tag) —
+  neither is named in either push command above, so neither is pushed by this sequence.
+  `git ls-remote origin` before and after (§6(iii)'s existing instruction) remains the verification
+  step: the ref list should show exactly `master` moving and exactly one new tag appearing, nothing
+  else.

@@ -62,4 +62,28 @@ d_bnrecal$state[1] <- "pruned30_bnrecal"
 check(inherits(tryCatch(fit_rq2_model(d_bnrecal), error = function(e) e), "error"),
       "fit_rq2_model: must error when bnrecal states are present")
 
+# --- (session, model, state) must occur exactly once: duplicate row rejected (A7r7(e)) ---
+d_dup <- rbind(d, d[1, ])
+check(inherits(tryCatch(fit_rq2_model(d_dup), error = function(e) e), "error"),
+      "fit_rq2_model: must error when a (session, model, state) combination repeats")
+
+# --- converged and singular are independent flags (A7r6(a)/A7r7) ---
+make_singular_prone <- function(seed) {
+  set.seed(seed)
+  models <- c("resnet18", "mobilenet_v3_small", "efficientnet_b0")
+  mac <- c(0.484, 0.252, 0.090, 0.533, 0.309, 0.132, 0.516, 0.288, 0.119)
+  states <- rep(c("pruned30", "pruned50", "pruned70"), 3)
+  mdl <- rep(models, each = 3)
+  rows <- lapply(seq_len(6), function(s) {
+    sess_eff <- rnorm(1, 0, 0.001)  # near-zero session variance provokes a boundary fit
+    lr <- 0.8 * log(mac) + c(0, 0.1, -0.1)[match(mdl, models)] + sess_eff + rnorm(9, 0, 0.05)
+    data.frame(session = s, model = mdl, state = states, log_ratio = lr, log_mac = log(mac))
+  })
+  do.call(rbind, rows)
+}
+res_sing <- suppressMessages(suppressWarnings(fit_rq2_model(make_singular_prone(seed = 1))))
+check(isTRUE(res_sing$singular), "fit_rq2_model: near-zero session variance produces a singular fit")
+check(isTRUE(res_sing$converged),
+      "fit_rq2_model: a singular fit can still be converged -- the two flags are independent")
+
 cat("test_rq2_model.R: ", pass_count, " checks passed\n", sep = "")
