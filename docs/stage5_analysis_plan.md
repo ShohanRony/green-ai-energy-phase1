@@ -1381,3 +1381,53 @@ state: none of this exists yet** — no R environment has been set up for this p
 entry; A7r3(f) named R/`lme4`/`lmerTest` as the intended tooling but nothing has been installed or
 version-pinned. This requirement is forward-looking, to be satisfied when the analysis environment
 is actually built, not retroactively invented here.
+
+**A7r5 — 2026-10-10. Dated revision (A7/A7r1/A7r2/A7r3/A7r4's text above is unchanged — this stands
+alongside them). Registers a read-only investigation's findings as the x86-GPU block's integrity
+evidence.**
+
+**(a) Exclusion rule for the x86-GPU block, registered:** *"Any x86-GPU-block condition whose
+measurement window overlaps a verified battery or discharging interval is excluded from the
+GPU-block analysis; the affected conditions are listed and disclosed; no session is added or
+dropped."* Consistent with this project's standing discipline (§8's own "only these, nothing
+decided later" exclusion list, A4's "no conditional add/drop of sessions") — this rule extends that
+same discipline to the one new, independently-sourced signal (UPower discharge history) this
+investigation found available for the GPU block's already-collected data.
+
+**(b) Current coverage: none — a fact, not an absence of checking.** Checked against: (i) UPower's
+persisted battery history (`/var/lib/upower/history-charge-L23M4PK4-60-1907.dat` and siblings,
+world-readable, no sudo), covering **2026-10-03T11:52:11Z through 2026-10-10T05:07:35Z** — the full
+target window with margin, not trimmed; (ii) the system journal (`journalctl`, read-only) for every
+boot between 2026-10-06 and 2026-10-09; (iii) the per-condition timeline (`environment.json`
+`uptime_s`/`timestamp_utc`, `windows.csv` `power_regime`) for all 270 conditions across all 9
+session directories. **Zero conditions currently fall under this rule** — no session window overlaps
+any UPower-recorded discharging interval (nearest approach: `main_session3_aborted`, 23.2 minutes
+after the nearest discharge interval ended, not overlapping it); no uptime drop (mid-session reboot)
+was found in any session; no GPU condition expected to pin on AC ever showed `dip`. This is reported
+as a fact established by direct inspection, not assumed from the rule's existence.
+
+**(c) Limitations, stated plainly:**
+- **UPower record spacing, measured, not assumed:** within confirmed discharging episodes, samples
+  are logged at a **median 60-second spacing** (mean 63.0s, max 1295s at episode boundaries, n=297
+  within-episode gaps checked). Across the full dataset including steady, unchanging periods, gaps
+  are far wider (median 60s but mean 1173.6s, max 56,478s ≈ 15.7 hours) — UPower logs primarily on
+  a state/percentage-change event, not a fixed interval, so the ~60s figure is the resolution
+  *while something is actively changing*, not a guaranteed worst-case sampling rate.
+- **Only 4 of 30 conditions per session can discriminate AC from battery via GPU power regime** —
+  the empirically-established expected-to-pin set (`resnet18_fp32`, `resnet18_fp16`,
+  `resnet18_pruned30`, `resnet18_pruned30_bnrecal`, A7r1's "Block M" investigation). The remaining
+  26 conditions are expected to show `dip` regardless of power source, so a `dip` reading from them
+  carries no AC/battery signal either way — the exclusion rule's practical reach, for the GPU-power
+  signal specifically, is limited to these 4 conditions per session; UPower's own discharge history
+  is the only signal that covers all 30.
+- **"Expected-to-pin" is derived empirically from the same dataset being checked, not from an
+  independent prior registration.** No document in this project registered which conditions should
+  pin before this investigation looked at the data — the classification (9/9 sessions, zero
+  exceptions, per condition) is internally consistent but self-referential: it was built by
+  observing the very data it is now used to validate. Stated so this isn't read as an
+  independently-predicted, pre-registered expectation.
+- **A short blip could be missed.** Given the measured ~60s median spacing during active discharge
+  and much wider gaps during steady periods, a discharge episode briefer than roughly a minute, or
+  one that starts and fully ends between two UPower samples during an otherwise-steady period,
+  could occur without leaving a distinguishable record — the exclusion rule in (a) can only act on
+  what the available signals actually captured, not on every possible battery event.
