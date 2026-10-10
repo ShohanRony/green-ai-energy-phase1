@@ -1693,3 +1693,5 @@ is a disclosure flag for the researcher to see, not an error condition this func
 
 **A10 — 2026-10-10. Single Authoritative Plan v1.0.**
 From the confirmation date, `docs/stage5_plan_v1.md` is the single authoritative plan. A1-A9, A7r1-A7r9, and A8-A8r2 remain as history. Corrections made in v1.0: gap-based H2, session-mean t primary, session:model structure, scope change, "type I error" wording corrected to power loss, and "bias" corrected to design weighting.
+
+**A10 confirmation — 2026-10-11.** The researcher confirmed `docs/stage5_plan_v1.md` (sha256 ace75a6b9bd9d38c947a44dde7aba8af9856986dbacfb4cbe5d7fb35a17b7434, committed in 4a701f6) and amendment A10. From this date `docs/stage5_plan_v1.md` is the single authoritative analysis plan. Its status line ("v1.0 DRAFT, awaiting researcher confirmation") is superseded by this entry; the file itself is left unchanged so that its hash stays valid. D3r1 and D4r1 are confirmed as stated in its section 7. RQ1b is deferred to Paper 2 and RQ3 is secondary, as stated in its sections 1-2. Amendments A1-A9, A7r1-A7r9 and A8-A8r2 remain as history and are superseded where its section 12 says so.
