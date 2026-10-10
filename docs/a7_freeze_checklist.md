@@ -92,3 +92,47 @@ Checked against this project's actual current state as of this review, not assum
   already committed as of this review and do not block the freeze on their own — listed here as
   context, since the freeze checklist above assumes their content is already folded into
   `stage5_analysis_plan.md`/`deviation_log.md` by the time any freeze actually happens.
+
+## 5. Additions, 2026-10-10 (previous sections above kept as-is, not edited)
+
+- **Pin the harness and session-runner commit hash in the tag.** §2's tag command is extended: the
+  annotated tag message should name the exact commit hash of `pilot.py` and
+  `scripts/run_cpu_block_session.py` as they exist at tag time (normally identical to the tag's own
+  commit, but stated explicitly so the tag is self-describing even if read outside its own git
+  history) — e.g. `git tag -a stage5-a7-frozen-<date> -m "A7 analysis framework frozen... harness:
+  pilot.py @ <hash>; session runner: scripts/run_cpu_block_session.py @ <hash>"`. Not run here —
+  written for when the freeze actually happens.
+- **A7r3 is now also a prerequisite, alongside A7/A7r1/A7r2 and A8/A8r1/A8r2** (§1/§4's existing
+  list) — all still DRAFT as of this review; A7r3 adds no new prerequisite category, it is simply
+  one more revision that must be confirmed before freezing, same as the others.
+- **D22, D23, D25 reviewed for host-security detail before any public deposit — findings, not a
+  redaction (nothing edited here):**
+  - **D23 carries the most sensitive detail of the three:** it names the real local username
+    (`shohan`) directly in "`stage4b-auto.service`, which runs as `User=shohan`," and describes a
+    (now-remediated) passwordless-sudo misconfiguration (`systemctl reboot` with no argument
+    restriction, service enable/disable) with specific sudoers rule filenames
+    (`green-ai-governor`, `stage4b-auto`). This is real operational security detail about a real
+    person's real machine — even though the exposure is already closed, publishing the exact prior
+    misconfiguration is a disclosure decision for the researcher, not an automatic "include" by
+    default.
+  - **D22 carries moderate detail:** systemd unit names, `User=root`, an absolute system path
+    (`/etc/systemd/system/p8-auto.service.quarantined-20261009`) — less sensitive than D23 (no
+    username, no sudoers specifics) but still real-machine configuration detail.
+  - **D25 carries the least security-sensitive detail of the three**, but a different kind of
+    disclosure risk: ACPI/battery timestamps across an evening reveal when the researcher was and
+    wasn't near AC power at home — a personal-routine inference risk, not a security
+    vulnerability, worth the same "researcher decides before public deposit" treatment.
+  - **Recommendation, not a decision:** if `deviation_log.md` is included in the deposit (§3 above
+    currently includes it), the researcher should explicitly decide whether D22/D23/D25 go in
+    as-is, get a redacted/summarized public version prepared separately, or get excluded from the
+    public deposit while remaining in the private git history. Not resolved here.
+- **Old-commit-hash citation check, read-only, as requested:** no document has been "submitted or
+  deposited" yet (no freeze has happened) — checked instead against every tracked document in this
+  repository, as a prospective check for what a deposit would currently contain. Every hash-like
+  string in every tracked `.md` file was checked against `git cat-file -e` for the current repo.
+  **Result: clean.** The only hash-like strings that don't resolve as current commits are: (a)
+  `docs/history_rewrite_map.md`'s own old-hash column — intentional, that is the document's entire
+  purpose, not a citation error; (b) one systemd boot ID in `docs/p8_spec.md`
+  (`27625af78f4a4efcb33001f10565a355`) — a 32-character boot identifier, not a git hash, correctly
+  labelled as a boot in its own sentence. **No document cites a stale commit hash.** Nothing
+  edited, per this item's instruction.
