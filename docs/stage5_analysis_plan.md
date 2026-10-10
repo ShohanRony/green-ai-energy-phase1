@@ -1265,3 +1265,119 @@ post hoc. **The two CPU blocks (x86-CPU, M1-CPU) are prospectively registered** 
 session counts, seeds, and void-and-rerun criteria are all fixed in this plan before any session has
 been run. This distinction is stated plainly because it affects how strong a confirmatory claim each
 block's results can support, independent of anything else this plan registers about them.
+
+**A7r4 — 2026-10-10. Dated revision (A7/A7r1/A7r2/A7r3's text above is unchanged — this stands
+alongside them).**
+
+**(a) Specification-curve grid, per block, defined before any data exists.**
+
+| Axis | x86-GPU | x86-CPU | M1-CPU |
+|---|---|---|---|
+| **Instrument** | NVML power-usage vs. cumulative counter — **2 levels, but only for data collected after D24** (`d82cd95`, 2026-10-09T21:57:54+06:00); **NOT AVAILABLE for sessions 1-6** (the GPU block's actual data), which store only the power-usage interface | RAPL package vs. psys (both already logged per window, D16/D24's CPU-side precedent) — **2 levels, available** once any CPU-block session is collected | **NOT AVAILABLE — one power source only.** `powermetrics` is M1's only instrument; there is no second interface to compare against, unlike NVML's dual-counter choice or RAPL's dual-domain choice |
+| **Boundary** | GPU-only / CPU-package (concurrent) / GPU+CPU — **3 levels**, via `--concurrent-cpu-package` logging, same post-D24-only caveat as Instrument above | **NOT APPLICABLE** — a CPU-only block has no GPU component to form a GPU-vs-CPU boundary choice from | **NOT APPLICABLE**, same reason as x86-CPU |
+| **Runtime** | eager / TorchScript / CUDA Graphs — **up to 3 levels**, but eager is the only one from the main sessions; TorchScript/CUDA Graphs exist only via series R (A8/A8r1), not yet collected | eager / TorchScript — **2 levels, both available directly** (every CPU-block session measures both, A7r1(e)); CUDA Graphs **NOT AVAILABLE** (CUDA-specific, no CPU equivalent) | eager / TorchScript — **2 levels**, per `docs/m1_harness_design.md`'s condition list; CUDA Graphs **NOT AVAILABLE**, same reason |
+| **Regime** | pinned / dip — **2 levels, available** (`power_regime`, every session) | **NOT AVAILABLE** — the pinned/dip concept is a GPU power-cap phenomenon (`classify_power_regime`); no x86-CPU analogue exists. (The thermal-throttle flag, (b) below, is a *different*, exclusion-oriented concept, not a specification-curve axis.) | **NOT AVAILABLE**, same reason as x86-CPU. (M1's own E-core/P-core residency record, `docs/m1_harness_design.md` §3, is a *different* thing — recorded for scheduling transparency, not a regime axis comparable across blocks.) |
+| **Gross/net** | gross vs. net-of-idle — **2 levels, available** (A7r1(h)'s definition applies directly) | **2 levels, available**, same definition | **2 levels, available**, same definition (computed from `powermetrics`' own idle windows) |
+
+- **Equal weighting, stated explicitly:** `SD_spec` (A7r3(g)) treats every available grid point —
+  one specific combination of axis levels — as **one equally-weighted observation**, not weighted
+  by how many levels an axis has or how "important" an axis feels. **Consequence, disclosed:**
+  blocks with fewer available axes (both CPU blocks, per the table above) have a smaller total grid
+  and therefore a smaller effective sample for `SD_spec` than the GPU block once series R and D24-
+  successor data exist for it — `SD_spec` values are not directly comparable in magnitude across
+  blocks with different grid sizes, only within a block.
+- **`headline_2` floor, added:** `headline_2 = SD_spec / max(|log r*|, ln 1.05)` — replaces A7r3(g)'s
+  undivided `|log r*|` denominator. **Reason:** when the primary ratio `r*` sits very close to 1
+  (near-zero effect size), dividing by `|log r*|` alone makes `headline_2` blow up or become
+  numerically unstable for a small absolute spread — flooring the denominator at the ±5%
+  equivalence margin itself (`ln 1.05`, the same scale D1/D2/D3r1 already use throughout this plan)
+  keeps `headline_2` bounded and prevents a near-null effect from producing a misleadingly extreme
+  headline number. **Both `headline_1` and `headline_2` remain marked descriptive**, unchanged from
+  A7r3(g).
+
+**(b) Thermal-throttle thresholds: marked assumption; calibration gated before any primary session.**
+- **The x86 80%-of-`cpuinfo_max_freq` figure (A7r3(h)) is marked: assumption, unverified** — stated
+  plainly with this project's own standard disclosure phrase, not just "not yet implemented."
+- **Both the x86 and M1 thresholds must be calibrated on a non-energy run** (a dedicated diagnostic
+  run that deliberately induces or searches for throttling — e.g. an extended synthetic load, not a
+  `pilot.py` energy-measurement session) **and registered in a dated amendment before the first
+  primary-block session.** Calibration is not something to infer retroactively from early primary-
+  block data.
+- **Hard gate, stated as a precondition:** **no x86-CPU or M1-CPU primary-block session may start**
+  until all three of the following are true: (1) the thermal-throttle guard code exists in the
+  harness (currently does not, A7r3(h)); (2) it has unit tests; (3) the calibrated thresholds for
+  that platform are registered in a dated amendment (not the placeholder 80% figure or the
+  unspecified M1 comparative threshold, both currently unverified). This gate is independent of,
+  and in addition to, A7r1(j)'s existing D26-AC-guard and wall-meter-protocol prerequisites.
+
+**(c) Rerun mechanics, specified.**
+- **A voided condition is rerun appended at the end of the same session's run order**, not
+  re-inserted at its original position — the session's randomised order (A7r3(h)'s seeds) stays a
+  faithful record of what was actually run, in the order it was actually run, with the rerun visibly
+  a rerun rather than silently blended into the original sequence.
+- **The rerun is flagged** (a `rerun=True`-style field on that condition's logged output,
+  distinguishing it from a first-attempt condition at the same position).
+- **More than 2 voided conditions in one session voids the whole session** — not a silent
+  accumulation of individual reruns without limit. Two or fewer voided conditions are handled by
+  the per-condition rerun-at-end mechanism above; three or more is read as a sign something about
+  the session itself (not just isolated conditions) is unreliable, and the whole session is voided
+  and rerun entirely on a fresh boot, per A7r3(h)'s existing whole-session-void handling.
+- **A rerun session reuses the same order seed** (`3000+N` for x86-CPU, `4000+N` for M1-CPU,
+  A7r3(h)) — a rerun is a repeat of session `N`, not a new session with its own new seed; the seed
+  identifies which *planned* session is being executed, not which *attempt* at it.
+
+**(d) D3r1: exact combinations and aggregation rule.**
+- **(architecture, prune level) combinations with a `_bnrecal` counterpart that CPU-block sessions
+  will actually measure** (A7r1(e)'s "where meaningful" filter, confirmed against
+  `scripts/run_cpu_block_session.py`'s `BNRECAL_SKIP` set, which excludes the three known-collapsed
+  combinations per `docs/bnrecal_cpu_equivalence.md`): **ResNet-18** × {pruned30, pruned50,
+  pruned70}; **MobileNetV3-Small** × {pruned30} only (pruned50/pruned70 excluded, known-collapsed);
+  **EfficientNet-B0** × {pruned30, pruned50} only (pruned70 excluded, known-collapsed). **6
+  combinations total**, not 9 — the 3 excluded ones are never measured in a CPU-block session under
+  the current design, so D3r1 cannot be evaluated for them without a separate, additional
+  measurement not currently planned.
+- **Aggregation rule:** D3r1 resolves **YES only if all 6 listed combinations are individually
+  within the ±5% equivalence margin** (per-combination computation, A7r2/A7r3(d)); **otherwise D3r1
+  resolves NO**, with **every combination's individual result reported**, not collapsed into a
+  single pass/fail. Same aggregation pattern this plan already uses for D2's per-architecture CPU-
+  block check (A7r3(b): "a block counts as bounded only if all three architectures are").
+
+**(e) Bridged ratio: interval construction and degrees-of-freedom rule.**
+- **On the log scale:** `log(bridged ratio) = log(ratio_eager) + log(eager/TS factor)` — since the
+  bridged ratio (A7r3(a)) is a product of two independent quantities, its log is their sum.
+  **Variance of the sum, for independent terms: `Var(log bridged) = Var(log ratio_eager) +
+  Var(log factor)`** — the precise statement A7r3(a)'s looser "relative variances add" phrasing
+  meant; stated here as an exact formula, not just descriptively.
+- **Degrees-of-freedom rule: Welch-Satterthwaite**, combining the GPU block's own df (`5`, from its
+  6 sessions) and series R's df (`3`, from its 4 sessions, A8r1) into an effective combined df for
+  the bridged ratio's own confidence interval:
+
+```
+df_eff = (s1² + s2²)² / ( (s1²)²/df1 + (s2²)²/df2 )
+
+  where s1² = Var(log ratio_eager), estimated from the GPU block's 6 sessions, df1 = 5
+        s2² = Var(log eager/TS factor), estimated from series R's 4 sessions, df2 = 3
+```
+
+  Standard Welch-Satterthwaite form, applied here because the two variance estimates come from
+  different sample sizes (6 vs. 4 sessions) and must not be pooled as if they shared one df. **Not
+  yet computable** — `s1²` exists now (the GPU block's own data), but `s2²` requires series R, not
+  yet collected; `df_eff` itself is only a number once both inputs exist.
+
+**(f) (j) extended: prospective-registration status is also conditional on the tag and deposit
+existing first.** A7r3(j)'s claim that the two CPU blocks "are prospectively registered" is **true
+only if the git tag (`a7_freeze_checklist.md` §2) and the Zenodo deposit (§3) both exist *before*
+the first CPU-block session is collected.** Without an external, timestamped, immutable record
+predating data collection, "prospectively registered" is otherwise just an internal claim this
+project's own, editable git history could in principle be altered to match after the fact — the tag
++ deposit is what makes the claim externally verifiable, not merely internally consistent. Until
+both exist, the CPU blocks' design is *written* prospectively but not yet *evidenced* as such.
+
+**(g) Analysis environment: a reproducibility-information requirement, established here (no such
+section exists yet in this plan's original text).** At freeze time (`a7_freeze_checklist.md`), the
+deposit's manifest must record, as **required fields, not optional metadata**: the R version, and
+the exact `lme4` and `lmerTest` package versions used for RQ2's one-sided test (A7r3(f)). **Current
+state: none of this exists yet** — no R environment has been set up for this project as of this
+entry; A7r3(f) named R/`lme4`/`lmerTest` as the intended tooling but nothing has been installed or
+version-pinned. This requirement is forward-looking, to be satisfied when the analysis environment
+is actually built, not retroactively invented here.
