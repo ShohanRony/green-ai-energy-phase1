@@ -242,3 +242,13 @@ local" and §2's own command to push the freeze tag. **Resolved here, explicitly
   `git ls-remote origin` before and after (§6(iii)'s existing instruction) remains the verification
   step: the ref list should show exactly `master` moving and exactly one new tag appearing, nothing
   else.
+
+## 9. Dated section, 2026-10-10: `analysis/` commit hash to pin is the one after this block
+
+§7's instruction to pin `analysis/`'s commit hash in the freeze tag message still applies
+unchanged — restated here only to say **which** commit that now means. This block added
+`analysis/rq2_diagnostics.R`, `analysis/simulate_rq2_diagnostics.R`, and
+`analysis/tests/test_rq2_diagnostics.R`, and extended `docs/analysis_environment.md`'s results
+table — the commit hash to name in the freeze tag's `analysis: analysis/ @ <hash>` field (§7) is
+whichever of this block's commits is the last one touching `analysis/`, not an earlier commit
+from Block O/P/Q. Not run here — written for when the freeze actually happens, same as §7.

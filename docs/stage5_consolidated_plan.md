@@ -74,6 +74,20 @@ replaced after seeing the result — A7r6(a). **Non-convergence fallback** (an o
 failure, not merely a singular fit): refit with `session` as a fixed factor, OLS, `df = n_obs −
 (1 + 1 + (n_models−1) + (n_sessions−1))` (45 for the registered design) — A7r6(b).
 
+**β's definition and two sensitivity diagnostics — A7r8, primary model/decision rule unchanged.**
+β is the pooled log-linear slope over the observed MAC-ratio range, **not a power-law exponent**
+— Methods/Abstract text must say so. `analysis/rq2_diagnostics.R`'s curvature fit (quadratic term
++ LRT) and slope-heterogeneity fit (per-architecture slopes + interaction LRT) are reported
+alongside the primary fit, never replace it, carry no multiplicity adjustment, and never change
+the H2 verdict. **Interpretation rule:** quadratic CI includes 0 AND interaction LRT not
+significant → report pooled β as is; otherwise → mandatory caveat sentence, lead Results with the
+per-architecture/quadratic estimates before the pooled number. Simulation evidence: pooled-test
+type I error can fall far below nominal when true per-architecture slopes differ (0.3% in one
+simulated case); the interaction LRT caught both simulated heterogeneous cases 100% of the time;
+`beta_hat` is essentially unbiased against the model's own best-linear-projection estimand under
+curvature, while badly biased against the underlying nonlinear truth — full table:
+`docs/analysis_environment.md`.
+
 **Analysis environment:** R 4.3.3, lme4 1.1.35.1, lmerTest 3.1.3 — `docs/analysis_environment.md`,
 confirmed in force by A7r7(c) (correcting A7r4(g)'s now-stale "none of this exists yet").
 **Scripts (`analysis/`) are pre-freeze, validated on synthetic data only** (Block O/P simulations,
@@ -206,9 +220,13 @@ been computed on any Stage 4b energy data at any point up to this summary.**
 - A6: not amended to activate D4r1.
 - Freeze tag and Zenodo deposit: not created — CPU blocks' prospective-registration claim depends
   on this happening before the first CPU session (A7r4(f)).
-- The curvature finding (A7r6(d)): mild, well-justified curvature in the simulated MAC-ratio
-  relationship produced a large, persistent bias in the linear RQ2 model's β̂ with zero CI coverage
-  — flagged as an open gap, no curvature check currently registered.
+- **The curvature gap flagged at A7r6(d) is now addressed by a registered sensitivity diagnostic,
+  not resolved by changing the primary model** — A7r8 registers `analysis/rq2_diagnostics.R`'s
+  curvature and slope-heterogeneity fits, an interpretation rule for when to lead with them, and
+  the precise, non-power-law definition of β. The primary model/decision rule is unchanged. Still
+  open: the diagnostics themselves have not been run on real data (synthetic-only, same as every
+  other `analysis/` script), and both LRTs' real-data false-positive behaviour is unverified
+  beyond the synthetic calibration check A7r8(d) reports.
 
 ## Supersession table
 
