@@ -126,15 +126,19 @@ def run_session(session_n, architectures, out_base, checkpoints_dir,
             
         # Check if flagged
         flagged = False
-        try:
-            import json
-            summary = json.loads((cond_out / 'summary.json').read_text())
-            for w in summary.get('windows', []):
-                if w.get('name') != 'warmup' and w.get('thermal_flag', False):
-                    flagged = True
-                    break
-        except Exception:
-            pass # if crashed, no summary.json
+        if not crashed:
+            import csv
+            csv_path = cond_out / 'windows.csv'
+            if not csv_path.exists():
+                raise RuntimeError(f"windows.csv is missing in {cond_out}")
+            with open(csv_path, 'r') as f:
+                reader = csv.DictReader(f)
+                if 'thermal_flag' not in reader.fieldnames:
+                    raise RuntimeError(f"thermal_flag column missing from {csv_path}")
+                for row in reader:
+                    if int(row['repeat']) > 0 and row.get('thermal_flag', 'False') == 'True':
+                        flagged = True
+                        break
             
         if crashed or flagged:
             void_log['voids'].append({'condition': f'{arch}_{condition}', 'crashed': crashed, 'thermal_flagged': flagged})

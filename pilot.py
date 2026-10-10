@@ -224,7 +224,7 @@ def integrate(trace, ranges, names=None):
 
 def read_thermal_thresholds(device):
     import json
-    path = Path('config/thermal_thresholds.json')
+    path = Path(__file__).resolve().parent / 'config' / 'thermal_thresholds.json'
     if not path.exists():
         if device == 'cpu':
             raise RuntimeError('CPU runs require config/thermal_thresholds.json for thermal guard.')
@@ -232,50 +232,67 @@ def read_thermal_thresholds(device):
     return json.loads(path.read_text())
 
 class ThermalGuard:
-    def __init__(self, device):
+    def __init__(self, device, sysfs_root='/sys'):
         self.device = device
+        self.sysfs_root = Path(sysfs_root)
         self.thresholds = read_thermal_thresholds(device)
-        try:
-            self.pcores = sorted(list(p_core_set()))
-        except Exception:
-            self.pcores = list(range(12)) # fallback for test fake
+        self.pcores = sorted(list(p_core_set()))
         
-        self.has_throttle = all(Path(f'/sys/devices/system/cpu/cpu{c}/thermal_throttle/core_throttle_count').exists() for c in self.pcores) if self.pcores else False
+        self.has_throttle = all((self.sysfs_root / f'devices/system/cpu/cpu{c}/thermal_throttle/core_throttle_count').exists() for c in self.pcores) if self.pcores else False
+        if device == 'cpu' and not self.has_throttle:
+            raise RuntimeError('CPU runs require thermal_throttle/core_throttle_count on all P-cores')
         
         self.temp_path = None
-        for z in Path('/sys/class/thermal').glob('thermal_zone*'):
+        self.temp_type = None
+        for z in (self.sysfs_root / 'class/thermal').glob('thermal_zone*'):
             try:
-                if (z / 'type').read_text().strip() in ('x86_pkg_temp', 'coretemp'):
+                tt = (z / 'type').read_text().strip()
+                if tt == 'x86_pkg_temp':
                     self.temp_path = z / 'temp'
+                    self.temp_type = tt
                     break
+                elif tt == 'coretemp' and self.temp_type is None:
+                    self.temp_path = z / 'temp'
+                    self.temp_type = tt
             except Exception: pass
 
     def sample(self):
         freqs = []
         for c in self.pcores:
-            try: freqs.append(int(Path(f'/sys/devices/system/cpu/cpu{c}/cpufreq/scaling_cur_freq').read_text()) / 1000.0)
-            except Exception: pass
+            if self.device == 'cpu':
+                freqs.append(int((self.sysfs_root / f'devices/system/cpu/cpu{c}/cpufreq/scaling_cur_freq').read_text()) / 1000.0)
+            else:
+                try: freqs.append(int((self.sysfs_root / f'devices/system/cpu/cpu{c}/cpufreq/scaling_cur_freq').read_text()) / 1000.0)
+                except Exception: pass
         
         core_throttle = 0; pkg_throttle = 0; pkg_throttle_ms = 0
         if self.has_throttle:
-            for c in self.pcores:
-                try: core_throttle += int(Path(f'/sys/devices/system/cpu/cpu{c}/thermal_throttle/core_throttle_count').read_text())
+            if self.device == 'cpu':
+                for c in self.pcores:
+                    core_throttle += int((self.sysfs_root / f'devices/system/cpu/cpu{c}/thermal_throttle/core_throttle_count').read_text())
+                pkg_throttle = int((self.sysfs_root / 'devices/system/cpu/cpu0/thermal_throttle/package_throttle_count').read_text())
+                pkg_throttle_ms = int((self.sysfs_root / 'devices/system/cpu/cpu0/thermal_throttle/package_throttle_total_time_ms').read_text())
+            else:
+                for c in self.pcores:
+                    try: core_throttle += int((self.sysfs_root / f'devices/system/cpu/cpu{c}/thermal_throttle/core_throttle_count').read_text())
+                    except Exception: pass
+                try:
+                    pkg_throttle = int((self.sysfs_root / 'devices/system/cpu/cpu0/thermal_throttle/package_throttle_count').read_text())
+                    pkg_throttle_ms = int((self.sysfs_root / 'devices/system/cpu/cpu0/thermal_throttle/package_throttle_total_time_ms').read_text())
                 except Exception: pass
-            try:
-                pkg_throttle = int(Path('/sys/devices/system/cpu/cpu0/thermal_throttle/package_throttle_count').read_text())
-                pkg_throttle_ms = int(Path('/sys/devices/system/cpu/cpu0/thermal_throttle/package_throttle_total_time_ms').read_text())
-            except Exception: pass
             
-        temp = 0
+        temp = None
         if self.temp_path:
-            try: temp = int(self.temp_path.read_text()) / 1000.0
-            except Exception: pass
+            if self.device == 'cpu':
+                temp = int(self.temp_path.read_text()) / 1000.0
+            else:
+                try: temp = int(self.temp_path.read_text()) / 1000.0
+                except Exception: pass
             
         return (freqs, core_throttle, pkg_throttle, pkg_throttle_ms, temp)
 
     def evaluate(self, trace):
         if not trace: return {}
-        # trace is list of (freqs, core_throttle, pkg_throttle, pkg_throttle_ms, temp)
         all_freqs = [f for smp in trace for f in smp[0]]
         mean_freq = sum(all_freqs)/len(all_freqs) if all_freqs else 0
         min_freq = min(all_freqs) if all_freqs else 0
@@ -283,7 +300,8 @@ class ThermalGuard:
         c_th_delta = trace[-1][1] - trace[0][1] if self.has_throttle else None
         p_th_delta = trace[-1][2] - trace[0][2] if self.has_throttle else None
         p_th_ms_delta = trace[-1][3] - trace[0][3] if self.has_throttle else None
-        max_temp = max(smp[4] for smp in trace)
+        temps = [smp[4] for smp in trace if smp[4] is not None]
+        max_temp = max(temps) if temps else None
         
         flag = False
         if self.thresholds:
@@ -502,8 +520,14 @@ def main():
         git_hash=subprocess.check_output(['git','rev-parse','HEAD'],cwd=Path(__file__).resolve().parent).decode().strip()
     except Exception:
         git_hash='unknown'
+    
+    if a.device == 'cpu':
+        read_thermal_thresholds('cpu')
+    temp_type = ThermalGuard(a.device).temp_type
+        
     env=dict(platform=platform.platform(),cpu=platform.processor(),arguments=vars(a),
              timestamp_utc=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),git_hash=git_hash,
+             thermal_sensor_type=temp_type,
              cpuinfo=Path('/proc/cpuinfo').read_text() if Path('/proc/cpuinfo').exists() else '')
     (out/'environment.json').write_text(json.dumps(env,indent=2))
     try:

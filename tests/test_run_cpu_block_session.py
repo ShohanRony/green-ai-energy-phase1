@@ -14,6 +14,15 @@ def stub_runner(calls):
     instrument is ever touched by these tests."""
     def _run(pilot_py, python_exe, args):
         calls.append(args)
+        if '--out' in args:
+            out_idx = args.index('--out')
+            out_dir = Path(args[out_idx + 1])
+            out_dir.mkdir(parents=True, exist_ok=True)
+            import csv
+            with open(out_dir / 'windows.csv', 'w', newline='') as f:
+                w = csv.DictWriter(f, fieldnames=['repeat', 'thermal_flag'])
+                w.writeheader()
+                w.writerow({'repeat': 0, 'thermal_flag': 'False'})
         class _Result:
             returncode = 0
         return _Result()
@@ -145,8 +154,14 @@ if __name__ == '__main__':
 
 
 class ThermalVoidRerunTests(unittest.TestCase):
+    def _write_csv(self, out_dir, rows):
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from pilot import csv_write
+        csv_write(Path(out_dir) / 'windows.csv', rows)
+
     @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
-    def test_flagged_condition_is_voided_and_rerun_at_end(self, _ac):
+    def test_flagged_warm_condition_is_voided_and_rerun_at_end(self, _ac):
         import tempfile, json
         with tempfile.TemporaryDirectory() as td:
             calls = []
@@ -154,15 +169,19 @@ class ThermalVoidRerunTests(unittest.TestCase):
             def runner(pilot_py, python_exe, args):
                 nonlocal flag_count
                 calls.append(args)
+                out_dir = Path(args[args.index('--out') + 1])
+                out_dir.mkdir(parents=True, exist_ok=True)
                 if 'fp32_eager' in str(args) and flag_count == 0:
-                    out_dir = Path(args[args.index('--out') + 1])
-                    out_dir.mkdir(parents=True, exist_ok=True)
-                    (out_dir / 'summary.json').write_text(json.dumps({'windows': [{'name': 'infer', 'thermal_flag': True}]}))
+                    self._write_csv(out_dir, [
+                        {'repeat': 0, 'thermal_flag': 'False'},
+                        {'repeat': 1, 'thermal_flag': 'True'}
+                    ])
                     flag_count += 1
-                elif 'fp32_eager' in str(args):
-                    out_dir = Path(args[args.index('--out') + 1])
-                    out_dir.mkdir(parents=True, exist_ok=True)
-                    (out_dir / 'summary.json').write_text(json.dumps({'windows': [{'name': 'infer', 'thermal_flag': False}]}))
+                else:
+                    self._write_csv(out_dir, [
+                        {'repeat': 0, 'thermal_flag': 'False'},
+                        {'repeat': 1, 'thermal_flag': 'False'}
+                    ])
 
             log = runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
             
@@ -175,13 +194,41 @@ class ThermalVoidRerunTests(unittest.TestCase):
             self.assertEqual(void_log['voids'][0]['condition'], 'resnet18_fp32_eager')
 
     @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
-    def test_more_than_two_voids_aborts_session(self, _ac):
+    def test_flagged_cold_window_only_is_not_voided(self, _ac):
         import tempfile, json
         with tempfile.TemporaryDirectory() as td:
             def runner(pilot_py, python_exe, args):
                 out_dir = Path(args[args.index('--out') + 1])
                 out_dir.mkdir(parents=True, exist_ok=True)
-                (out_dir / 'summary.json').write_text(json.dumps({'windows': [{'name': 'infer', 'thermal_flag': True}]}))
+                self._write_csv(out_dir, [
+                    {'repeat': 0, 'thermal_flag': 'True'},
+                    {'repeat': 1, 'thermal_flag': 'False'}
+                ])
+
+            log = runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+            void_log = json.loads((Path(td) / 'void_log.json').read_text())
+            self.assertEqual(len(void_log['voids']), 0)
+
+    @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
+    def test_missing_thermal_flag_column_raises(self, _ac):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            def runner(pilot_py, python_exe, args):
+                out_dir = Path(args[args.index('--out') + 1])
+                out_dir.mkdir(parents=True, exist_ok=True)
+                self._write_csv(out_dir, [{'repeat': 0, 'some_other_col': 'False'}])
+
+            with self.assertRaisesRegex(RuntimeError, "thermal_flag column missing"):
+                runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+
+    @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
+    def test_more_than_two_voids_aborts_session(self, _ac):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            def runner(pilot_py, python_exe, args):
+                out_dir = Path(args[args.index('--out') + 1])
+                out_dir.mkdir(parents=True, exist_ok=True)
+                self._write_csv(out_dir, [{'repeat': 1, 'thermal_flag': 'True'}])
 
             with self.assertRaisesRegex(RuntimeError, "Session voided: more than 2 voided conditions"):
                 runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)

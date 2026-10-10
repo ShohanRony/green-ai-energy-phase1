@@ -250,61 +250,56 @@ class ThermalGuardTests(unittest.TestCase):
     def tearDown(self):
         self.td.cleanup()
         
-    @patch('pilot.Path')
-    def test_missing_threshold_refuses_cpu(self, mock_path):
+    @patch('pilot.Path.exists')
+    def test_missing_threshold_refuses_cpu(self, mock_exists):
         import pilot
-        def fake_path(p):
-            class _F:
-                def exists(self): return False
-            return _F()
-        mock_path.side_effect = fake_path
+        mock_exists.return_value = False
         with self.assertRaisesRegex(RuntimeError, "require config/thermal_thresholds.json"):
             pilot.read_thermal_thresholds('cpu')
             
-    @patch('pilot.Path')
-    def test_missing_threshold_returns_none_for_gpu(self, mock_path):
+    @patch('pilot.Path.exists')
+    def test_missing_threshold_returns_none_for_gpu(self, mock_exists):
         import pilot
-        def fake_path(p):
-            class _F:
-                def exists(self): return False
-            return _F()
-        mock_path.side_effect = fake_path
+        mock_exists.return_value = False
         self.assertIsNone(pilot.read_thermal_thresholds('cuda'))
 
-    @patch('pilot.Path')
-    def test_thermal_guard_flags(self, mock_path):
+    @patch('pilot.read_thermal_thresholds')
+    @patch('pilot.p_core_set')
+    def test_missing_cpu_throttle_raises(self, mock_pcore, mock_read):
         import pilot
-        def fake_path(p):
-            p = str(p)
-            if 'thermal_thresholds.json' in p:
-                class _F:
-                    def exists(self): return True
-                    def read_text(self): return '{"T_mhz": 2000}'
-                return _F()
-            if 'cpu_core/cpus' in p:
-                class _F:
-                    def exists(self): return True
-                    def read_text(self): return '0-3'
-                return _F()
-            if 'thermal_zone' in p:
-                class _F:
-                    def read_text(self): return 'coretemp'
-                    def __truediv__(self, other): return fake_path(p + '/' + other)
-                return _F()
-            if 'thermal' in p and not 'thermal_throttle' in p:
-                class _F:
-                    def exists(self): return True
-                    def glob(self, pat): return []
-                return _F()
-            class _F:
-                def exists(self): return False
-                def read_text(self): raise FileNotFoundError()
-            return _F()
-        mock_path.side_effect = fake_path
+        mock_read.return_value = {'T_mhz': 2000}
+        mock_pcore.return_value = {0, 1}
+        # Do not create thermal_throttle directories
+        with self.assertRaisesRegex(RuntimeError, "require thermal_throttle/core_throttle_count on all P-cores"):
+            pilot.ThermalGuard('cpu', sysfs_root=self.sysfs)
+
+    @patch('pilot.read_thermal_thresholds')
+    @patch('pilot.p_core_set')
+    def test_thermal_guard_flags(self, mock_pcore, mock_read):
+        import pilot
+        mock_read.return_value = {'T_mhz': 2000}
+        mock_pcore.return_value = {0, 1}
+
+        # Setup sysfs
+        for c in [0, 1]:
+            d = self.sysfs / f'devices/system/cpu/cpu{c}/thermal_throttle'
+            d.mkdir(parents=True)
+            (d / 'core_throttle_count').write_text('0')
+            f = self.sysfs / f'devices/system/cpu/cpu{c}/cpufreq'
+            f.mkdir(parents=True)
+            (f / 'scaling_cur_freq').write_text('2100000')
+
+        (self.sysfs / 'devices/system/cpu/cpu0/thermal_throttle/package_throttle_count').write_text('0')
+        (self.sysfs / 'devices/system/cpu/cpu0/thermal_throttle/package_throttle_total_time_ms').write_text('0')
+        
+        tz = self.sysfs / 'class/thermal/thermal_zone0'
+        tz.mkdir(parents=True)
+        (tz / 'type').write_text('coretemp')
+        (tz / 'temp').write_text('40000')
+
+        guard = pilot.ThermalGuard('cpu', sysfs_root=self.sysfs)
         
         # Test low frequency flag
-        guard = pilot.ThermalGuard('cpu')
-        guard.has_throttle = True
         trace = [
             ([1800, 1800], 0, 0, 0, 40.0),
             ([1800, 1800], 0, 0, 0, 40.0)
@@ -328,7 +323,7 @@ class ThermalGuardTests(unittest.TestCase):
         res3 = guard.evaluate(trace3)
         self.assertFalse(res3['thermal_flag'])
         
-        # Test counters absent falls back to frequency only
+        # Test counters absent falls back to frequency only (for GPU)
         guard.has_throttle = False
         res4 = guard.evaluate(trace2)
         self.assertFalse(res4['thermal_flag']) # no throttle check, freq 2100 > 2000
