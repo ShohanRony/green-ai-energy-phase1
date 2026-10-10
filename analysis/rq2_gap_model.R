@@ -251,3 +251,38 @@ fit_sensitivity_free_intercept <- function(data) {
     p_one_sided = p_one_sided
   )
 }
+
+fit_h2_primary <- function(data) {
+  mixed_res <- fit_h2_gap_model(data)
+  
+  if (!is.null(mixed_res$complete_design) && mixed_res$complete_design) {
+    t_res <- session_mean_t_test(data)
+    list(
+      primary_method = "session_mean_t",
+      complete_design = TRUE,
+      estimate = t_res$mu_hat,
+      se = t_res$se,
+      df = t_res$df,
+      p_one_sided = t_res$p_one_sided,
+      ci_lower = t_res$ci_lower,
+      ci_upper = t_res$ci_upper,
+      exp_estimate = t_res$exp_mu_hat,
+      exp_ci_lower = t_res$exp_ci_lower,
+      exp_ci_upper = t_res$exp_ci_upper
+    )
+  } else {
+    list(
+      primary_method = "cell_fixed_mixed",
+      complete_design = FALSE,
+      estimate = mixed_res$mu_hat,
+      se = mixed_res$se,
+      df = mixed_res$df,
+      p_one_sided = mixed_res$p_one_sided,
+      ci_lower = mixed_res$ci_lower,
+      ci_upper = mixed_res$ci_upper,
+      exp_estimate = mixed_res$exp_mu_hat,
+      exp_ci_lower = mixed_res$exp_ci_lower,
+      exp_ci_upper = mixed_res$exp_ci_upper
+    )
+  }
+}

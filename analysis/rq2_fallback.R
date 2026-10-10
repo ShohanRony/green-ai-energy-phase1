@@ -17,7 +17,7 @@ source("analysis/rq2_model.R")
 #' reused, matching analysis/rq2_diagnostics.R's own convention, so a validation failure (bad
 #' columns, bnrecal states, duplicate rows) is rejected immediately here and never silently
 #' routed into the lm() fallback as if it were a convergence problem.
-.validate_rq2_input <- function(data, caller) {
+.validate_rq2_fallback_input <- function(data, caller) {
   required_cols <- c("session", "model", "state", "log_ratio", "log_mac")
   missing_cols <- setdiff(required_cols, names(data))
   if (length(missing_cols) > 0) {
@@ -49,7 +49,7 @@ source("analysis/rq2_model.R")
 #'   `model_used` ("lmer" or "lm_fixed_session") and `complete_design` (TRUE only if
 #'   n_obs == n_sessions * n_models * 3, the registered design's full cell count).
 fit_rq2_with_fallback <- function(data, primary_fit_fn = fit_rq2_model) {
-  .validate_rq2_input(data, "fit_rq2_with_fallback")
+  .validate_rq2_fallback_input(data, "fit_rq2_with_fallback")
 
   n_sessions <- length(unique(data$session))
   n_models <- length(unique(data$model))

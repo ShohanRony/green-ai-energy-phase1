@@ -10,7 +10,7 @@
 
 suppressMessages(library(lmerTest))
 
-.validate_rq2_input <- function(data, caller) {
+.validate_rq2_diag_input <- function(data, caller) {
   required_cols <- c("session", "model", "state", "log_ratio", "log_mac")
   missing_cols <- setdiff(required_cols, names(data))
   if (length(missing_cols) > 0) {
@@ -35,7 +35,7 @@ suppressMessages(library(lmerTest))
 }
 
 fit_curvature_diagnostic <- function(data) {
-  .validate_rq2_input(data, "fit_curvature_diagnostic")
+  .validate_rq2_diag_input(data, "fit_curvature_diagnostic")
   data$model <- factor(data$model)
   data$session <- factor(data$session)
 
@@ -68,7 +68,7 @@ fit_curvature_diagnostic <- function(data) {
 }
 
 fit_heterogeneity_diagnostic <- function(data) {
-  .validate_rq2_input(data, "fit_heterogeneity_diagnostic")
+  .validate_rq2_diag_input(data, "fit_heterogeneity_diagnostic")
   data$model <- factor(data$model)
   data$session <- factor(data$session)
   model_levels <- levels(data$model)
