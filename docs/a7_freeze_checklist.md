@@ -354,3 +354,10 @@ entries — **is already public in the current GitHub repository** (it is a trac
 a redaction decision for one has no effect on the other. Stated here so this isn't discovered
 only after a Zenodo redaction is made and assumed to be complete; **the researcher decides**
 whether any further action on the GitHub copy is wanted, separately from the Zenodo decision.
+
+## Freeze Update (2026-10-10)
+- **Confirmation scope**: `docs/stage5_plan_v1.md` plus A10 (named explicitly; no implicit confirmation).
+- **Deposit list**: `docs/stage5_plan_v1.md`, `docs/stage5_analysis_plan.md`, `docs/deviation_log.md`, `docs/p1_wall_meter_protocol.md`, `docs/m1_harness_design.md`, `docs/analysis_environment.md`, `docs/history_rewrite_map.md`, the whole `analysis/` directory, `pilot.py`, `power_state.py`, `scripts/run_cpu_block_session.py`, plus a manifest.
+- **Tag instructions**: Pin the commit hash and the output of `git rev-parse HEAD:analysis` in the tag message.
+- **Test counts recorded**: R checks total 93; Python tests total 65 (using `measurement_env/bin/python3`).
+- **Sensitive-string scan**: Hits include "Shohan" (in `stage5_analysis_plan.md`), `User=shohan` (in `deviation_log.md`), and R roxygen `@param` tags. No redaction performed as per researcher instruction.
