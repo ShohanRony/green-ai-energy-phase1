@@ -94,3 +94,78 @@ This document proposes; it does not adopt. Whether any of (a), (b), the seed cou
 compute-time tradeoff is worth running is the researcher's and supervisor's decision — consistent
 with `stage5_analysis_plan.md` A5's own "DRAFT, pending supervisor review" status, which this
 document does not change.
+
+## Revision, 2026-10-10 (previous text above kept as-is, not edited)
+
+**(a) Variance arm extended: each new seed's FP32 model also goes through post-training
+compression, accuracy-evaluated only.** Each new-seed FP32 checkpoint (proposed above) is also run
+through this project's existing post-training compression pipeline — INT8, pruned30/50/70
+zero-finetune, and their `_bnrecal` counterparts — using the same procedures already applied to the
+seed-2026 checkpoints (`materialize_checkpoints.py`, `scripts/pruned_controls.py`). **Accuracy
+only** — no energy measurement on these additional checkpoints, consistent with the variance arm's
+own stated purpose. **Why:** §6's 99%/99.9% accuracy rule compares a compressed state's accuracy to
+its own model's FP32 accuracy — a **relative** figure. Training only extra FP32 seeds (as originally
+proposed) would give seed variance on the FP32 anchor alone; it says nothing about how much the
+**relative** accuracy ratio actually used by §6's rule moves across seeds, since that ratio also
+depends on how the compression pipeline interacts with each seed's particular weights. Running every
+new seed through the full compression set closes that gap directly.
+
+**(b) Fine-tune arm: validation-split asymmetry disclosed, fixed recipe proposed, alternative
+listed.**
+- **Disclosed:** the standing seed-2026 FP32 parents (`checkpoints/*_fp32.pt`) were trained on
+  **all 50,000** training images (confirmed directly, `checkpoints/*_train.log` — no held-out
+  subset; `train_baseline.py` has no validation split, per `stage5_analysis_plan.md` §6(f)). A
+  45,000/5,000 validation split (as proposed in this draft's original (b), and as P8 already
+  implements) is therefore **not held out for these parents** — the parents were trained with every
+  image the split would otherwise reserve. Fine-tuning them under a 45k/5k split gives the
+  fine-tuning *step* a genuine validation set, but the *parent* checkpoint being fine-tuned was
+  already exposed to all 50k images during its own training — the split is not clean end-to-end.
+- **Proposed fixed recipe (pre-declared, not chosen after seeing results):** **25 epochs**,
+  `lr=0.01`, **final checkpoint used** (no best-epoch selection against the validation set — avoids
+  turning the validation split into an implicit second test set), accuracy computed on the real
+  CIFAR-10 test set **exactly once**, no model selection anywhere in the pipeline. Matches A5's
+  original "20-30 epoch" range and P8's own already-run fine-tune parameters
+  (`docs/p8_spec.md`: `ft_resnet18_30_1001`, 25 epochs, `lr=0.01`) — reusing a figure already run
+  once in this project rather than inventing a new one.
+- **Alternative, with trade-offs, not chosen here:** fine-tune from parents **retrained on 45,000
+  images at the registered epoch counts** (ResNet-18 30, MobileNetV3-Small/EfficientNet-B0 60) —
+  i.e. retrain the FP32 baselines themselves under the 45k/5k split first, then prune and fine-tune
+  from those. **Trade-off:** a genuinely clean split end-to-end (parent never sees the 5k validation
+  images), at the cost of retraining all three FP32 baselines from scratch (full epoch counts, not
+  just the fine-tune step) — roughly the same wall-clock cost as one more variance-arm seed (c,
+  below), before any fine-tuning even starts. Not proposed as the default because it multiplies the
+  compute cost for a split-cleanliness improvement whose practical effect on the fine-tuned models'
+  accuracy is itself unmeasured.
+
+**(c) Measured wall-clock, replacing the earlier unmeasured estimate.** Read directly from this
+project's own training logs (`checkpoints/{arch}_train.log`, the registered seed-2026 runs — not
+re-measured, not re-run):
+
+| Architecture | Epochs | Total elapsed | Per-epoch |
+|---|---|---|---|
+| ResNet-18 | 30 | 1344 s (≈22.4 min) | ≈44.8 s |
+| MobileNetV3-Small | 60 | 442 s (≈7.4 min) | ≈7.4 s |
+| EfficientNet-B0 | 60 | 2067 s (≈34.5 min) | ≈34.5 s |
+
+- **Variance arm (5 extra seeds × 3 architectures, (a)'s FP32 training only):** one seed's full set
+  = `1344 + 442 + 2067 = 3853 s` (≈64.2 min). **5 seeds ≈ 19,265 s ≈ 5.35 hours** of training wall-
+  clock, real numbers, not scaled from an assumption. **Still unmeasured, disclosed as an
+  assumption:** the post-training compression + accuracy-eval step (a) adds per the new seed — no
+  wall-clock log exists for `materialize_checkpoints.py`/`scripts/pruned_controls.py`'s own running
+  time, so this addition's total cost is not included in the 5.35-hour figure above.
+- **Fine-tune arm, 25 epochs, extrapolated from the same per-epoch rates above — assumption,
+  unverified:** ResNet-18 ≈ `25 × 44.8 = 1120 s` (≈18.7 min); MobileNetV3-Small ≈ `25 × 7.4 = 184 s`
+  (≈3.1 min); EfficientNet-B0 ≈ `25 × 34.5 = 861 s` (≈14.4 min). **Assumption:** fine-tuning a
+  pruned model's per-epoch time is assumed equal to the full model's per-epoch training time — in
+  practice a pruned model has fewer active channels and would typically run *faster* per epoch, so
+  this extrapolation is more likely an upper bound than an exact figure, not independently verified
+  for the fine-tune case specifically.
+
+**(d) No training may overlap an energy measurement session.** Any variance-arm or fine-tune-arm
+training run (GPU or CPU) must not run concurrently with any `pilot.py` energy-measurement session
+on the same machine — the existing concurrent-GPU-process guard (`pilot.py`, §8's exclusion list)
+already enforces this for the GPU, but this applies more broadly: a CPU-block energy session would
+also be contaminated by a concurrent CPU training job competing for the same cores, which the
+existing guard does not detect (it only checks for GPU processes). Stated here as a scheduling
+constraint for whoever eventually runs this arm, not a new harness feature — no code change
+proposed in this revision.
