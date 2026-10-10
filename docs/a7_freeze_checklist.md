@@ -136,3 +136,68 @@ Checked against this project's actual current state as of this review, not assum
   (`27625af78f4a4efcb33001f10565a355`) — a 32-character boot identifier, not a git hash, correctly
   labelled as a boot in its own sentence. **No document cites a stale commit hash.** Nothing
   edited, per this item's instruction.
+
+## 6. Dated section, 2026-10-10 (previous sections above kept as-is, not edited)
+
+**(i) Correction: "no result exists" was inaccurate — §3's text is left as-is, corrected here.**
+§3 above states (twice) that no result exists to deposit ("this is a pre-registration (no results
+data)," "no result exists yet to deposit"). **This is wrong** — `results_stage4b/`'s raw GPU-block
+data (sessions 1-6 and the unpinned/aborted directories) already exists in the repository and is
+tracked in git, collected before A7 even existed (A7r3(j)). The accurate statement: **no
+confirmatory statistic has been computed; raw GPU-block data exist in the repository.** §3's
+exclusion of `results_*` from the deposit (line 73) is unaffected by this correction — raw data is
+still excluded from the *deposit* for the same reason as before (the deposit is the plan, not a
+results release), the correction is only to the claim that no such data exists at all anywhere.
+
+**(ii) Upload method: manual, not the GitHub-release integration.** Zenodo's GitHub integration
+archives a release as **the entire repository snapshot**, including every `results_*` directory,
+`checkpoints/`, and anything else tracked at that commit — directly contradicting §3's carefully
+curated inclusion/exclusion list. **Use a manual upload** through Zenodo's own web upload (or API)
+interface instead, uploading **exactly** the files §3 lists — not a repository archive, not a
+GitHub release artifact. This is a correction to how the deposit must be performed, not previously
+stated in §2/§3.
+
+**(iii) Push scope: master only; backup branches and tags stay local; verify with `git ls-remote`.**
+§1's existing "pushed to origin before tagging" bullet is imprecise about scope. Precisely: **`git
+push origin master`** is the one push command for the freeze itself. **Backup branches** (e.g.
+`backup-pre-blockj-foldfix-20261010`) **and housekeeping tags** (e.g. the renamed
+`backup-pre-history-rewrite-20261010`) **stay local, never pushed.** **Verify with `git ls-remote
+origin` before and after the push** — compare the ref list both times to confirm exactly what
+changed and that nothing besides `master` (and, per §2, the freeze tag) moved.
+- **Flagged, not resolved: a real tension with §2.** §2's own tag command includes
+  `git push origin stage5-a7-frozen-<date>` — pushing the freeze tag itself. Whether "tags stay
+  local" in this instruction means *all* tags (which would contradict §2's command, and undercut
+  the freeze tag's own stated purpose — "tagging a commit that only exists locally defeats the
+  purpose of an externally-verifiable freeze point," §1) or only the *housekeeping/backup* tags
+  (leaving the freeze tag's push in §2 intact) is **not resolved here.** §2's text is left as-is;
+  this item is stated as read, with the apparent conflict surfaced rather than silently picked one
+  way — the researcher's call.
+
+**(iv) First-CPU-session prerequisites, distinct from the freeze prerequisites in §1.** The freeze
+itself (§1) does not require any CPU-block data to exist (A7r1(j)/§1's own M1 bullet already
+established this). Collecting the **first actual CPU-block session**, once the plan is frozen, has
+its **own**, separate gate, not previously listed in §1: **the thermal-throttle guard code must
+exist, have unit tests, and the calibrated thresholds must be registered in a dated amendment**
+(`stage5_analysis_plan.md` A7r4(b)) — none of which exists yet. Listed here so it isn't conflated
+with the freeze's own prerequisite list; a frozen plan can sit un-executed while this gate is still
+open.
+
+**(v) Redaction plan for the Zenodo copy of D22/D23/D25 — a concrete proposal, not yet a decision.**
+Building on §5's earlier sensitivity ranking (D23 highest, D22 moderate, D25 a privacy-not-security
+risk), a possible redaction, **for the Zenodo deposit copy only**:
+- **Username:** every literal `shohan` → a generic placeholder (e.g. `[local user]`).
+- **Sudoers rule filenames:** `green-ai-governor`, `stage4b-auto` → generic descriptions (e.g.
+  `[CPU-governor sudoers rule]`, `[reboot/service-toggle sudoers rule]`).
+- **Systemd absolute paths:** e.g.
+  `/etc/systemd/system/p8-auto.service.quarantined-20261009` → a relative/generic description
+  (e.g. `[quarantined unit file, system service directory]`).
+- **D25's evening timestamps:** the exact clock times (19:57:41 through 00:07:02) enable inferring
+  when the researcher was away from AC power at home — proposed treatment: round to the nearest
+  hour, or replace with relative offsets from the first event, removing the precise-clock-time
+  inference risk while keeping the forensic sequence (AC confirmed → battery confirmed twice →
+  apparent shutdown → reboot) fully legible.
+- **Explicitly: the git repository's `deviation_log.md` is unchanged by any of this** — D22/D23/D25
+  stay exactly as written, append-only, in the project's own history. A redacted version, if the
+  researcher chooses one, would exist **only** as a separate file prepared specifically for the
+  Zenodo copy, never substituted into the repo itself. **This is a proposal; the researcher decides**
+  whether to redact at all, and exactly how — nothing above is applied to any file by this entry.
