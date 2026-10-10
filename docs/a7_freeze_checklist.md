@@ -361,3 +361,7 @@ whether any further action on the GitHub copy is wanted, separately from the Zen
 - **Tag instructions**: Pin the commit hash and the output of `git rev-parse HEAD:analysis` in the tag message.
 - **Test counts recorded**: R checks total 93; Python tests total 65 (using `measurement_env/bin/python3`).
 - **Sensitive-string scan**: Hits include "Shohan" (in `stage5_analysis_plan.md`), `User=shohan` (in `deviation_log.md`), and R roxygen `@param` tags. No redaction performed as per researcher instruction.
+
+## Correction (2026-10-10)
+- **Import closure & Deposit list update**: A recursive dependency check of `pilot.py`, `power_state.py`, `train_baseline.py`, and `scripts/run_cpu_block_session.py` shows the local module closure includes at least `train_baseline.py` (which was omitted from the previous freeze update's deposit list). The deposit list is hereby updated to explicitly include this full closure.
+- **Sensitive-string scan note**: The `@param` hits reported in the earlier sensitive-string scan are strictly R documentation (roxygen) tags, not e-mail addresses.
