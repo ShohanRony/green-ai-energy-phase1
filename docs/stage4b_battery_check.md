@@ -161,3 +161,23 @@ All figures from `resnet18_fp32`, the diagnostic condition per (b) above. "Windo
 and never more than ~0.15 W off the cap, i.e. no partial-dip or borderline reading in the set). The
 control row confirms the rule can and does produce a different grade when the underlying condition is
 actually different, which is the main thing (a)'s disclosure asked this revision to check for.
+
+## Note, 2026-10-10 (previous text above kept as-is, not edited)
+
+Stated plainly, so the grade's actual evidentiary weight isn't overread: **Signal 1 (kernel/systemd
+transition evidence) alone cannot distinguish steady AC from steady battery** — it only rules out a
+power-source *change* during the swept window (stated already above, in the "Correction, 2026-10-10"
+section). Every "Evidenced" grade in the table above therefore rests on **one discriminating signal**
+(Signal 2 — GPU power sitting at the known AC-pinned cap, which a steady battery state would not
+reproduce) **plus one battery contrast** (the D25 control row, the one case where this project has
+independently confirmed ground truth, used to check that the rule actually grades a known-battery
+run differently). It is not two independent discriminating signals in the stronger sense — Signal 1
+contributes only its (real, but non-discriminating-alone) absence-of-transition finding, and Signal 3
+(watchdog) contributes nothing for any of the 9 sessions. This does not change any grade already
+given; it is a precision statement about what the grade is actually built on.
+
+**Suggested neutral Methods-section sentence, for whoever writes the thesis text:** *"GPU power draw
+was consistent with AC operation in all sessions; sessions 1-6 have no direct power-source record."*
+Deliberately plain and free of the grading mechanics above — states the one finding that matters for
+a reader (power draw pattern matches AC) and the one limitation that matters (no direct record exists
+for this data), without importing the signal-counting discussion into the thesis text itself.
