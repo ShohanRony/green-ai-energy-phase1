@@ -1690,3 +1690,6 @@ fit and reported, not silently treated as if it were the full registered design*
 with A7r3(h)'s void-and-rerun criteria, which can legitimately leave a session with fewer than
 the full condition count after a voided-and-not-yet-rerun condition. `complete_design == FALSE`
 is a disclosure flag for the researcher to see, not an error condition this function raises.
+
+**A10 — 2026-10-10. Single Authoritative Plan v1.0.**
+From the confirmation date, `docs/stage5_plan_v1.md` is the single authoritative plan. A1-A9, A7r1-A7r9, and A8-A8r2 remain as history. Corrections made in v1.0: gap-based H2, session-mean t primary, session:model structure, scope change, "type I error" wording corrected to power loss, and "bias" corrected to design weighting.
