@@ -243,10 +243,11 @@ def read_thermal_thresholds(device):
     return data
 
 class ThermalGuard:
-    def __init__(self, device, sysfs_root='/sys'):
+    def __init__(self, device, sysfs_root='/sys', require_thresholds=True):
         self.device = device
         self.sysfs_root = Path(sysfs_root)
-        self.thresholds = read_thermal_thresholds(device)
+        self.require_thresholds = require_thresholds
+        self.thresholds = read_thermal_thresholds(device) if require_thresholds else None
         self.pcores = sorted(list(p_core_set()))
         
         self.has_throttle = all((self.sysfs_root / f'devices/system/cpu/cpu{c}/thermal_throttle/core_throttle_count').exists() for c in self.pcores) if self.pcores else False
@@ -316,6 +317,8 @@ class ThermalGuard:
         
         flag = False
         if not active:
+            flag = None
+        elif not self.require_thresholds:
             flag = None
         else:
             if self.thresholds:

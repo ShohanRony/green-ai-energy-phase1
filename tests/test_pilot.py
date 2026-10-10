@@ -250,6 +250,21 @@ class ThermalGuardTests(unittest.TestCase):
     def tearDown(self):
         self.td.cleanup()
         
+
+    @patch('pilot.Path.exists')
+    @patch('pilot.p_core_set')
+    def test_calibration_mode(self, mock_pcore, mock_exists):
+        import pilot
+        mock_exists.return_value = True
+        mock_pcore.return_value = {0}
+        with patch('pilot.read_thermal_thresholds') as mock_read:
+            guard = pilot.ThermalGuard('cpu', sysfs_root=str(self.sysfs), require_thresholds=False)
+            mock_read.assert_not_called()
+            guard.has_throttle = True # bypass for test
+            trace = [([1000], 0, 0, 0, 40), ([1000], 1, 0, 0, 40)]
+            res = guard.evaluate(trace, active=True)
+            self.assertIsNone(res['thermal_flag'])
+
     @patch('pilot.Path.exists')
     def test_missing_threshold_refuses_cpu(self, mock_exists):
         import pilot
