@@ -181,3 +181,46 @@ was consistent with AC operation in all sessions; sessions 1-6 have no direct po
 Deliberately plain and free of the grading mechanics above — states the one finding that matters for
 a reader (power draw pattern matches AC) and the one limitation that matters (no direct record exists
 for this data), without importing the signal-counting discussion into the thesis text itself.
+
+## Revision, 2026-10-10: a direct power-source record was found (UPower), previous grading kept
+as-is above, not edited
+
+The limitation stated immediately above ("sessions 1-6 have no direct power-source record") is
+**now out of date** — a direct record exists and was checked: `/var/lib/upower/`'s persisted
+battery history (`history-charge-L23M4PK4-60-1907.dat` and siblings), world-readable, no sudo
+needed, covering **2026-10-03T11:52:11Z through 2026-10-10T05:07:35Z** — the full target window
+with margin. The suggested Methods sentence above should be read as superseded by this revision,
+not deleted (append-only).
+
+### Per-session table, with the UPower signal added
+
+| Session | Regime | Mean/min GPU power | Windows | Nearest UPower discharge interval | Gap to session window | Grade |
+|---|---|---|---|---|---|---|
+| `main_session1_unpinned` | pinned | 59.91/59.86 W | 14 | 2026-10-06T18:50:30Z–19:12:06Z | 70.5 min (before) | **Evidenced** |
+| `main_session1` | pinned | 59.92/59.88 W | 14 | 2026-10-07T09:58:59Z–10:08:37Z | 214.2 min (before) | **Evidenced** |
+| `main_session2` | pinned | 59.92/59.88 W | 14 | 2026-10-07T09:58:59Z–10:08:37Z | 84.5 min (before) | **Evidenced** |
+| `main_session3_aborted` | pinned | 59.94/59.92 W | 4 | 2026-10-07T09:58:59Z–10:08:37Z | 23.2 min (before) | **Evidenced** |
+| `main_session4_aborted` | pinned | 59.91/59.88 W | 4 | 2026-10-07T13:31:06Z–14:19:46Z | 27.8 min (after) | **Evidenced** |
+| `main_session3` | pinned | 59.91/59.89 W | 14 | 2026-10-07T13:31:06Z–14:19:46Z | 302.8 min (before) | **Evidenced** |
+| `main_session4` | pinned | 59.90/59.87 W | 14 | 2026-10-09T01:54:46Z–02:22:22Z | 662.2 min (before) | **Evidenced** |
+| `main_session5` | pinned | 59.94/59.90 W | 14 | 2026-10-09T01:54:46Z–02:22:22Z | 546.1 min (before) | **Evidenced** |
+| `main_session6` | pinned | 59.94/59.92 W | 14 | 2026-10-09T01:54:46Z–02:22:22Z | 409.1 min (before) | **Evidenced** |
+
+**Zero overlaps** — no session window intersects any UPower-recorded discharging interval. No grade
+changes under the existing rule; the UPower signal corroborates every prior "Evidenced" call with a
+direct (not inferred) battery-state source, for the first time in this document's history.
+
+### Limitations of the UPower signal, stated plainly (same as `stage5_analysis_plan.md` A7r5(c))
+
+- **Sample spacing, measured, not assumed:** within confirmed discharging episodes, a **median
+  60-second** spacing (mean 63.0s, max 1295s at episode boundaries, n=297 within-episode gaps).
+  Across the full dataset including steady periods, gaps are far wider (mean 1173.6s, max ≈15.7
+  hours) — UPower logs primarily on a state/percentage-change event, not a fixed interval.
+- **Only 4 of 30 conditions per session discriminate via GPU regime** (`resnet18_fp32`,
+  `resnet18_fp16`, `resnet18_pruned30`, `resnet18_pruned30_bnrecal`) — the other 26 are expected to
+  `dip` regardless of power source. UPower's own history is the only signal covering all 30.
+- **"Expected-to-pin" is derived empirically from this same dataset**, not an independent prior
+  registration — internally consistent, but self-referential.
+- **A short blip (roughly under a minute, or falling inside a steady-period sampling gap) could be
+  missed** by UPower's own recording behaviour — the table above reports what the available signals
+  actually captured, not a guarantee against every possible battery event.
