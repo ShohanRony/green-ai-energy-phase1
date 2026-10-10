@@ -252,3 +252,105 @@ unchanged — restated here only to say **which** commit that now means. This bl
 table — the commit hash to name in the freeze tag's `analysis: analysis/ @ <hash>` field (§7) is
 whichever of this block's commits is the last one touching `analysis/`, not an earlier commit
 from Block O/P/Q. Not run here — written for when the freeze actually happens, same as §7.
+
+## 10. Dated section, 2026-10-10: confirmation scope, clean-status check, test counts, tree hash,
+DRAFT replacement, and the looked-at repeat
+
+**(i) Exact confirmation scope, listed so nothing is confirmed by accident or omission:**
+**A7, A7r1, A7r2, A7r3, A7r4, A7r5, A7r6, A7r7, A7r8, A7r9; A8, A8r1, A8r2.** Plus, **separately
+and explicitly**, proposals **D3r1** and **D4r1** — both currently marked "proposal pending
+researcher confirmation" in their own text — as confirmed **only if and when the researcher's
+reply contains no objection to them** ("no complaint" standing as the confirmation signal for
+these two specifically, distinct from the broader amendment-by-amendment confirmation above,
+since D3r1/D4r1 were explicitly flagged pending rather than silently assumed). This list is the
+complete confirmation scope — nothing outside it is confirmed by a general "looks good."
+
+**(ii) Clean-status check, extended.** §1's existing "no uncommitted changes" prerequisite now
+also covers: `analysis/` (all scripts and `analysis/tests/`), `docs/analysis_environment.md`, and
+`docs/stage5_consolidated_plan.md` — `git status` must be clean for all of these, not only
+`stage5_analysis_plan.md`/`deviation_log.md`, before tagging.
+
+**(iii) Test pass counts in the deposit manifest.** At the freeze commit, run **all R checks**
+(`Rscript analysis/tests/run_all.R`) and **all Python tests** (this project's existing
+`tests/` suite) and record both pass counts in the deposit manifest/README (§3) — a frozen
+analysis pipeline whose own test suite was never confirmed passing at the exact frozen commit is
+a weaker registration than one that was.
+
+**(iv) Pin both the commit hash and the `analysis/` tree hash in the tag message.** §7 already
+asks for `analysis/`'s commit hash; **also pin `git rev-parse HEAD:analysis`** (the tree object
+hash for the `analysis/` subtree at the frozen commit) in the same tag message — a tree hash
+identifies the exact file contents independent of which commit last touched them, giving a second,
+content-addressed check that doesn't rely on correctly identifying "the last commit that touched
+`analysis/`" by hand.
+
+**(v) DRAFT status replacement, text prepared only after confirmation, not now.** Every amendment
+in (i)'s scope currently reads "DRAFT, pending researcher/supervisor confirmation" (or, for
+D3r1/D4r1, "pending researcher confirmation"). **Once the researcher actually confirms, that
+DRAFT language is replaced by a new, dated confirmation entry** — stating what was confirmed and
+when — **not edited into the existing DRAFT text in place** (this plan's own append-only rule
+applies to a confirmation exactly as it does to a correction). **This confirmation entry's text
+is not written here** — writing it now, before confirmation has actually happened, would risk it
+being read as already-confirmed; it is prepared only once the researcher's confirmation is
+received.
+
+**(vi) The "looked at" check is repeated at freeze, not assumed still true from when it was last
+written.** Matching §1's existing instruction for the plan's own "looked at" statement: re-run
+the same check at the moment of freezing — confirm no ratio, interval, or hypothesis test has
+been computed on any Stage 4b energy data between whenever it was last checked and the freeze
+commit itself. A stale "already checked" is not sufficient for a freeze-time claim.
+
+## 11. Dated section, 2026-10-10: proposed updated Zenodo inclusion list
+
+**Produced by scanning `docs/stage5_analysis_plan.md` for every `docs/`, `analysis/`, or
+`scripts/` file it cites** (direct text search, not exhaustive beyond what the plan's own prose
+names). Every file found is tracked in git as of this review — none is missing.
+
+| File | Cited in the plan | Currently in §3's inclusion list |
+|---|---|---|
+| `docs/stage5_analysis_plan.md` | yes (is the plan) | yes |
+| `docs/deviation_log.md` | yes | yes |
+| `docs/p1_wall_meter_protocol.md` | yes | yes |
+| `docs/m1_harness_design.md` | yes | yes |
+| `docs/a7_freeze_checklist.md` | yes | no |
+| `docs/phase1-execution-plan.md` | yes | no |
+| `docs/stage4b-design.md` | yes | no |
+| `docs/stage4-implementation-brief.md` | yes | no |
+| `docs/analysis_environment.md` | yes | no |
+| `docs/bnrecal_cpu_equivalence.md` | yes | no |
+| `docs/feasibility_x86_cpu_block.md` | yes | no |
+| `docs/stage4b_battery_check.md` | yes | no |
+| `analysis/check_pooled_slope_weights.R` | yes | no |
+| `analysis/helpers.R` | yes | no |
+| `analysis/rq2_diagnostics.R` | yes | no |
+| `analysis/rq2_fallback.R` | yes | no |
+| `analysis/rq2_model.R` | yes | no |
+| `analysis/simulate_rq2.R` | yes | no |
+| `analysis/simulate_rq2_block_p.R` | yes | no |
+| `analysis/simulate_rq2_diagnostics.R` | yes | no |
+| `scripts/recompute_cpu_package_energy.py` | yes | no |
+| `scripts/run_cpu_block_session.py` | yes | no |
+
+**Proposed additions to §3's inclusion list, as this block's order specifies, beyond the scan
+above:** `analysis/` (the whole directory, including `analysis/tests/`, covering the scanned
+files above plus their test files, which the plan cites collectively but not file-by-file),
+`docs/analysis_environment.md` (already found cited, listed here too per the order's explicit
+instruction), `docs/stage5_consolidated_plan.md` (a derived summary, **not** found cited by the
+plan itself — it cites the plan, not the reverse — proposed for inclusion anyway so the deposit's
+reader has the same navigational summary a project contributor would), `docs/stage4b_battery_check.md`
+(already found cited, listed here too per the order), and `scripts/run_cpu_block_session.py`
+(already found cited, listed here too per the order).
+
+**Explicitly not decided here: D22/D23/D25 redaction.** §6(v)'s existing redaction proposal
+(username, sudoers filenames, systemd paths, evening timestamps) is unchanged by this section —
+still a proposal, still the researcher's decision, not applied to anything.
+
+**Still excluded, unchanged from §3:** `results_*`, `checkpoints/` and `checkpoints_p8/`,
+`docs/incidents/`.
+
+**A plain fact, not a decision:** `docs/deviation_log.md` — including its D22, D23, and D25
+entries — **is already public in the current GitHub repository** (it is a tracked file on
+`origin/master`, confirmed pushed). **Redacting only the Zenodo deposit's copy of D22/D23/D25
+(§6(v)) does not remove that same content from GitHub** — the two are separate publications, and
+a redaction decision for one has no effect on the other. Stated here so this isn't discovered
+only after a Zenodo redaction is made and assumed to be complete; **the researcher decides**
+whether any further action on the GitHub copy is wanted, separately from the Zenodo decision.

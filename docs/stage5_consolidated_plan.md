@@ -192,10 +192,14 @@ undivided version) — A7r4(a). Both marked descriptive, no significance thresho
 ## Analysis tooling
 
 `analysis/rq2_model.R`, `analysis/helpers.R` (D2 TOST, SD threshold, bridged ratio, spec-curve
-metrics, Holm adjustment — base R's `p.adjust`, not reimplemented), `analysis/simulate_rq2.R` +
-`analysis/simulate_rq2_block_p.R` (simulation validation), `analysis/tests/` (unit tests) — written
-and tested on synthetic data only, Blocks O-Q. Any post-freeze change to these scripts needs a
-dated amendment, the same discipline as the prose plan — `docs/analysis_environment.md`.
+metrics, Holm adjustment — base R's `p.adjust`, not reimplemented), `analysis/rq2_diagnostics.R`
+(curvature and slope-heterogeneity sensitivity fits, A7r8), `analysis/rq2_fallback.R`
+(non-convergence fallback, A7r6(b)/A7r9(a)), `analysis/simulate_rq2.R` +
+`analysis/simulate_rq2_block_p.R` + `analysis/simulate_rq2_diagnostics.R` (simulation
+validation), `analysis/check_pooled_slope_weights.R` (Frisch-Waugh weight check, A7r9(b)),
+`analysis/tests/` (unit tests, 84 R checks as of this summary) — written and tested on synthetic
+data only, Blocks O-S. Any post-freeze change to these scripts needs a dated amendment, the same
+discipline as the prose plan — `docs/analysis_environment.md`.
 
 ## "Looked at" statement
 
@@ -210,8 +214,9 @@ been computed on any Stage 4b energy data at any point up to this summary.**
 
 ## Open prerequisites (not yet satisfied, as of this summary)
 
-- A7 and every dated revision (A7r1-A7r7), A8 and its revisions (A8r1-A8r2) — all still **DRAFT**,
-  pending researcher/supervisor confirmation.
+- **A7 and every dated revision (A7r1-A7r9), A8 and its revisions (A8r1-A8r2) — all still
+  DRAFT**, pending researcher/supervisor confirmation. Proposals D3r1 and D4r1 remain marked
+  "pending researcher confirmation" specifically.
 - No wall meter chosen; P1 protocol exists in draft only, not run.
 - No M1 hardware ever accessed; `docs/m1_check_commands.md`'s checks not yet run.
 - Thermal-throttle guard: not implemented, no tests, no calibrated thresholds.
@@ -227,6 +232,16 @@ been computed on any Stage 4b energy data at any point up to this summary.**
   open: the diagnostics themselves have not been run on real data (synthetic-only, same as every
   other `analysis/` script), and both LRTs' real-data false-positive behaviour is unverified
   beyond the synthetic calibration check A7r8(d) reports.
+- **The A7r6(d) heterogeneity-bias framing is corrected, not retracted** — A7r9(b) shows the
+  reported "bias" figures are the registered pooled estimator's own Frisch-Waugh design
+  weighting (dominated by ResNet-18's larger MAC-ratio span), not estimation error; A7r6(d)'s
+  original text is unchanged, the correction stands alongside it. Still open: Methods text for
+  any eventual real-data report must carry this framing (report the pooled β as a
+  design-weighted average, alongside per-architecture slopes) — not yet written, since no
+  real-data report exists yet.
+- The A7r6(b) non-convergence fallback is now implemented and tested
+  (`analysis/rq2_fallback.R`, A7r9(a)) but, like every other `analysis/` script, only on
+  synthetic data — never exercised against a real non-convergent fit.
 
 ## Supersession table
 
@@ -243,3 +258,4 @@ been computed on any Stage 4b energy data at any point up to this summary.**
 | A7r5(c) (source mislabelled "A7r1's Block M") | A7r7(d) — actual source is the 2026-10-10 integrity investigation |
 | A7r4(e) (Welch-Satterthwaite inputs, ambiguous) | A7r7(b) — clarified as variances of the means, not raw sample variances |
 | §6(iii) tag-push tension (flagged, unresolved) | `a7_freeze_checklist.md` §8 — freeze tag is pushed by name; wildcard push commands never used |
+| A7r6(d) heterogeneous-slope "bias" figures (-0.0195, -0.0102, framed as estimation bias) | A7r9(b) — these are the pooled estimator's own Frisch-Waugh design weighting (ResNet-18-dominated), not bias; A7r6(d)'s original text unchanged |
