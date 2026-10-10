@@ -143,6 +143,23 @@ def check_platform_profile(path=Path('/sys/firmware/acpi/platform_profile')):
                             f'variable for the whole project. Set it with: echo performance | sudo tee {path}')
     return value
 
+def check_governor(paths=None):
+    if paths is None:
+        paths = glob.glob('/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor')
+    if not paths:
+        raise RuntimeError("No CPU scaling_governor files found; cannot verify governor.")
+    bad_values = []
+    for p in paths:
+        value = Path(p).read_text().strip()
+        if value != 'performance':
+            bad_values.append(f"{p}: {value}")
+    if bad_values:
+        raise RuntimeError(
+            "CPU governor is not 'performance' on all cores. Found:\n" +
+            "\n".join(bad_values) +
+            "\nFix: echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
+        )
+
 def flag_implausible_power(device, implied_w, power_cap_w):
     """Mark (never drop) a window whose implied power exceeds the GPU's own enforced
     hardware power cap -- a physically impossible reading, not just noise. Verified
@@ -204,7 +221,91 @@ def integrate(trace, ranges, names=None):
             totals[name] += d
     return totals
 
+
+def read_thermal_thresholds(device):
+    import json
+    path = Path('config/thermal_thresholds.json')
+    if not path.exists():
+        if device == 'cpu':
+            raise RuntimeError('CPU runs require config/thermal_thresholds.json for thermal guard.')
+        return None
+    return json.loads(path.read_text())
+
+class ThermalGuard:
+    def __init__(self, device):
+        self.device = device
+        self.thresholds = read_thermal_thresholds(device)
+        try:
+            self.pcores = sorted(list(p_core_set()))
+        except Exception:
+            self.pcores = list(range(12)) # fallback for test fake
+        
+        self.has_throttle = all(Path(f'/sys/devices/system/cpu/cpu{c}/thermal_throttle/core_throttle_count').exists() for c in self.pcores) if self.pcores else False
+        
+        self.temp_path = None
+        for z in Path('/sys/class/thermal').glob('thermal_zone*'):
+            try:
+                if (z / 'type').read_text().strip() in ('x86_pkg_temp', 'coretemp'):
+                    self.temp_path = z / 'temp'
+                    break
+            except Exception: pass
+
+    def sample(self):
+        freqs = []
+        for c in self.pcores:
+            try: freqs.append(int(Path(f'/sys/devices/system/cpu/cpu{c}/cpufreq/scaling_cur_freq').read_text()) / 1000.0)
+            except Exception: pass
+        
+        core_throttle = 0; pkg_throttle = 0; pkg_throttle_ms = 0
+        if self.has_throttle:
+            for c in self.pcores:
+                try: core_throttle += int(Path(f'/sys/devices/system/cpu/cpu{c}/thermal_throttle/core_throttle_count').read_text())
+                except Exception: pass
+            try:
+                pkg_throttle = int(Path('/sys/devices/system/cpu/cpu0/thermal_throttle/package_throttle_count').read_text())
+                pkg_throttle_ms = int(Path('/sys/devices/system/cpu/cpu0/thermal_throttle/package_throttle_total_time_ms').read_text())
+            except Exception: pass
+            
+        temp = 0
+        if self.temp_path:
+            try: temp = int(self.temp_path.read_text()) / 1000.0
+            except Exception: pass
+            
+        return (freqs, core_throttle, pkg_throttle, pkg_throttle_ms, temp)
+
+    def evaluate(self, trace):
+        if not trace: return {}
+        # trace is list of (freqs, core_throttle, pkg_throttle, pkg_throttle_ms, temp)
+        all_freqs = [f for smp in trace for f in smp[0]]
+        mean_freq = sum(all_freqs)/len(all_freqs) if all_freqs else 0
+        min_freq = min(all_freqs) if all_freqs else 0
+        
+        c_th_delta = trace[-1][1] - trace[0][1] if self.has_throttle else None
+        p_th_delta = trace[-1][2] - trace[0][2] if self.has_throttle else None
+        p_th_ms_delta = trace[-1][3] - trace[0][3] if self.has_throttle else None
+        max_temp = max(smp[4] for smp in trace)
+        
+        flag = False
+        if self.thresholds:
+            T = self.thresholds.get('T_mhz', 0)
+            if mean_freq < T: flag = True
+            
+        if self.has_throttle and c_th_delta is not None and c_th_delta > 0:
+            flag = True
+            
+        return dict(
+            thermal_pcore_mean_freq_mhz=mean_freq,
+            thermal_pcore_min_freq_mhz=min_freq,
+            thermal_core_throttle_delta=c_th_delta,
+            thermal_pkg_throttle_count_delta=p_th_delta,
+            thermal_pkg_throttle_time_ms_delta=p_th_ms_delta,
+            thermal_pkg_temp_max_c=max_temp,
+            thermal_flag=flag
+        )
+
 def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concurrent_gpu=False):
+    thermal_guard = ThermalGuard(sensor.device)
+    thermal_trace = []
     check_no_concurrent_gpu(sensor, allow_concurrent_gpu)
     sync(); trace=[]; errors=[]; stop=threading.Event()
     def sample():
@@ -213,6 +314,7 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
                 errors.append('AC power lost mid-run (D25) -- aborting.'); stop.set(); return
             start=time.perf_counter(); value=sensor.read(); end=time.perf_counter()
             trace.append(((start+end)/2,value))
+            thermal_trace.append(thermal_guard.sample())
         except Exception as e: errors.append(str(e)); stop.set()
     sample()
     def poll():
@@ -266,7 +368,7 @@ def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concur
                 power_regime=classify_power_regime(sensor.device, energy/duration, sensor.power_cap_w),
                 ac_online=True,  # D25: a completed window only exists because every sample()
                                  # call confirmed AC; any False mid-window aborts before this return.
-                **extra)
+                **extra, **thermal_guard.evaluate(thermal_trace))
 
 def summarize(rows):
     # Independently paired A/A differences estimate the noise relevant to a future A/B comparison.
@@ -412,6 +514,7 @@ def main():
         check_interval_floor(a.device=='cpu', a.interval, 0.01, a.override_fast_rapl_interval, '--override-fast-rapl-interval',
             f'--interval {a.interval}s exceeds the RAPL/perf-events sampling ceiling (100Hz / 0.01s, plan checklist item 4).')
         platform_profile=check_platform_profile()
+        check_governor()
         uptime_s=check_fresh_boot(a.max_uptime_min*60, a.allow_stale_boot, '--allow-stale-boot')
         ac_online=check_ac_power()
         if not ac_online:

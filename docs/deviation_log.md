@@ -1043,3 +1043,22 @@ the plan — recorded for completeness per the same openness principle.
 ## D28. Real-GPU guard tests silently skipped due to system python usage
 - **What happened:** Tests had previously been run using the system `python3` (which lacked `torch`/`pynvml`), causing the two real-GPU guard tests to be silently skipped.
 - **Correction:** All project tests and runs must strictly use the project's virtual environment interpreter (`measurement_env/bin/python3`).
+
+## D29. CPU governor resets after boot; enforced per session instead
+
+- **Discovery (2026-10-11):** after reboot, all 16 cores read `powersave` within 3 minutes of boot,
+  although a boot-time service had set `performance` (journal confirms it ran). Setting `performance`
+  by hand holds (checked over 60 s, and across power-profiles-daemon profile switches, whose EPP write
+  fails with EBUSY under the performance governor and leaves the governor unchanged). Ubuntu's
+  ondemand.service is not installed. The component that resets the governor was not identified; see
+  D9 for an earlier instance of the same reset.
+- **Invalid run:** one thermal-guard calibration attempt ran under `powersave`, against its stop rule.
+  It is excluded from the calibration of T; its files are kept.
+- **Control:** the boot-time service was removed. `pilot.py` now refuses to measure unless every core
+  reads `performance` (same pattern as the platform-profile check), and `run_cpu_block_session.py`
+  checks the same before the first condition. The researcher sets the governor by hand before each
+  session. Governors stay logged per condition in environment.json.
+- **Prior data:** of 380 logged environment.json files, 6 record `powersave`, all Stage 2
+  `pilot_proof_*` runs; none enter the Stage 5 analysis.
+- **Could this change the conclusions?** No for the confirmatory x86-CPU block: it has not run yet and
+  is now gated.

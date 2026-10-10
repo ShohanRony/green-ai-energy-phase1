@@ -142,3 +142,58 @@ class RunSessionEndToEndTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ThermalVoidRerunTests(unittest.TestCase):
+    @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
+    def test_flagged_condition_is_voided_and_rerun_at_end(self, _ac):
+        import tempfile, json
+        with tempfile.TemporaryDirectory() as td:
+            calls = []
+            flag_count = 0
+            def runner(pilot_py, python_exe, args):
+                nonlocal flag_count
+                calls.append(args)
+                if 'fp32_eager' in str(args) and flag_count == 0:
+                    out_dir = Path(args[args.index('--out') + 1])
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    (out_dir / 'summary.json').write_text(json.dumps({'windows': [{'name': 'infer', 'thermal_flag': True}]}))
+                    flag_count += 1
+                elif 'fp32_eager' in str(args):
+                    out_dir = Path(args[args.index('--out') + 1])
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    (out_dir / 'summary.json').write_text(json.dumps({'windows': [{'name': 'infer', 'thermal_flag': False}]}))
+
+            log = runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+            
+            eager_runs = [c for c in calls if 'fp32_eager' in str(c)]
+            self.assertEqual(len(eager_runs), 2)
+            self.assertTrue('_rerun' in str(eager_runs[-1]))
+            
+            void_log = json.loads((Path(td) / 'void_log.json').read_text())
+            self.assertEqual(len(void_log['voids']), 1)
+            self.assertEqual(void_log['voids'][0]['condition'], 'resnet18_fp32_eager')
+
+    @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
+    def test_more_than_two_voids_aborts_session(self, _ac):
+        import tempfile, json
+        with tempfile.TemporaryDirectory() as td:
+            def runner(pilot_py, python_exe, args):
+                out_dir = Path(args[args.index('--out') + 1])
+                out_dir.mkdir(parents=True, exist_ok=True)
+                (out_dir / 'summary.json').write_text(json.dumps({'windows': [{'name': 'infer', 'thermal_flag': True}]}))
+
+            with self.assertRaisesRegex(RuntimeError, "Session voided: more than 2 voided conditions"):
+                runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+class SessionGovernorCheckTests(unittest.TestCase):
+    def test_failing_governor_check_stops_session(self):
+        def fake_governor_check():
+            raise RuntimeError("Fake governor failure")
+        calls = []
+        with self.assertRaisesRegex(RuntimeError, "Fake governor failure"):
+            runner_mod.run_session(
+                session_n=1, architectures=['resnet18'], out_base='/tmp/fake_base',
+                checkpoints_dir='checkpoints', runner=stub_runner(calls),
+                skip_ac_check=True, governor_check=fake_governor_check)
+        self.assertEqual(calls, [])
+

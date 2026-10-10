@@ -80,12 +80,16 @@ def default_runner(pilot_py, python_exe, args):
 
 def run_session(session_n, architectures, out_base, checkpoints_dir,
                  runner=default_runner, python_exe=sys.executable,
-                 pilot_py=None, skip_ac_check=False, include_collapsed_bnrecal=False):
-    """Runs one full session: AC guard, then every (arch, condition) pair in this
-    session's randomised order, each via `runner`. Returns the session log dict (also
-    written to out_base/session_log.json)."""
+                 pilot_py=None, skip_ac_check=False, include_collapsed_bnrecal=False,
+                 governor_check=None):
     if pilot_py is None:
         pilot_py = Path(__file__).resolve().parent.parent / 'pilot.py'
+    
+    if governor_check is None:
+        from pilot import check_governor
+        governor_check = check_governor
+    governor_check()
+    
     out_base = Path(out_base)
     out_base.mkdir(parents=True, exist_ok=True)
 
@@ -96,15 +100,62 @@ def run_session(session_n, architectures, out_base, checkpoints_dir,
     order = session_order(session_n, architectures, include_collapsed_bnrecal)
     log = {'session': session_n, 'seed': CONDITION_SEED_BASE + session_n,
            'order': [f'{a}_{c}' for a, c in order], 'conditions': []}
-    for arch, condition in order:
+           
+    void_log = {'session': session_n, 'voids': []}
+    
+    reruns = []
+    void_count = 0
+    
+    def process_condition(arch, condition, is_rerun=False):
+        nonlocal void_count
         label = f'{arch}_{condition}'
+        if is_rerun:
+            label += '_rerun'
         cond_out = out_base / label
         args = pilot_args_for(arch, condition, cond_out, checkpoints_dir)
-        runner(pilot_py, python_exe, args)
-        log['conditions'].append(label)
-    (out_base / 'session_log.json').write_text(json.dumps(log, indent=2))
-    return log
+        
+        crashed = False
+        try:
+            runner(pilot_py, python_exe, args)
+        except subprocess.CalledProcessError as e:
+            crashed = True
+            
+        # check AC abort
+        if not skip_ac_check and not check_ac_power():
+            raise RuntimeError('AC power lost mid-session -- aborting session.')
+            
+        # Check if flagged
+        flagged = False
+        try:
+            import json
+            summary = json.loads((cond_out / 'summary.json').read_text())
+            for w in summary.get('windows', []):
+                if w.get('name') != 'warmup' and w.get('thermal_flag', False):
+                    flagged = True
+                    break
+        except Exception:
+            pass # if crashed, no summary.json
+            
+        if crashed or flagged:
+            void_log['voids'].append({'condition': f'{arch}_{condition}', 'crashed': crashed, 'thermal_flagged': flagged})
+            void_count += 1
+            if void_count > 2:
+                (out_base / 'void_log.json').write_text(json.dumps(void_log, indent=2))
+                raise RuntimeError(f"Session voided: more than 2 voided conditions ({void_count}).")
+            if not is_rerun:
+                reruns.append((arch, condition))
+        else:
+            log['conditions'].append(label)
 
+    for arch, condition in order:
+        process_condition(arch, condition, is_rerun=False)
+        
+    for arch, condition in reruns:
+        process_condition(arch, condition, is_rerun=True)
+
+    (out_base / 'session_log.json').write_text(json.dumps(log, indent=2))
+    (out_base / 'void_log.json').write_text(json.dumps(void_log, indent=2))
+    return log
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)

@@ -239,3 +239,130 @@ class AcPowerGuardTests(unittest.TestCase):
         self.assertTrue(check_ac_power())
 
 if __name__=='__main__': unittest.main()
+
+
+class ThermalGuardTests(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.td = tempfile.TemporaryDirectory()
+        self.sysfs = Path(self.td.name)
+        
+    def tearDown(self):
+        self.td.cleanup()
+        
+    @patch('pilot.Path')
+    def test_missing_threshold_refuses_cpu(self, mock_path):
+        import pilot
+        def fake_path(p):
+            class _F:
+                def exists(self): return False
+            return _F()
+        mock_path.side_effect = fake_path
+        with self.assertRaisesRegex(RuntimeError, "require config/thermal_thresholds.json"):
+            pilot.read_thermal_thresholds('cpu')
+            
+    @patch('pilot.Path')
+    def test_missing_threshold_returns_none_for_gpu(self, mock_path):
+        import pilot
+        def fake_path(p):
+            class _F:
+                def exists(self): return False
+            return _F()
+        mock_path.side_effect = fake_path
+        self.assertIsNone(pilot.read_thermal_thresholds('cuda'))
+
+    @patch('pilot.Path')
+    def test_thermal_guard_flags(self, mock_path):
+        import pilot
+        def fake_path(p):
+            p = str(p)
+            if 'thermal_thresholds.json' in p:
+                class _F:
+                    def exists(self): return True
+                    def read_text(self): return '{"T_mhz": 2000}'
+                return _F()
+            if 'cpu_core/cpus' in p:
+                class _F:
+                    def exists(self): return True
+                    def read_text(self): return '0-3'
+                return _F()
+            if 'thermal_zone' in p:
+                class _F:
+                    def read_text(self): return 'coretemp'
+                    def __truediv__(self, other): return fake_path(p + '/' + other)
+                return _F()
+            if 'thermal' in p and not 'thermal_throttle' in p:
+                class _F:
+                    def exists(self): return True
+                    def glob(self, pat): return []
+                return _F()
+            class _F:
+                def exists(self): return False
+                def read_text(self): raise FileNotFoundError()
+            return _F()
+        mock_path.side_effect = fake_path
+        
+        # Test low frequency flag
+        guard = pilot.ThermalGuard('cpu')
+        guard.has_throttle = True
+        trace = [
+            ([1800, 1800], 0, 0, 0, 40.0),
+            ([1800, 1800], 0, 0, 0, 40.0)
+        ]
+        res = guard.evaluate(trace)
+        self.assertTrue(res['thermal_flag']) # 1800 < 2000
+        
+        # Test counter increase flag
+        trace2 = [
+            ([2100, 2100], 0, 0, 0, 40.0),
+            ([2100, 2100], 1, 0, 0, 40.0)
+        ]
+        res2 = guard.evaluate(trace2)
+        self.assertTrue(res2['thermal_flag']) # throttle increased
+        
+        # Test normal window does not flag
+        trace3 = [
+            ([2100, 2100], 0, 0, 0, 40.0),
+            ([2100, 2100], 0, 0, 0, 40.0)
+        ]
+        res3 = guard.evaluate(trace3)
+        self.assertFalse(res3['thermal_flag'])
+        
+        # Test counters absent falls back to frequency only
+        guard.has_throttle = False
+        res4 = guard.evaluate(trace2)
+        self.assertFalse(res4['thermal_flag']) # no throttle check, freq 2100 > 2000
+
+class GovernorCheckTests(unittest.TestCase):
+    def test_all_performance_passes(self):
+        import pilot
+        def fake_glob(pat):
+            return ['/fake/gov1', '/fake/gov2']
+        def fake_path(p):
+            class _F:
+                def read_text(self): return 'performance\n'
+            return _F()
+        with patch('pilot.glob.glob', side_effect=fake_glob), patch('pilot.Path', side_effect=fake_path):
+            pilot.check_governor()
+
+    def test_one_powersave_raises(self):
+        import pilot
+        def fake_glob(pat):
+            return ['/fake/gov1', '/fake/gov2']
+        def fake_path(p):
+            class _F:
+                def read_text(self):
+                    if 'gov2' in str(p): return 'powersave\n'
+                    return 'performance\n'
+            return _F()
+        with patch('pilot.glob.glob', side_effect=fake_glob), patch('pilot.Path', side_effect=fake_path):
+            with self.assertRaisesRegex(RuntimeError, "governor is not 'performance'"):
+                pilot.check_governor()
+
+    def test_no_files_raises(self):
+        import pilot
+        def fake_glob(pat):
+            return []
+        with patch('pilot.glob.glob', side_effect=fake_glob):
+            with self.assertRaisesRegex(RuntimeError, "No CPU scaling_governor files found"):
+                pilot.check_governor()
