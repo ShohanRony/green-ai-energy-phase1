@@ -702,6 +702,18 @@ no rerun of already-collected data.**
   6. Re-run Sessions 3 and 4, each after a fresh reboot and about 2 minutes' wait.
 - **Timing:** AFTER — Sessions 3 and 4 were run but data audit revealed truncation. Completed 2026-10-07.
 - **Status:** Runner script fully hardened (row count validation, preflight marker guard, wait cap), truncated folders renamed, stale marker deleted. Re-runs of Sessions 3 and 4 are pending.
+- **Appended 2026-10-10 (this entry's text above is unchanged):** UPower's persisted battery
+  history (`/var/lib/upower/history-charge-L23M4PK4-60-1907.dat`, world-readable, no sudo) gives
+  timestamps for discharging episodes in the relevant window, which this entry's original text did
+  not have. **The best candidate for the battery interruption this entry describes is the
+  2026-10-07 09:58-10:08 UTC discharge** (9.6 minutes, ending 23.2 minutes before
+  `main_session3_aborted`'s own window begins) — the only discharging episode found anywhere near
+  Session 3's timeline that precedes the truncated run this entry documents. **Marked as an
+  inference, not verified:** this entry's original text gives no exact timestamp for "previously
+  interrupted while on battery," and no independent evidence (journal, session log, or other
+  record) directly ties that specific discharge episode to the specific interrupted run this entry
+  describes — the candidate is a plausible, best-available match from timing proximity and
+  sequence alone, not a confirmed identification.
 
 ## D21. Amendment A4 (six sessions) executed before supervisor review — marked ADOPTED, with the realised calendar spread corrected
 
