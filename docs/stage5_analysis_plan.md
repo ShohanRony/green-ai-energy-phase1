@@ -1431,3 +1431,75 @@ as a fact established by direct inspection, not assumed from the rule's existenc
   one that starts and fully ends between two UPower samples during an otherwise-steady period,
   could occur without leaving a distinguishable record — the exclusion rule in (a) can only act on
   what the available signals actually captured, not on every possible battery event.
+
+**A7r6 — 2026-10-10. Dated revision (A7/A7r1-A7r5's text above is unchanged — this stands alongside
+them). Registers decision rules for the RQ2 fitting pipeline (`analysis/rq2_model.R`) and the
+simulation findings that motivate them. Everything below describes the analysis code's behaviour
+on synthetic data only (A8r1-style simulation, `analysis/simulate_rq2.R` and
+`analysis/simulate_rq2_block_p.R`) — no real Stage 4b data has been fit by this pipeline.**
+
+**(a) Singular-fit handling, decided now, before real data exists:** when the registered RQ2
+model (`fit_rq2_model`) returns a singular fit (`lme4::isSingular`), **the estimate is kept and
+flagged, not discarded or replaced.** `beta_hat`, its 95% CI, and the one-sided p-value are
+reported exactly as the fit produced them, with the `singular` flag disclosed alongside — **no
+alternative model is chosen after seeing that a fit is singular.** Choosing a different model
+specification only for the sessions/architectures that happen to produce a singular fit would be
+exactly the kind of post-hoc, outcome-dependent model selection this project's whole pre-
+registration discipline exists to prevent.
+
+**(b) Fallback if `lmerTest`/`lme4` fails to converge (not merely singular — an outright fitting
+failure), declared now:** refit **the same model with `session` as a fixed factor instead of a
+random effect** — `log_ratio ~ log_mac + model + session` (ordinary least squares, `lm()`, not a
+mixed model) — rather than a different model chosen after seeing which one happens to converge.
+**Degrees-of-freedom rule for this fallback:** standard OLS residual degrees of freedom,
+`n_obs - (1 [intercept] + 1 [log_mac] + (n_models-1) + (n_sessions-1))` — for the registered
+design (9 states × 6 sessions = 54 observations, 3 models, 6 sessions), this is
+`54 - (1+1+2+5) = 45`. No Satterthwaite approximation is needed for this fallback since it is an
+ordinary fixed-effects model, not a mixed model — `lm()`'s own reported residual df applies
+directly.
+
+**(c) Effect-size reporting, registered as a standing rule:** every report of the RQ2 test
+**always** gives `beta_hat` with its 95% CI **alongside** the one-sided p-value — never the
+p-value alone. **No claim is made stronger than the interval supports** — e.g. a significant
+one-sided p-value with a CI that still comes close to 1 is reported as such, not rounded up to an
+unqualified "β is well below 1." This matches how every other decision rule in this plan (D1-D5,
+D1r1-D5r1) already reports an interval alongside any directional call, applied explicitly to RQ2
+here.
+
+**(d) Simulation findings, Block O and Block P, in one table — synthetic data only, not a claim
+about real Stage 4b data:**
+
+| Design | β_true (pooled) | session_sd | residual_sd | bias | 95% coverage | rejection rate | n_singular/1000 |
+|---|---|---|---|---|---|---|---|
+| Homogeneous, type I error (Block O, 6 of 18 rows) | 1.0 | 0.02-0.06 | 0.02 | ≈0 | 0.940-0.955 | **0.039-0.055** (≈nominal 0.05) | 0-9 |
+| Homogeneous, power (Block O, 12 of 18 rows) | 0.6 / 0.8 | 0.02-0.06 | 0.02/0.05 | ≈0 | 0.937-0.967 | **≈1.000** (full power) | 0-163 |
+| Near-boundary (Block P 1a) | 0.90 / 0.95 | 0.04 | 0.02/0.05 | ≈0 | 0.942-0.956 | **0.998-1.000** | 0-20 |
+| Heterogeneous slopes, power (Block P 1b) | 0.8 (true per-model 0.6/0.8/1.0) | 0.04 | 0.02 | **-0.0195** | 1.000 | 1.000 | **538** |
+| Heterogeneous slopes, type I error (Block P 1b) | 1.0 (true per-model 0.9/1.0/1.1) | 0.04 | 0.02 | -0.0097 | 1.000 | **0.003** (far below nominal 0.05 — conservative) | 57 |
+| Mild curvature (Block P 1c, γ=0.03) | 0.8 | 0.04 | 0.02 | **-0.0884** | **0.000** | 1.000 | 0 |
+
+- **Homogeneous-slope scenarios (Block O) calibrate well** — type I error close to the nominal
+  0.05, coverage close to 95%, bias negligible, full power once the true effect departs from 1 by
+  more than a few hundredths.
+- **Heterogeneous true slopes across architectures degrade convergence sharply** (53.8% of fits
+  singular/non-converged in the power case) and **bias `beta_hat` downward** (-0.0195, -0.0097) —
+  but the type-I-error direction is **conservative**, not inflated (0.3% vs. the nominal 5%),
+  because the unmodeled heterogeneity appears to inflate the estimated standard error rather than
+  shrink it. If real per-architecture slopes turn out to differ substantially, expect reduced
+  power and elevated singular-fit counts, not false positives.
+- **Mild curvature is the most serious finding:** a quadratic term justified to be a genuinely
+  *mild* departure from linearity (≈9% of the linear term's magnitude at the most extreme observed
+  MAC ratio, `analysis/simulate_rq2_block_p.R`'s own derivation) produces a **large, persistent
+  bias** in `beta_hat` (-0.0884, about 11% of the true linear-only coefficient) and **the 95% CI
+  never once covered the nominal linear coefficient across 1000 replicates.** This is not a
+  sampling-noise effect that more data would fix — it is the expected consequence of fitting a
+  linear model to a curved relationship, and it means **if the real log(MAC ratio)-vs-log(energy
+  ratio) relationship has even mild curvature, the registered linear RQ2 model's `beta_hat` and CI
+  should not be read as an unbiased estimate of a single "true" slope.** Not resolved here — this
+  plan does not currently register a curvature check or a quadratic-term specification-curve axis;
+  flagged as an open gap for the researcher's attention, not a change made unilaterally to the
+  registered model.
+- **Stated again, plainly: this entire table describes `analysis/`'s own code behaviour on
+  simulated data built from fixed, known-true parameters.** It is a validation of the fitting and
+  testing pipeline, not a finding about real compressed-model energy data, which has not been
+  touched by this code.
