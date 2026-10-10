@@ -92,3 +92,6 @@ alone doesn't carry. **In the homogeneous null, the interaction LRT fires at 0.0
 above nominal 0.05 — the same mild-inflation pattern as the quadratic LRT at γ=0, not a separate
 issue. The primary model's own type I error in the homogeneous null (0.053) and coverage (0.948)
 both land close to nominal, consistent with A7r6(d)'s earlier finding.
+
+## Correction (2026-10-10)
+**Power Loss and Design Weighting:** Note that the previously stated "type I error inflation" under heterogeneity is corrected to **power loss** (the pooled test becomes extremely conservative). Furthermore, the gap previously described as "bias" is corrected to **design weighting**; the pooled slope is a Frisch-Waugh-weighted average, not estimator error.

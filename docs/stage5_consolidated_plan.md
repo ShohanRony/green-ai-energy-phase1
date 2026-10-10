@@ -1,3 +1,5 @@
+Note: This plan is superseded by docs/stage5_plan_v1.md.
+
 # Stage 5 analysis plan — consolidated summary (as of 2026-10-10)
 
 **This is a derived summary, not a registered document.** It exists to make

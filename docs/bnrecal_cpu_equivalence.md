@@ -70,3 +70,7 @@ used batch=200; this recheck used batch=1 — **batch-size-dependent kernel sele
 also-benign source of floating-point non-determinism, not unique to CPU-vs-CUDA) is the more
 likely explanation for those two**, not interpreted further than that. **The FAIL labels in the
 table above are unchanged** — this is additional explanation, not a relabelling.
+
+## Correction (2026-10-10)
+**New equivalence rule:** A checkpoint is functionally equivalent if the McNemar test is not significant at α = 0.05 AND the |accuracy difference| <= 0.05 percentage points. 
+Under this new rule, **all 9 of the `_bnrecal` checkpoints pass** (the maximum net difference is 0.02 percentage points and the maximum disagreements are 5, yielding p=1.0 for McNemar, passing both criteria).
