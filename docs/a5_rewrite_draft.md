@@ -169,3 +169,42 @@ also be contaminated by a concurrent CPU training job competing for the same cor
 existing guard does not detect (it only checks for GPU processes). Stated here as a scheduling
 constraint for whoever eventually runs this arm, not a new harness feature — no code change
 proposed in this revision.
+
+## Revision, 2026-10-10 (previous text above, including the earlier 45k/5k fine-tune proposal, kept
+as-is, not edited — this supersedes that proposal's split choice specifically)
+
+**Fine-tune arm, split choice reconsidered: all 50,000 training images, no validation split.** The
+previous revision ((b) above) disclosed that the seed-2026 FP32 parents were trained on all 50,000
+images, making a 45k/5k split "not clean end-to-end" for fine-tuning them. Rather than retraining
+the parents under a 45k/5k split (the "alternative" (b) already listed, with its own cost), this
+entry resolves the tension the other way: **the fine-tune arm also uses all 50,000 images, no
+held-out validation split** — matching the parent checkpoints' own training data exactly, end to
+end. **Final checkpoint used** (no best-epoch selection — there is no validation set to select
+against), **test set evaluated once**, same discipline (b) already proposed, now simplified by
+removing the split's own asymmetry rather than working around it.
+
+**Full recipe, specified field by field:** *identical to the registered recipe (optimizer,
+momentum, weight decay, batch size, augmentation, LR schedule shape) except `epochs = 25` and
+initial `lr = 0.01`.* Each field checked directly against the actual registered training script
+(`train_baseline.py`, not a summary file — the JSON outputs, e.g. `checkpoints/resnet18_fp32.json`,
+record only `arch`/`epochs`/`lr`/`batch_size`/`seed`/`test_acc`, not the finer hyperparameters
+below):
+
+| Field | Registered value, confirmed from `train_baseline.py` |
+|---|---|
+| Optimizer | `torch.optim.SGD` (line 100) |
+| Momentum | `0.9` (line 100) |
+| Weight decay | `5e-4` (line 100) |
+| Nesterov | `True` (line 100) |
+| LR schedule shape | `CosineAnnealingLR`, `T_max=epochs` (line 101) |
+| Batch size | `128` (`--batch-size` default, line 55; matches every `*_fp32.json`) |
+| Augmentation | `RandomCrop(32, padding=4)` + `RandomHorizontalFlip` (lines 85-86) |
+
+**All six required fields were found directly in the registered training script — none is missing,
+none is invented.** The fine-tune recipe differs from this table in exactly two fields:
+`epochs = 25` (vs. 30/60 in the registered recipe) and initial `lr = 0.01` (vs. `0.1`) — matching
+A5's original "20-30 epoch" range and P8's own already-run fine-tune parameters
+(`docs/p8_spec.md`: `ft_resnet18_30_1001`, 25 epochs, `lr=0.01`), same justification the previous
+revision already gave for these two numbers specifically. `CosineAnnealingLR`'s `T_max` follows the
+fine-tune job's own 25 epochs (resets per job, not inherited from the parent's schedule), consistent
+with how `train_p8.py`'s fine-tune jobs already handle this (`docs/p8_spec.md`).
