@@ -1039,3 +1039,7 @@ the plan — recorded for completeness per the same openness principle.
   anomaly. Recorded here only because the *investigation path* (ruling out governor, thermal soak,
   boot-identity before landing on compute-threshold) is itself informative about how much effort an
   apparently-anomalous 3-point comparison required to resolve.
+
+## D28. Real-GPU guard tests silently skipped due to system python usage
+- **What happened:** Tests had previously been run using the system `python3` (which lacked `torch`/`pynvml`), causing the two real-GPU guard tests to be silently skipped.
+- **Correction:** All project tests and runs must strictly use the project's virtual environment interpreter (`measurement_env/bin/python3`).
