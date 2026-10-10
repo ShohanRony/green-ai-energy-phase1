@@ -201,3 +201,16 @@ risk), a possible redaction, **for the Zenodo deposit copy only**:
   researcher chooses one, would exist **only** as a separate file prepared specifically for the
   Zenodo copy, never substituted into the repo itself. **This is a proposal; the researcher decides**
   whether to redact at all, and exactly how — nothing above is applied to any file by this entry.
+
+## 7. Dated section, 2026-10-10: pin the analysis scripts' commit hash too
+
+§5(i)'s existing instruction to pin the harness and session-runner commit hash in the freeze tag
+is extended: the tag message should also name the exact commit hash of the `analysis/` directory
+(`analysis/rq2_model.R`, `analysis/helpers.R`, `analysis/simulate_rq2.R`, `analysis/tests/`) as it
+exists at tag time — e.g. `git tag -a stage5-a7-frozen-<date> -m "... harness: pilot.py @ <hash>;
+session runner: scripts/run_cpu_block_session.py @ <hash>; analysis: analysis/ @ <hash>"`. Same
+reasoning as §5(i): the frozen tag should be self-describing about exactly which version of the
+code that will eventually run against real data was registered, not just the prose plan. Not run
+here — written for when the freeze actually happens. `docs/analysis_environment.md` records the
+analysis scripts' own pre-freeze/synthetic-only status and the requirement that any post-freeze
+change needs a dated amendment; this section is the freeze-checklist-side counterpart of that.
