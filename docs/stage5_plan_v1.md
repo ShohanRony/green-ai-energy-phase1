@@ -20,21 +20,23 @@ No M1-GPU block. Comparisons are within block only; cross-block comparisons are 
 freeze tag and the Zenodo deposit exist before the first CPU-block session is collected.
 
 **Deferred or not adopted (no data, no claims):** series R (A8 family); A5 fine-tune arm; A6
-224x224 pass; P8 checkpoints (not used for any claim).
+224x224 pass; RQ1b (CodeCarbon fallback mode, to Paper 2); P8 checkpoints (not used for any
+claim).
 
 ## 2. Research questions
 
 - **RQ1a (coverage):** under steady loads, how much of the wall-meter-derived energy change does
   each in-device instrument or boundary capture (NVML power-usage, NVML cumulative, RAPL
-  package-0, RAPL psys, CodeCarbon)? Descriptive, Bland-Altman style, via the P1 protocol
-  (`docs/p1_wall_meter_protocol.md`).
-- **RQ1b (estimation mode):** CodeCarbon with hardware counters vs CodeCarbon in its fallback
-  estimation mode, both against the wall meter. Collected in one dedicated x86-CPU session after
-  the six confirmatory sessions; never pooled with them. Descriptive.
+  package-0, RAPL psys, CodeCarbon in its normal hardware-counter mode, logged during the same
+  P1 loads)? Descriptive, Bland-Altman style, via the P1 protocol
+  (`docs/p1_wall_meter_protocol.md`). No extra session.
+- **RQ1b (estimation mode): deferred to Paper 2.** CodeCarbon's fallback estimation mode is not
+  collected in this study.
 - **RQ2 / H2 (confirmatory):** MAC reduction overstates the energy saving of structured pruning.
   Test in section 4.
 - **RQ3 (secondary, not confirmatory):** does the effect of compression state on energy differ
-  between x86-CPU and M1-CPU? Test in section 6. Evaluated only once M1-CPU data exist.
+  between x86-CPU and M1-CPU? Test in section 6. Evaluated only once M1-CPU data exist; if they do
+  not exist when Paper 1 is ready, RQ3 moves to Paper 2. Paper 1 never waits for it.
 
 ## 3. Measurement
 
@@ -172,6 +174,7 @@ dated amendment. The manuscript states the use of AI coding assistants in its Me
 | M1-CPU as a confirmatory block (A7 point 1) | Registered replication (section 1) |
 | GPU bridged ratio via series R (A7r3(a), A8 family) | Deferred; GPU ratios use the eager baseline with caveat |
 | D5r1 scope gate | Removed; scope fixed in section 1 |
+| RQ1b as part of this study (A7 point 10) | Deferred to Paper 2 (section 2) |
 | "Type I error far below nominal" (A7r6(d), A7r8(d)) | Power loss under slope heterogeneity (section 4) |
 | "Bias" under heterogeneous slopes (A7r6(d)) | Frisch-Waugh design weighting (A7r9(b), section 4) |
 | bnrecal exact-count equivalence rule | Tolerance rule (section 9) |
