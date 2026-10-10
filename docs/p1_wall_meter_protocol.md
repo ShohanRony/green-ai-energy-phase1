@@ -185,3 +185,13 @@ Per session this protocol runs:
 - Clock-sync method (§5) is an outline, not a worked procedure — depends on which meter is chosen.
 - This document does not propose a schedule or decide which conditions get the wall-meter check —
   that is a researcher decision once a meter exists.
+
+## Revision (2026-10-10)
+- **Design**: Steady-state design.
+- **Meter**: BENETECH GM86 (class 1.0, true watts with power factor; display read from video, readings every 10 s). *Note: GM86 display resolution and update rate remain unverified until physically checked on the device.*
+- **Loads**: Idle, GPU FP32 batch 64, GPU batch 1, CPU INT8, CPU all-core load.
+- **Duration/Reps**: 5 min each, 3 randomised repeats.
+- **Battery/Power**: Battery full and charge-limited, AC logged.
+- **Analysis**: Conducted on deltas from idle so adapter efficiency enters as a ratio.
+- **Regression**: Pre-registered regression of `nvml_cumulative` on `nvml_power_usage` across load levels (estimating slope and intercept to separate an additive offset from a scaling factor).
+- **D1r1 Outcome**: Marked as "unresolved" if the confidence interval exceeds +/-5%.
