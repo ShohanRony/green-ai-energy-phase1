@@ -18,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--minutes-per-model', type=float, default=15.0)
     parser.add_argument('--out', type=str, default=str(repo_root / f'calibration/thermal_{datetime.datetime.now().strftime("%Y%m%d")}'))
+    parser.add_argument('--ambient-note', type=str, default="")
     args = parser.parse_args()
 
     if not check_ac_power():
@@ -45,7 +46,7 @@ def main():
     os.sched_setaffinity(0, pcores)
     torch.set_num_threads(4)
     
-    guard = ThermalGuard('cpu', require_thresholds=False)
+    guard = ThermalGuard('cpu', require_thresholds=False, busy_k=4)
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -68,7 +69,7 @@ def main():
         'input_shape': [1, 3, 32, 32],
         'threads': 4,
         'minutes_per_model': args.minutes_per_model,
-        'ambient_note': "",
+        'ambient_note': args.ambient_note,
         'invalid_reason': ""
     }
     env_path = out_dir / 'environment.json'
@@ -77,7 +78,7 @@ def main():
     csv_path = out_dir / 'windows.csv'
     with open(csv_path, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['timestamp_utc', 'model', 'window_idx', 'duration_s', 'n_samples', 'mean_freq_mhz', 'min_freq_mhz', 'core_throttle_delta', 'pkg_throttle_delta', 'pkg_throttle_ms_delta', 'pkg_temp_max_c'])
+        writer.writerow(['timestamp_utc', 'model', 'window_idx', 'duration_s', 'n_samples', 'n_inferences', 'busy_mean_freq_mhz', 'mean_freq_mhz', 'min_freq_mhz', 'core_throttle_delta', 'pkg_throttle_delta', 'pkg_throttle_ms_delta', 'pkg_temp_max_c'])
         
         for model_name in ['resnet18_fp32.pt', 'resnet18_int8.pt']:
             torch.manual_seed(2026)
@@ -113,9 +114,11 @@ def main():
                 trace.append(guard.sample())
                 last_sample = time.perf_counter()
 
+                n_infs = 0
                 while time.perf_counter() - win_start < 5:
                     with torch.inference_mode():
                         model(x)
+                    n_infs += 1
                     now = time.perf_counter()
                     if now - last_sample >= 0.4:
                         trace.append(guard.sample())
@@ -134,6 +137,8 @@ def main():
                     window_idx,
                     time.perf_counter() - win_start,
                     len(trace),
+                    n_infs,
+                    fmt(eval_res.get('thermal_busy_mean_freq_mhz')),
                     fmt(eval_res.get('thermal_pcore_mean_freq_mhz')),
                     fmt(eval_res.get('thermal_pcore_min_freq_mhz')),
                     fmt(eval_res.get('thermal_core_throttle_delta')),

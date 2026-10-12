@@ -363,6 +363,25 @@ class ThermalGuardTests(unittest.TestCase):
         res4 = guard.evaluate(trace2)
         self.assertFalse(res4['thermal_flag']) # no throttle check, freq 2100 > 2000
 
+        # Test busy core metric: 4 cores at high frequency and 8 at 800 MHz is not flagged when busy mean >= T
+        trace_busy_ok = [
+            ([2500]*4 + [800]*8, 0, 0, 0, 40.0),
+            ([2500]*4 + [800]*8, 0, 0, 0, 40.0)
+        ]
+        res_busy_ok = guard.evaluate(trace_busy_ok, active=True)
+        self.assertLess(res_busy_ok['thermal_pcore_mean_freq_mhz'], 2000)
+        self.assertEqual(res_busy_ok['thermal_busy_mean_freq_mhz'], 2500.0)
+        self.assertFalse(res_busy_ok['thermal_flag'])
+
+        # Test busy core metric: 4 busy cores below T are flagged
+        trace_busy_low = [
+            ([1900]*4 + [800]*8, 0, 0, 0, 40.0),
+            ([1900]*4 + [800]*8, 0, 0, 0, 40.0)
+        ]
+        res_busy_low = guard.evaluate(trace_busy_low, active=True)
+        self.assertEqual(res_busy_low['thermal_busy_mean_freq_mhz'], 1900.0)
+        self.assertTrue(res_busy_low['thermal_flag'])
+
 class GovernorCheckTests(unittest.TestCase):
     def test_all_performance_passes(self):
         import pilot

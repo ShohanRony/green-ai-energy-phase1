@@ -243,12 +243,13 @@ def read_thermal_thresholds(device):
     return data
 
 class ThermalGuard:
-    def __init__(self, device, sysfs_root='/sys', require_thresholds=True):
+    def __init__(self, device, sysfs_root='/sys', require_thresholds=True, busy_k=4):
         self.device = device
         self.sysfs_root = Path(sysfs_root)
         self.require_thresholds = require_thresholds
         self.thresholds = read_thermal_thresholds(device) if require_thresholds else None
         self.pcores = sorted(list(p_core_set()))
+        self.busy_k = busy_k
         
         self.has_throttle = all((self.sysfs_root / f'devices/system/cpu/cpu{c}/thermal_throttle/core_throttle_count').exists() for c in self.pcores) if self.pcores else False
         if device == 'cpu' and not self.has_throttle:
@@ -309,6 +310,14 @@ class ThermalGuard:
         mean_freq = sum(all_freqs)/len(all_freqs) if all_freqs else 0
         min_freq = min(all_freqs) if all_freqs else 0
         
+        busy_sample_values = []
+        for smp in trace:
+            smp_freqs = smp[0]
+            if smp_freqs:
+                top_k = sorted(smp_freqs, reverse=True)[:self.busy_k]
+                busy_sample_values.append(sum(top_k) / len(top_k))
+        busy_mean_freq = sum(busy_sample_values) / len(busy_sample_values) if busy_sample_values else 0
+        
         c_th_delta = trace[-1][1] - trace[0][1] if self.has_throttle else None
         p_th_delta = trace[-1][2] - trace[0][2] if self.has_throttle else None
         p_th_ms_delta = trace[-1][3] - trace[0][3] if self.has_throttle else None
@@ -323,7 +332,7 @@ class ThermalGuard:
         else:
             if self.thresholds:
                 T = self.thresholds.get('T_mhz', 0)
-                if mean_freq < T: flag = True
+                if busy_mean_freq < T: flag = True
                 
             if self.has_throttle and c_th_delta is not None and c_th_delta > 0:
                 flag = True
@@ -331,6 +340,7 @@ class ThermalGuard:
         return dict(
             thermal_pcore_mean_freq_mhz=mean_freq,
             thermal_pcore_min_freq_mhz=min_freq,
+            thermal_busy_mean_freq_mhz=busy_mean_freq,
             thermal_core_throttle_delta=c_th_delta,
             thermal_pkg_throttle_count_delta=p_th_delta,
             thermal_pkg_throttle_time_ms_delta=p_th_ms_delta,
@@ -338,8 +348,8 @@ class ThermalGuard:
             thermal_flag=flag
         )
 
-def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concurrent_gpu=False):
-    thermal_guard = ThermalGuard(sensor.device)
+def window(sensor, seconds, interval, work=None, sync=lambda: None, allow_concurrent_gpu=False, busy_k=4):
+    thermal_guard = ThermalGuard(sensor.device, busy_k=busy_k)
     thermal_trace = []
     check_no_concurrent_gpu(sensor, allow_concurrent_gpu)
     sync(); trace=[]; errors=[]; stop=threading.Event()
@@ -624,7 +634,7 @@ def main():
                                                                     log_level='error',save_to_file=False,
                                                                     measure_power_secs=max(a.interval,1))
                                 cc_tracker.start()
-                            result=window(sensor,seconds,a.interval,work if phase.startswith('a') else None,sync,a.allow_concurrent_gpu)
+                            result=window(sensor,seconds,a.interval,work if phase.startswith('a') else None,sync,a.allow_concurrent_gpu,busy_k=a.threads)
                             if cc_tracker is not None:
                                 cc_tracker.stop()
                                 ed=cc_tracker.final_emissions_data
