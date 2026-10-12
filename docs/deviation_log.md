@@ -1062,3 +1062,17 @@ the plan — recorded for completeness per the same openness principle.
   `pilot_proof_*` runs; none enter the Stage 5 analysis.
 - **Could this change the conclusions?** No for the confirmatory x86-CPU block: it has not run yet and
   is now gated.
+
+
+## D30. CPU-block runner did not restrict pilot.py to the planned configuration
+
+- **Discovery (2026-10-12, before any confirmatory session):** a guard-validation run showed
+  200 warm active windows for one condition instead of about 10. `pilot_args_for()` passed no
+  `--sizes`/`--batches`, so pilot.py ran its defaults (sizes 32/64/128/224 x batches
+  1/16/64/128/256 = 20 configurations), while plan v1 section 3 specifies batch 1 at 32x32 only.
+- **Fix:** the runner now passes `--sizes 32 --batches 1` for every condition, with a test.
+- **Data affected:** none in the analysis. Only the guard-validation run in a scratch folder
+  (not deposited) used the faulty arguments.
+- **Could this change the conclusions?** No. Found before any confirmatory session; without the fix,
+  sessions would have run about 20 times longer, with extra heat from the large configurations
+  before the measured windows.

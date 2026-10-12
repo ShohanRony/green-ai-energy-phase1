@@ -89,6 +89,17 @@ class PilotArgsTests(unittest.TestCase):
         self.assertIn('--cpu-affinity', args)
         self.assertIn('pcores', args)
 
+    def test_each_condition_contains_sizes_32_and_batches_1(self):
+        for arch in ['resnet18', 'mobilenet_v3_small', 'efficientnet_b0']:
+            for cond in runner_mod.conditions_for(arch, include_collapsed_bnrecal=True):
+                args = runner_mod.pilot_args_for(arch, cond, '/tmp/out', 'checkpoints')
+                self.assertIn('--sizes', args)
+                sizes_idx = args.index('--sizes')
+                self.assertEqual(args[sizes_idx + 1], '32')
+                self.assertIn('--batches', args)
+                batches_idx = args.index('--batches')
+                self.assertEqual(args[batches_idx + 1], '1')
+
 
 class RunSessionEndToEndTests(unittest.TestCase):
     """Exercises the full orchestration path with a stub instrument (no real pilot.py

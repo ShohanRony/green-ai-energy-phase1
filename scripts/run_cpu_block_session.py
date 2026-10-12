@@ -60,7 +60,8 @@ def pilot_args_for(arch, condition, out_dir, checkpoints_dir):
     """Translate one (arch, condition) pair into the pilot.py invocation that measures it.
     fp32_eager uses --arch (builds the model fresh, no TorchScript checkpoint); every other
     condition loads a checkpoint, which already carries its own architecture when traced."""
-    args = ['--device', 'cpu', '--out', str(out_dir), '--cpu-affinity', 'pcores']
+    args = ['--device', 'cpu', '--out', str(out_dir), '--cpu-affinity', 'pcores',
+            '--sizes', '32', '--batches', '1']
     if condition == 'fp32_eager':
         args += ['--arch', arch]
     else:
