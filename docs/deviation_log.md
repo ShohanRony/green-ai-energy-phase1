@@ -1088,3 +1088,18 @@ the plan — recorded for completeness per the same openness principle.
   from a fresh boot) and changes no analysis rule, threshold or condition.
 - **Frozen record:** the freeze tag is unchanged; this fix is a later commit, cited here.
 - **Could this change the conclusions?** No. Found before any confirmatory data.
+
+## D32. FP32-TorchScript baseline was not TorchScript; session 1 voided
+
+- **Discovery (2026-10-13, session 1):** `checkpoints/{arch}_fp32.pt` is a state_dict, not
+  TorchScript. pilot.py fell back to building the model from `--arch`, which the runner did not pass
+  (default resnet18). EfficientNet-B0 and MobileNetV3-Small fp32_ts crashed (3 voids, session voided
+  under plan v1 section 5); ResNet-18 fp32_ts ran in eager mode, not TorchScript.
+- **Fix:** FP32 TorchScript checkpoints `{arch}_fp32_ts.pt` exported with the same method as the
+  pruned/INT8 checkpoints (scripts/export_fp32_torchscript.py, output equivalence reported); the
+  runner maps fp32_ts to them, always passes `--arch`, and refuses to start unless every non-eager
+  checkpoint loads as TorchScript.
+- **Data:** session 1 attempt 1 is voided and kept at results_stage5/cpu/voided/session_01_attempt1;
+  it is excluded from all analyses. Session 1 is rerun with the same seed.
+- **Could this change the conclusions?** No. The plan already specified an FP32-TorchScript
+  baseline; this makes the code match it before any valid session.

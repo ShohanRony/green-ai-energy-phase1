@@ -90,9 +90,18 @@ class PilotArgsTests(unittest.TestCase):
         self.assertIn('--arch', args)
         self.assertNotIn('--checkpoint', args)
 
-    def test_fp32_ts_loads_plain_fp32_checkpoint(self):
-        args = runner_mod.pilot_args_for('resnet18', 'fp32_ts', '/tmp/out', 'checkpoints')
-        self.assertIn('checkpoints/resnet18_fp32.pt', args)
+    def test_fp32_ts_maps_to_fp32_ts_pt(self):
+        for arch in ['resnet18', 'mobilenet_v3_small', 'efficientnet_b0']:
+            args = runner_mod.pilot_args_for(arch, 'fp32_ts', '/tmp/out', 'checkpoints')
+            self.assertIn(f'checkpoints/{arch}_fp32_ts.pt', args)
+
+    def test_args_contain_arch_for_every_condition(self):
+        for arch in ['resnet18', 'mobilenet_v3_small', 'efficientnet_b0']:
+            for cond in runner_mod.conditions_for(arch, include_collapsed_bnrecal=True):
+                args = runner_mod.pilot_args_for(arch, cond, '/tmp/out', 'checkpoints')
+                self.assertIn('--arch', args)
+                arch_idx = args.index('--arch')
+                self.assertEqual(args[arch_idx + 1], arch)
 
     def test_pruned_condition_loads_matching_checkpoint(self):
         args = runner_mod.pilot_args_for('efficientnet_b0', 'pruned30_bnrecal', '/tmp/out', 'checkpoints')
@@ -208,7 +217,7 @@ class ThermalVoidRerunTests(unittest.TestCase):
                         {'repeat': 1, 'phase': 'a1', 'thermal_flag': 'False'}
                     ])
 
-            log = runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+            log = runner_mod.run_session(10, ['resnet18'], td, 'checkpoints', runner=runner)
             
             eager_runs = [c for c in calls if 'fp32_eager' in str(c)]
             self.assertEqual(len(eager_runs), 2)
@@ -230,7 +239,7 @@ class ThermalVoidRerunTests(unittest.TestCase):
                     {'repeat': 1, 'phase': 'a1', 'thermal_flag': 'False'}
                 ])
 
-            log = runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+            log = runner_mod.run_session(10, ['resnet18'], td, 'checkpoints', runner=runner)
             void_log = json.loads((Path(td) / 'void_log.json').read_text())
             self.assertEqual(len(void_log['voids']), 0)
 
@@ -244,7 +253,7 @@ class ThermalVoidRerunTests(unittest.TestCase):
                 self._write_csv(out_dir, [{'repeat': 0, 'phase': 'a1', 'some_other_col': 'False'}])
 
             with self.assertRaisesRegex(RuntimeError, "thermal_flag column missing"):
-                runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+                runner_mod.run_session(10, ['resnet18'], td, 'checkpoints', runner=runner)
 
     @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
     def test_more_than_two_voids_aborts_session(self, _ac):
@@ -256,7 +265,7 @@ class ThermalVoidRerunTests(unittest.TestCase):
                 self._write_csv(out_dir, [{'repeat': 1, 'phase': 'a1', 'thermal_flag': 'True'}])
 
             with self.assertRaisesRegex(RuntimeError, "Session voided: more than 2 voided conditions"):
-                runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+                runner_mod.run_session(10, ['resnet18'], td, 'checkpoints', runner=runner)
     @patch('scripts.run_cpu_block_session.check_ac_power', return_value=True)
     def test_runner_ignores_low_frequency_idle_row(self, _ac):
         import tempfile, json
@@ -270,7 +279,7 @@ class ThermalVoidRerunTests(unittest.TestCase):
                     {'repeat': 1, 'phase': 'idle_before', 'thermal_flag': 'True'}
                 ])
 
-            log = runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+            log = runner_mod.run_session(10, ['resnet18'], td, 'checkpoints', runner=runner)
             void_log = json.loads((Path(td) / 'void_log.json').read_text())
             self.assertEqual(len(void_log['voids']), 0)
 
@@ -287,7 +296,7 @@ class ThermalVoidRerunTests(unittest.TestCase):
                 ])
 
             with self.assertRaisesRegex(RuntimeError, "Evaluation missing"):
-                runner_mod.run_session(10, ['resnet18'], td, 'checkpts', runner=runner)
+                runner_mod.run_session(10, ['resnet18'], td, 'checkpoints', runner=runner)
 
 class SessionGovernorCheckTests(unittest.TestCase):
     def test_failing_governor_check_stops_session(self):
@@ -334,5 +343,24 @@ class SessionUptimeCheckTests(unittest.TestCase):
                 self.assertIn('--max-uptime-min', args)
                 idx = args.index('--max-uptime-min')
                 self.assertEqual(args[idx + 1], '180')
+
+
+class SessionCheckpointPreflightTests(unittest.TestCase):
+    def test_preflight_fails_on_state_dict_file(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            shutil.copy('checkpoints/resnet18_fp32.pt', td_path / 'resnet18_fp32_ts.pt')
+            with self.assertRaisesRegex(RuntimeError, "Checkpoint failed torch.jit.load"):
+                runner_mod.preflight_checkpoints(['resnet18'], td_path)
+
+    def test_preflight_fails_on_missing_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            with self.assertRaisesRegex(RuntimeError, "Required checkpoint file missing"):
+                runner_mod.preflight_checkpoints(['resnet18'], td)
+
+    def test_preflight_succeeds_on_valid_checkpoints(self):
+        runner_mod.preflight_checkpoints(['resnet18', 'mobilenet_v3_small', 'efficientnet_b0'], 'checkpoints')
+
 
 

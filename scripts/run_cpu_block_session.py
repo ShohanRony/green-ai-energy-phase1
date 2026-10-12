@@ -60,22 +60,47 @@ def get_system_uptime():
     return float(Path('/proc/uptime').read_text().split()[0])
 
 
+def checkpoint_for(arch, condition):
+    """Return the checkpoint filename for an (arch, condition) pair, or None if eager."""
+    if condition == 'fp32_eager':
+        return None
+    if condition == 'fp32_ts':
+        return f'{arch}_fp32_ts.pt'
+    if condition == 'int8':
+        return f'{arch}_int8.pt'
+    return f'{arch}_{condition}.pt'
+
+
 def pilot_args_for(arch, condition, out_dir, checkpoints_dir):
     """Translate one (arch, condition) pair into the pilot.py invocation that measures it.
-    fp32_eager uses --arch (builds the model fresh, no TorchScript checkpoint); every other
-    condition loads a checkpoint, which already carries its own architecture when traced."""
+    Always passes --arch {arch} for every condition. fp32_eager builds fresh; every other
+    condition loads a checkpoint."""
     args = ['--device', 'cpu', '--out', str(out_dir), '--cpu-affinity', 'pcores',
             '--sizes', '32', '--batches', '1',
-            '--max-uptime-min', '180']
-    if condition == 'fp32_eager':
-        args += ['--arch', arch]
-    else:
-        ckpt_name = {
-            'fp32_ts': f'{arch}_fp32.pt',
-            'int8': f'{arch}_int8.pt',
-        }.get(condition, f'{arch}_{condition}.pt')
+            '--max-uptime-min', '180',
+            '--arch', arch]
+    ckpt_name = checkpoint_for(arch, condition)
+    if ckpt_name is not None:
         args += ['--checkpoint', str(Path(checkpoints_dir) / ckpt_name)]
     return args
+
+
+def preflight_checkpoints(architectures, checkpoints_dir, include_collapsed_bnrecal=False):
+    """Verify that every non-eager checkpoint for the session exists and loads with torch.jit.load."""
+    import torch
+    checkpoints_dir = Path(checkpoints_dir)
+    for arch in architectures:
+        for cond in conditions_for(arch, include_collapsed_bnrecal):
+            ckpt_name = checkpoint_for(arch, cond)
+            if ckpt_name is None:
+                continue
+            ckpt_path = checkpoints_dir / ckpt_name
+            if not ckpt_path.is_file():
+                raise RuntimeError(f"Required checkpoint file missing: {ckpt_path}")
+            try:
+                torch.jit.load(str(ckpt_path), map_location='cpu')
+            except Exception as e:
+                raise RuntimeError(f"Checkpoint failed torch.jit.load: {ckpt_path} ({e})")
 
 
 def default_runner(pilot_py, python_exe, args):
@@ -87,7 +112,8 @@ def default_runner(pilot_py, python_exe, args):
 def run_session(session_n, architectures, out_base, checkpoints_dir,
                  runner=default_runner, python_exe=sys.executable,
                  pilot_py=None, skip_ac_check=False, include_collapsed_bnrecal=False,
-                 governor_check=None, uptime_fn=None):
+                 governor_check=None, uptime_fn=None,
+                 checkpoint_preflight=None):
     if uptime_fn is None:
         uptime_fn = get_system_uptime
     uptime_s = uptime_fn()
@@ -101,6 +127,10 @@ def run_session(session_n, architectures, out_base, checkpoints_dir,
         from pilot import check_governor
         governor_check = check_governor
     governor_check()
+
+    if checkpoint_preflight is None:
+        checkpoint_preflight = preflight_checkpoints
+    checkpoint_preflight(architectures, checkpoints_dir, include_collapsed_bnrecal)
     
     out_base = Path(out_base)
     out_base.mkdir(parents=True, exist_ok=True)
