@@ -1,0 +1,7 @@
+{
+  "T_mhz": 3952.07,
+  "rule_version": "v1",
+  "source": "calibration/thermal_20261012",
+  "metric": "thermal_busy_mean_freq_mhz",
+  "busy_k": 4
+}
