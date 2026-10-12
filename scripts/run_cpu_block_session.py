@@ -56,12 +56,17 @@ def session_order(session_n, architectures, include_collapsed_bnrecal=False):
     return pairs
 
 
+def get_system_uptime():
+    return float(Path('/proc/uptime').read_text().split()[0])
+
+
 def pilot_args_for(arch, condition, out_dir, checkpoints_dir):
     """Translate one (arch, condition) pair into the pilot.py invocation that measures it.
     fp32_eager uses --arch (builds the model fresh, no TorchScript checkpoint); every other
     condition loads a checkpoint, which already carries its own architecture when traced."""
     args = ['--device', 'cpu', '--out', str(out_dir), '--cpu-affinity', 'pcores',
-            '--sizes', '32', '--batches', '1']
+            '--sizes', '32', '--batches', '1',
+            '--max-uptime-min', '180']
     if condition == 'fp32_eager':
         args += ['--arch', arch]
     else:
@@ -82,7 +87,13 @@ def default_runner(pilot_py, python_exe, args):
 def run_session(session_n, architectures, out_base, checkpoints_dir,
                  runner=default_runner, python_exe=sys.executable,
                  pilot_py=None, skip_ac_check=False, include_collapsed_bnrecal=False,
-                 governor_check=None):
+                 governor_check=None, uptime_fn=None):
+    if uptime_fn is None:
+        uptime_fn = get_system_uptime
+    uptime_s = uptime_fn()
+    if uptime_s > 30 * 60:
+        raise RuntimeError(f'System uptime is {uptime_s/60:.1f} min (> 30 min) -- reboot and start within 30 min.')
+
     if pilot_py is None:
         pilot_py = Path(__file__).resolve().parent.parent / 'pilot.py'
     
@@ -100,6 +111,7 @@ def run_session(session_n, architectures, out_base, checkpoints_dir,
 
     order = session_order(session_n, architectures, include_collapsed_bnrecal)
     log = {'session': session_n, 'seed': CONDITION_SEED_BASE + session_n,
+           'session_start_uptime_s': uptime_s,
            'order': [f'{a}_{c}' for a, c in order], 'conditions': []}
            
     void_log = {'session': session_n, 'voids': []}

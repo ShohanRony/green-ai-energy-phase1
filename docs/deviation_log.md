@@ -1076,3 +1076,15 @@ the plan — recorded for completeness per the same openness principle.
 - **Could this change the conclusions?** No. Found before any confirmatory session; without the fix,
   sessions would have run about 20 times longer, with extra heat from the large configurations
   before the measured windows.
+
+## D31. Fresh-boot check moved from per condition to session start (after freeze)
+
+- **Discovery (2026-10-12, after freeze tag stage5-a7-frozen-20261012, before any session):**
+  pilot.py refuses to start above 30 min uptime, and the CPU-block runner launches pilot.py once per
+  condition. A 24-condition session (~78 min) would have voided every condition starting after
+  30 min.
+- **Fix:** the runner checks uptime <= 30 min once at session start and passes
+  `--max-uptime-min 180` to each pilot.py call. This keeps the rule's intent (each session starts
+  from a fresh boot) and changes no analysis rule, threshold or condition.
+- **Frozen record:** the freeze tag is unchanged; this fix is a later commit, cited here.
+- **Could this change the conclusions?** No. Found before any confirmatory data.

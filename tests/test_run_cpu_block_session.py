@@ -8,6 +8,20 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'scripts'))
 import run_cpu_block_session as runner_mod
 
+_uptime_patcher = None
+
+
+def setUpModule():
+    global _uptime_patcher
+    _uptime_patcher = patch.object(runner_mod, 'get_system_uptime', return_value=600.0)
+    _uptime_patcher.start()
+
+
+def tearDownModule():
+    global _uptime_patcher
+    if _uptime_patcher:
+        _uptime_patcher.stop()
+
 
 def stub_runner(calls):
     """Records every invocation instead of launching a real process -- no real model or
@@ -286,4 +300,39 @@ class SessionGovernorCheckTests(unittest.TestCase):
                 checkpoints_dir='checkpoints', runner=stub_runner(calls),
                 skip_ac_check=True, governor_check=fake_governor_check)
         self.assertEqual(calls, [])
+
+
+class SessionUptimeCheckTests(unittest.TestCase):
+    def test_uptime_31_min_refuses_before_runner_call(self):
+        calls = []
+        with self.assertRaisesRegex(RuntimeError, "reboot and start within 30 min"):
+            runner_mod.run_session(
+                session_n=1, architectures=['resnet18'], out_base='/tmp/fake_base',
+                checkpoints_dir='checkpoints', runner=stub_runner(calls),
+                skip_ac_check=True, governor_check=lambda: None,
+                uptime_fn=lambda: 31 * 60)
+        self.assertEqual(calls, [])
+
+    def test_uptime_10_min_proceeds(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            calls = []
+            log = runner_mod.run_session(
+                session_n=1, architectures=['resnet18'], out_base=td,
+                checkpoints_dir='checkpoints', runner=stub_runner(calls),
+                skip_ac_check=True, governor_check=lambda: None,
+                uptime_fn=lambda: 10 * 60)
+            self.assertTrue(len(calls) > 0)
+            self.assertEqual(log['session_start_uptime_s'], 600)
+            session_log = json.loads((Path(td) / 'session_log.json').read_text())
+            self.assertEqual(session_log['session_start_uptime_s'], 600)
+
+    def test_every_condition_args_contain_max_uptime_min_180(self):
+        for arch in ['resnet18', 'mobilenet_v3_small', 'efficientnet_b0']:
+            for cond in runner_mod.conditions_for(arch, include_collapsed_bnrecal=True):
+                args = runner_mod.pilot_args_for(arch, cond, '/tmp/out', 'checkpoints')
+                self.assertIn('--max-uptime-min', args)
+                idx = args.index('--max-uptime-min')
+                self.assertEqual(args[idx + 1], '180')
+
 
