@@ -333,9 +333,6 @@ class ThermalGuard:
             if self.thresholds:
                 T = self.thresholds.get('T_mhz', 0)
                 if busy_mean_freq < T: flag = True
-                
-            if self.has_throttle and c_th_delta is not None and c_th_delta > 0:
-                flag = True
             
         return dict(
             thermal_pcore_mean_freq_mhz=mean_freq,

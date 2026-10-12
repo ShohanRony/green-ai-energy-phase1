@@ -342,13 +342,23 @@ class ThermalGuardTests(unittest.TestCase):
         res_idle = guard.evaluate(trace, active=False)
         self.assertIsNone(res_idle['thermal_flag'])
         
-        # Test counter increase flag
+        # Test core-throttle increase with busy freq >= T -> not flagged (throttling logged but not flagged)
         trace2 = [
             ([2100, 2100], 0, 0, 0, 40.0),
             ([2100, 2100], 1, 0, 0, 40.0)
         ]
         res2 = guard.evaluate(trace2)
-        self.assertTrue(res2['thermal_flag']) # throttle increased
+        self.assertFalse(res2['thermal_flag']) # busy freq 2100 >= 2000: not flagged
+        self.assertEqual(res2['thermal_core_throttle_delta'], 1) # core throttle delta is logged
+        
+        # Test core-throttle increase with busy freq < T -> flagged
+        trace2_low = [
+            ([1900, 1900], 0, 0, 0, 40.0),
+            ([1900, 1900], 1, 0, 0, 40.0)
+        ]
+        res2_low = guard.evaluate(trace2_low)
+        self.assertTrue(res2_low['thermal_flag']) # busy freq 1900 < 2000: flagged
+        self.assertEqual(res2_low['thermal_core_throttle_delta'], 1)
         
         # Test normal window does not flag
         trace3 = [
