@@ -1695,3 +1695,32 @@ is a disclosure flag for the researcher to see, not an error condition this func
 From the confirmation date, `docs/stage5_plan_v1.md` is the single authoritative plan. A1-A9, A7r1-A7r9, and A8-A8r2 remain as history. Corrections made in v1.0: gap-based H2, session-mean t primary, session:model structure, scope change, "type I error" wording corrected to power loss, and "bias" corrected to design weighting.
 
 **A10 confirmation — 2026-10-11.** The researcher confirmed `docs/stage5_plan_v1.md` (sha256 ace75a6b9bd9d38c947a44dde7aba8af9856986dbacfb4cbe5d7fb35a17b7434, committed in 4a701f6) and amendment A10. From this date `docs/stage5_plan_v1.md` is the single authoritative analysis plan. Its status line ("v1.0 DRAFT, awaiting researcher confirmation") is superseded by this entry; the file itself is left unchanged so that its hash stays valid. D3r1 and D4r1 are confirmed as stated in its section 7. RQ1b is deferred to Paper 2 and RQ3 is secondary, as stated in its sections 1-2. Amendments A1-A9, A7r1-A7r9 and A8-A8r2 remain as history and are superseded where its section 12 says so.
+
+**A11 — Thermal guard registered (2026-10-12).** Registered before any confirmatory session.
+- *Metric:* per sample (every 0.4 s), the mean of the 4 highest P-core `scaling_cur_freq` readings
+  (busy_k = 4, the inference thread count); per window, the mean over samples
+  (`thermal_busy_mean_freq_mhz`). The all-P-core mean is logged, not used: with 4 threads on 12
+  P-core CPUs, about 8 idle at 800 MHz, so the all-core mean measures idleness, not throttling.
+- *Threshold:* T = 3952.07 MHz = 0.90 x pooled 5th percentile (4391.19 MHz) of the busy-core mean
+  over calibration windows with no core-throttle increase. Calibration: `calibration/thermal_20261012`
+  (commit 57d0396), 360 windows of 5 s, ResNet-18 FP32-TorchScript and INT8, 15 min each,
+  continuous batch-1 inference at 32x32, 4 threads, P-cores, governor performance, AC, room 28.8 C.
+- *Rule:* only active windows (a1, a2) are evaluated; a window is flagged if its busy-core mean is
+  below T. Idle windows are logged and never evaluated. A condition is voided if any warm active
+  window (repeat > 0) is flagged; void/rerun as plan v1 section 5.
+- *Change from the pre-calibration rule, stated openly:* the pre-calibration rule also flagged any
+  core-throttle-counter increase. Calibration showed such increases in 59 of 360 windows (58 INT8),
+  with the busy-core mean falling at most to 4201.6 MHz (about 4.5%), so that criterion would have
+  voided most conditions for a small slowdown. It was removed on this calibration evidence, before
+  any confirmatory data. Throttle counts, package throttle time and package temperature stay logged
+  for every window.
+- *Registered sensitivity analysis (never changes the H2 verdict):* the primary H2 analysis is
+  repeated after excluding every warm repeat in which either active window had a package-throttle
+  increase. A cell left with no repeats counts as missing (plan v1 completeness rule). The share of
+  throttled warm active windows is reported per cell.
+- *Protocol check:* ResNet-18 INT8 under the session runner's exact arguments: 10 warm active
+  windows, 0 throttled, 0 flagged, maximum package temperature 79 C, 194 s per condition.
+  Guard-validation data only; not deposited and not analysed.
+- *Related:* governor gate (D29), runner configuration fix (D30).
+- *Deposit:* the frozen tag is published on Zenodo before session 1. The DOI is added in a later
+  dated note, append-only.
