@@ -1724,3 +1724,9 @@ From the confirmation date, `docs/stage5_plan_v1.md` is the single authoritative
 - *Related:* governor gate (D29), runner configuration fix (D30).
 - *Deposit:* the frozen tag is published on Zenodo before session 1. The DOI is added in a later
   dated note, append-only.
+**A12 — H2 input extraction script registered (2026-10-14).** Registered before any energy value in results_stage5 is inspected.
+- *Script:* `scripts/extract_h2_input.py`, producing the input table required by `analysis/rq2_gap_model.R` with columns `session`, `model`, `state`, `log_ratio`, `log_mac`.
+- *Outcome column:* `gross_j_per_image_mean` from `summary.csv` (`pilot.py:462`, `mean = statistics.mean(pairs)`), which for CPU runs equals RAPL package-0 gross energy per image. `cpu_package_j_per_image_mean` (`pilot.py:464`) is identical by construction on CPU runs (`pilot.py:376-381, 431-436`).
+- *Registered MAC constants:* log_mac = log(1 - mac_reduction) using the realised MAC reductions from Stage 2: ResNet-18: 1-0.516, 1-0.748, 1-0.910; MobileNetV3-Small: 1-0.467, 1-0.691, 1-0.868; EfficientNet-B0: 1-0.484, 1-0.712, 1-0.881.
+- *Omission and validation rules:* Zero-finetune pruned cells only; `_bnrecal` states are ignored. Any missing or voided cell is left out (never imputed) and listed on stderr. The script exits non-zero if a session's `fp32_ts` baseline is missing or if any condition's `summary.csv` has != 1 data row.
+- *Verification:* Written and tested on synthetic data (`tests/test_extract_h2_input.py`), and validated against `analysis/rq2_gap_model.R` (`fit_h2_primary`), before inspecting any energy value.

@@ -1103,3 +1103,9 @@ the plan — recorded for completeness per the same openness principle.
   it is excluded from all analyses. Session 1 is rerun with the same seed.
 - **Could this change the conclusions?** No. The plan already specified an FP32-TorchScript
   baseline; this makes the code match it before any valid session.
+
+## D33. H2 input extraction script added after session completion, before inspection
+
+- **Discovery (2026-10-14, after sessions 1-6 completed, before inspection of energy results):** Plan v1 section 4 specifies the confirmatory test on $d = \log(r) - \log(\text{MAC ratio})$ per session and cell, but no script existed to extract and format the $(session, model, state, \log(r), \log(\text{MAC}))$ inputs required by `analysis/rq2_gap_model.R` from the session output directories.
+- **Fix:** Added `scripts/extract_h2_input.py` and unit tests (`tests/test_extract_h2_input.py`), tested on synthetic data only. Registered in amendment A12.
+- **Could this change the conclusions?** No. The script implements the exact computation already specified in Plan v1 section 4, using registered Stage 2 MAC reductions and gross energy per image, before any energy value in `results_stage5` was viewed or analysed.
