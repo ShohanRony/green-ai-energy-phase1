@@ -1,0 +1,159 @@
+=== Environment ===
+R version: R version 4.3.3 (2024-02-29)
+lme4 version: 1.1.35.1
+lmerTest version: 3.1.3
+
+=== 3a. Sensitivity & Secondary Fits (rq2_gap_model.R) ===
+-- fit_sensitivity_free_intercept --
+beta_hat (log_mac slope): 0.43726552
+se: 0.04530026
+df: 50.0000
+t_stat (H0: beta >= 1): -12.42232456
+p_one_sided: 3.34443127e-17
+
+-- fit_anchored_slopes --
+mean_slope: 0.38473771
+se: 0.00524044
+df: 51.0000
+ci_lower (95%): 0.37421710
+ci_upper (95%): 0.39525832
+t_stat (H0: mean_slope >= 1): -117.40671644
+p_one_sided: 4.93820201e-64
+
+=== 3b. Diagnostics (rq2_diagnostics.R) ===
+Note: No column adaptation required: h2_input.csv already provides required columns (session, model, state, log_ratio, log_mac).
+
+-- fit_curvature_diagnostic --
+quad_estimate: -0.19927911
+quad_se: 0.09353765
+quad_df: 49.0000
+quad_ci_lower (95%): -0.38725005
+quad_ci_upper (95%): -0.01130818
+lrt_chisq: 4.78376343
+lrt_df: 1
+lrt_p: 2.87292683e-02
+converged: TRUE
+singular: TRUE
+n_obs: 54
+n_sessions: 6
+n_models: 3
+
+-- fit_heterogeneity_diagnostic --
+per_model slopes:
+  model                slope        se           df       ci_lower     ci_upper    
+  efficientnet_b0      0.22249289   0.01654797   48.00    0.18922096   0.25576482  
+  mobilenet_v3_small   0.12886569   0.01737619   48.00    0.09392852   0.16380285  
+  resnet18             0.81226527   0.01441081   48.00    0.78329038   0.84124015  
+lrt_chisq: 174.20514674
+lrt_df: 2
+lrt_p: 1.48536445e-38
+converged: TRUE
+singular: TRUE
+n_obs: 54
+n_sessions: 6
+n_models: 3
+
+=== 3c. bnrecal Subset Fit (fit_h2_gap_model) ===
+Note: 6 conditions exist (3 missing by design under BNRECAL_SKIP).
+converged: FALSE
+singular: TRUE
+complete_design: FALSE
+error: Not all 9 cells are present in the data to compute the equal-weight mean
+
+=== 3d. Decision Rule D2r1 (FP32-TS vs FP32-eager TOST) ===
+Equivalence margin: log(1.05) = +/-0.04879016, df = 5, SD threshold = 0.0593
+Architecture: resnet18
+  n_sessions: 6
+  mean log ratio: -0.05219058
+  sd: 0.00611970
+  90% CI: [ -0.05722489 , -0.04715627 ]
+  bounded within [-log(1.05), +log(1.05)]: FALSE
+  sd <= 0.0593 threshold: 0.00611970 <= 0.0593 is TRUE
+
+Architecture: mobilenet_v3_small
+  n_sessions: 6
+  mean log ratio: -0.37954261
+  sd: 0.02466572
+  90% CI: [ -0.39983362 , -0.35925160 ]
+  bounded within [-log(1.05), +log(1.05)]: FALSE
+  sd <= 0.0593 threshold: 0.02466572 <= 0.0593 is TRUE
+
+Architecture: efficientnet_b0
+  n_sessions: 6
+  mean log ratio: -0.31013788
+  sd: 0.02952280
+  90% CI: [ -0.33442452 , -0.28585125 ]
+  bounded within [-log(1.05), +log(1.05)]: FALSE
+  sd <= 0.0593 threshold: 0.02952280 <= 0.0593 is TRUE
+
+=== 3e. Decision Rule D3r1 (Weight Dependence: bnrecal vs zero-finetune TOST) ===
+Equivalence margin: log(1.05) = +/-0.04879016, df = 5
+Pair: resnet18_pruned30_bnrecal vs resnet18_pruned30
+  n_sessions: 6
+  mean log ratio: 0.00394791
+  sd: 0.00883438
+  90% CI: [ -0.00331960 , 0.01121542 ]
+  bounded within [-log(1.05), +log(1.05)]: TRUE
+
+Pair: resnet18_pruned50_bnrecal vs resnet18_pruned50
+  n_sessions: 6
+  mean log ratio: 0.00644409
+  sd: 0.00831977
+  90% CI: [ -0.00040008 , 0.01328826 ]
+  bounded within [-log(1.05), +log(1.05)]: TRUE
+
+Pair: resnet18_pruned70_bnrecal vs resnet18_pruned70
+  n_sessions: 6
+  mean log ratio: -0.00430360
+  sd: 0.01689500
+  90% CI: [ -0.01820211 , 0.00959490 ]
+  bounded within [-log(1.05), +log(1.05)]: TRUE
+
+Pair: mobilenet_v3_small_pruned30_bnrecal vs mobilenet_v3_small_pruned30
+  n_sessions: 6
+  mean log ratio: -0.01562661
+  sd: 0.01433832
+  90% CI: [ -0.02742189 , -0.00383134 ]
+  bounded within [-log(1.05), +log(1.05)]: TRUE
+
+Pair: efficientnet_b0_pruned30_bnrecal vs efficientnet_b0_pruned30
+  n_sessions: 6
+  mean log ratio: -0.00384763
+  sd: 0.00875312
+  90% CI: [ -0.01104829 , 0.00335303 ]
+  bounded within [-log(1.05), +log(1.05)]: TRUE
+
+Pair: efficientnet_b0_pruned50_bnrecal vs efficientnet_b0_pruned50
+  n_sessions: 6
+  mean log ratio: -0.00403323
+  sd: 0.02001263
+  90% CI: [ -0.02049643 , 0.01242996 ]
+  bounded within [-log(1.05), +log(1.05)]: TRUE
+
+Overall D3r1 verdict (YES only if all 6 are bounded): YES
+
+=== 3f. Section 6 Per-State Ratios (relative to same-session arch fp32_ts) ===
+Geometric mean over 6 sessions, 95% t-interval on log r (df = 5), exp transformed.
+
+condition                            model              n    geom_mean_r  ci_lower_95  ci_upper_95  mean_log_r   se_log_r    
+efficientnet_b0_fp32_eager           efficientnet_b0    6    1.363613     1.322013     1.406522     0.310138     0.012053    
+efficientnet_b0_int8                 efficientnet_b0    6    0.636744     0.624014     0.649734     -0.451388    0.007856    
+efficientnet_b0_pruned30             efficientnet_b0    6    0.810565     0.799593     0.821686     -0.210024    0.005301    
+efficientnet_b0_pruned30_bnrecal     efficientnet_b0    6    0.807452     0.793239     0.821920     -0.213872    0.006909    
+efficientnet_b0_pruned50             efficientnet_b0    6    0.666157     0.653198     0.679372     -0.406230    0.007642    
+efficientnet_b0_pruned50_bnrecal     efficientnet_b0    6    0.663475     0.652214     0.674931     -0.410264    0.006659    
+efficientnet_b0_pruned70             efficientnet_b0    6    0.579889     0.570287     0.589652     -0.544918    0.006495    
+mobilenet_v3_small_fp32_eager        mobilenet_v3_small 6    1.461616     1.424267     1.499944     0.379543     0.010070    
+mobilenet_v3_small_int8              mobilenet_v3_small 6    0.460850     0.452098     0.469772     -0.774683    0.007459    
+mobilenet_v3_small_pruned30          mobilenet_v3_small 6    0.911491     0.890260     0.933228     -0.092674    0.009168    
+mobilenet_v3_small_pruned30_bnrecal  mobilenet_v3_small 6    0.897358     0.879640     0.915433     -0.108301    0.007758    
+mobilenet_v3_small_pruned50          mobilenet_v3_small 6    0.835377     0.819330     0.851738     -0.179872    0.007545    
+mobilenet_v3_small_pruned70          mobilenet_v3_small 6    0.759695     0.739181     0.780780     -0.274838    0.010649    
+resnet18_fp32_eager                  resnet18           6    1.053577     1.046832     1.060365     0.052191     0.002498    
+resnet18_int8                        resnet18           6    0.422414     0.418491     0.426373     -0.861771    0.003629    
+resnet18_pruned30                    resnet18           6    0.667882     0.662163     0.673651     -0.403644    0.003346    
+resnet18_pruned30_bnrecal            resnet18           6    0.670524     0.662629     0.678513     -0.399696    0.004608    
+resnet18_pruned50                    resnet18           6    0.346220     0.342976     0.349495     -1.060680    0.003663    
+resnet18_pruned50_bnrecal            resnet18           6    0.348458     0.344421     0.352543     -1.054236    0.004534    
+resnet18_pruned70                    resnet18           6    0.167338     0.165784     0.168907     -1.787738    0.003631    
+resnet18_pruned70_bnrecal            resnet18           6    0.166620     0.164521     0.168745     -1.792042    0.004931    
