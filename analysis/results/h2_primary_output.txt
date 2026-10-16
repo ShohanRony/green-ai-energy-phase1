@@ -1,0 +1,43 @@
+=== Environment ===
+R version: R version 4.3.3 (2024-02-29)
+lme4 version: 1.1.35.1
+lmerTest version: 3.1.3
+
+=== Primary H2 Test (fit_h2_primary) ===
+primary_method: session_mean_t
+complete_design: TRUE
+estimate (mean d): 0.82388876
+se: 0.00338825
+df: 5.0000
+p_one_sided (H0: mean d <= 0 vs H1: mean d > 0): 1.11616458e-11
+ci_lower (95%): 0.81517899
+ci_upper (95%): 0.83259852
+exp_estimate: 2.27934645
+exp_ci_lower: 2.25958007
+exp_ci_upper: 2.29928573
+
+=== Cross-Check Mixed Model (fit_h2_gap_model) ===
+converged: TRUE
+singular: FALSE
+complete_design: TRUE
+mu_hat (equal-weight contrast): 0.82388876
+se: 0.00344359
+df: 14.9934
+p_one_sided: 1.42265832e-28
+ci_lower (95%): 0.81654865
+ci_upper (95%): 0.83122886
+exp_mu_hat: 2.27934645
+exp_ci_lower: 2.26267705
+exp_ci_upper: 2.29613865
+
+=== Per-Cell Descriptive Statistics (95% t-interval over sessions) ===
+cell                                mean_d     se         df   ci_lower     ci_upper     exp_mean_d   exp_ci_lower exp_ci_upper
+resnet18_pruned30                   0.322026   0.003346   5    0.313426     0.330627     1.379921     1.368105     1.391840    
+resnet18_pruned50                   0.317646   0.003663   5    0.308231     0.327061     1.373890     1.361015     1.386886    
+resnet18_pruned70                   0.620207   0.003631   5    0.610874     0.629541     1.859314     1.842041     1.876748    
+mobilenet_v3_small_pruned30         0.536560   0.009168   5    0.512992     0.560128     1.710114     1.670281     1.750896    
+mobilenet_v3_small_pruned50         0.994542   0.007545   5    0.975146     1.013938     2.703485     2.651553     2.756434    
+mobilenet_v3_small_pruned70         1.750116   0.010649   5    1.722740     1.777491     5.755268     5.599853     5.914997    
+efficientnet_b0_pruned30            0.451624   0.005301   5    0.437996     0.465252     1.570862     1.549599     1.592415    
+efficientnet_b0_pruned50            0.838564   0.007642   5    0.818920     0.858209     2.313044     2.268049     2.358932    
+efficientnet_b0_pruned70            1.583713   0.006495   5    1.567017     1.600410     4.873017     4.792330     4.955063    
