@@ -1,0 +1,44 @@
+================================================================================
+Exclusion Counts Report (Plan v1 section 5)
+================================================================================
+Plan v1 section 5 rule: Exclusions (counted and reported): the cold-start repetition;
+plausibility-guard trips; governor not 'performance'; concurrent GPU process;
+conditions overlapping a verified battery interval (A7r5).
+
+Exclusion Category                            x86-CPU Block          x86-GPU Block         
+-------------------------------------------------------------------------------------------
+Sessions Analyzed                             6                      6                     
+Conditions per Session                        24                     30                    
+Total Conditions Measured                     144                    180                   
+Total Measured Windows (all phases)           3456                   5040                  
+Total Active Windows (a1 + a2)                1728                   2520                  
+Warm Active Windows Analyzed                  1440                   2160                  
+-------------------------------------------------------------------------------------------
+1. Cold-start repeats excluded (rep 0)        144                    180                   
+   - Corresponding cold active windows        288                    360                   
+2. Plausibility_flag trips                    0                      0                     
+3. Windows with governor not performance      0                      0                     
+4. Conditions voided (void_log / session logs) 0                      0                     
+5. Concurrent-GPU-process events              not logged             not logged            
+6. Battery interval overlaps (A7r5)           0                      0                     
+-------------------------------------------------------------------------------------------
+Total Conditions Excluded from Analysis       0                      0                     
+Total Repeats Excluded from Analysis          144 (cold-start)       180 (cold-start)      
+Total Active Windows Excluded                 288 (cold-start)       360 (cold-start)      
+-------------------------------------------------------------------------------------------
+
+Notes on specific categories:
+  - Category 1 (Cold-start repeats): Exactly repeat 0 was excluded per condition per pilot.py:428, 446.
+    (x86-CPU: 144 conditions x 1 cold repeat = 144 repeats, 288 active windows).
+    (x86-GPU: 180 conditions x 1 cold repeat = 180 repeats, 360 active windows).
+  - Category 2 (Plausibility trips): Zero windows exceeded hardware power limits in either block.
+  - Category 3 (CPU governor): All conditions across both blocks had scaling governors locked to 'performance'
+    in environment.json; zero windows were run under non-performance governors.
+  - Category 4 (Voided conditions): In the committed sessions, exactly 0 conditions were voided.
+    (Whole-session void/abort events prior to clean completion: results_stage5/cpu/voided/session_01_attempt1
+    voided under D32; results_stage4b/main_session3_aborted and main_session4_aborted; all rerun cleanly).
+  - Category 5 (Concurrent GPU process): 'not logged'. In pilot.py:113-122 (check_no_concurrent_gpu),
+    concurrent compute processes raise RuntimeError aborting before the window starts rather than logging a counter;
+    zero aborts occurred during the completed sessions. CPU block did not use GPU.
+  - Category 6 (Battery overlap): Zero conditions overlapped a verified discharging interval (A7r5).
+
