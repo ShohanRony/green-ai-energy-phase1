@@ -1,0 +1,226 @@
+=== Environment ===
+R version: R version 4.3.3 (2024-02-29)
+lme4 version: 1.1.35.1
+lmerTest version: 3.1.3
+
+=== Step 3: Reconciliation Gate ===
+Reconciliation checked: 144 condition pairs
+Max relative difference: 0.00e+00
+RECONCILIATION GATE: PASSED
+Exported condition energy specs to analysis/results/condition_energy_specs.csv
+Exported A11 H2 input to analysis/results/h2_input_a11.csv
+
+=== Step 4: A11 Throttle Sensitivity Analysis ===
+Rule: Exclude warm repeats where either active window (a1 or a2) has thermal_pkg_throttle_count_delta > 0.
+
+Per-cell throttle audit across all 6 sessions:
+cell                                warm_repeats warm_excluded  warm_active  throttled_act  throttle_share
+resnet18_pruned30                   30           0              60           0              0.0000        
+resnet18_pruned50                   30           0              60           0              0.0000        
+resnet18_pruned70                   30           0              60           0              0.0000        
+mobilenet_v3_small_pruned30         30           0              60           0              0.0000        
+mobilenet_v3_small_pruned50         30           0              60           0              0.0000        
+mobilenet_v3_small_pruned70         30           0              60           0              0.0000        
+efficientnet_b0_pruned30            30           0              60           0              0.0000        
+efficientnet_b0_pruned50            30           0              60           0              0.0000        
+efficientnet_b0_pruned70            30           0              60           0              0.0000        
+resnet18_fp32_ts                    30           0              60           0              0.0000        
+mobilenet_v3_small_fp32_ts          30           0              60           0              0.0000        
+efficientnet_b0_fp32_ts             30           0              60           0              0.0000        
+
+-- A11 fit_h2_primary Output --
+primary_method: session_mean_t
+complete_design: TRUE
+estimate (mean d): 0.82388876
+se: 0.00338825
+df: 5.0000
+p_one_sided (H0: mean d <= 0 vs H1: mean d > 0): 1.11616458e-11
+ci_lower (95%): 0.81517899
+ci_upper (95%): 0.83259852
+exp_estimate: 2.27934645
+exp_ci_lower: 2.25958007
+exp_ci_upper: 2.29928573
+
+=== Step 5: Specification Curve (x86-CPU, Plan v1 section 8) ===
+Axes: instrument {package-0, psys} x runtime {fp32_ts, fp32_eager} x quantity {gross, net} = up to 8 points.
+Unavailable points (2 of 8):
+  - (psys, fp32_ts, net): Unavailable -- no psys-specific idle quantity or net column exists in windows.csv.
+  - (psys, fp32_eager, net): Unavailable -- no psys-specific idle quantity or net column exists in windows.csv.
+Available points: 6 points.
+
+State: resnet18_pruned30
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.403644 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.411275
+    (package-0, fp32_eager, gross)     : log_r =   -0.455835
+    (package-0, fp32_eager, net)       : log_r =   -0.461756
+    (psys, fp32_ts, gross)             : log_r =   -0.404721
+    (psys, fp32_eager, gross)          : log_r =   -0.457225
+  sd_spec    : 0.028518
+  w_star     : 0.008600
+  headline_1 : 3.316029
+  headline_2 : 0.070652
+
+State: resnet18_pruned50
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -1.060680 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -1.066517
+    (package-0, fp32_eager, gross)     : log_r =   -1.112871
+    (package-0, fp32_eager, net)       : log_r =   -1.116998
+    (psys, fp32_ts, gross)             : log_r =   -1.069817
+    (psys, fp32_eager, gross)          : log_r =   -1.122320
+  sd_spec    : 0.028639
+  w_star     : 0.009415
+  headline_1 : 3.041835
+  headline_2 : 0.027000
+
+State: resnet18_pruned70
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -1.787738 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -1.793075
+    (package-0, fp32_eager, gross)     : log_r =   -1.839929
+    (package-0, fp32_eager, net)       : log_r =   -1.843556
+    (psys, fp32_ts, gross)             : log_r =   -1.793374
+    (psys, fp32_eager, gross)          : log_r =   -1.845877
+  sd_spec    : 0.028465
+  w_star     : 0.009333
+  headline_1 : 3.049843
+  headline_2 : 0.015922
+
+State: resnet18_int8
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.861771 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.862705
+    (package-0, fp32_eager, gross)     : log_r =   -0.913961
+    (package-0, fp32_eager, net)       : log_r =   -0.913186
+    (psys, fp32_ts, gross)             : log_r =   -0.868616
+    (psys, fp32_eager, gross)          : log_r =   -0.921119
+  sd_spec    : 0.028562
+  w_star     : 0.009330
+  headline_1 : 3.061485
+  headline_2 : 0.033144
+
+State: mobilenet_v3_small_pruned30
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.092674 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.097579
+    (package-0, fp32_eager, gross)     : log_r =   -0.472217
+    (package-0, fp32_eager, net)       : log_r =   -0.473341
+    (psys, fp32_ts, gross)             : log_r =   -0.085556
+    (psys, fp32_eager, gross)          : log_r =   -0.472202
+  sd_spec    : 0.208526
+  w_star     : 0.023568
+  headline_1 : 8.847894
+  headline_2 : 2.250104
+
+State: mobilenet_v3_small_pruned50
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.179872 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.195277
+    (package-0, fp32_eager, gross)     : log_r =   -0.559415
+    (package-0, fp32_eager, net)       : log_r =   -0.571039
+    (psys, fp32_ts, gross)             : log_r =   -0.158198
+    (psys, fp32_eager, gross)          : log_r =   -0.544845
+  sd_spec    : 0.208988
+  w_star     : 0.019396
+  headline_1 : 10.774678
+  headline_2 : 1.161870
+
+State: mobilenet_v3_small_pruned70
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.274838 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.291299
+    (package-0, fp32_eager, gross)     : log_r =   -0.654380
+    (package-0, fp32_eager, net)       : log_r =   -0.667060
+    (psys, fp32_ts, gross)             : log_r =   -0.248183
+    (psys, fp32_eager, gross)          : log_r =   -0.634830
+  sd_spec    : 0.209197
+  w_star     : 0.027375
+  headline_1 : 7.641789
+  headline_2 : 0.761164
+
+State: mobilenet_v3_small_int8
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.774683 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.770850
+    (package-0, fp32_eager, gross)     : log_r =   -1.154225
+    (package-0, fp32_eager, net)       : log_r =   -1.146611
+    (psys, fp32_ts, gross)             : log_r =   -0.784211
+    (psys, fp32_eager, gross)          : log_r =   -1.170857
+  sd_spec    : 0.208684
+  w_star     : 0.019174
+  headline_1 : 10.883551
+  headline_2 : 0.269379
+
+State: efficientnet_b0_pruned30
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.210024 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.212642
+    (package-0, fp32_eager, gross)     : log_r =   -0.520162
+    (package-0, fp32_eager, net)       : log_r =   -0.522522
+    (psys, fp32_ts, gross)             : log_r =   -0.204190
+    (psys, fp32_eager, gross)          : log_r =   -0.519193
+  sd_spec    : 0.170736
+  w_star     : 0.013628
+  headline_1 : 12.528504
+  headline_2 : 0.812935
+
+State: efficientnet_b0_pruned50
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.406230 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.414658
+    (package-0, fp32_eager, gross)     : log_r =   -0.716368
+    (package-0, fp32_eager, net)       : log_r =   -0.724539
+    (psys, fp32_ts, gross)             : log_r =   -0.393642
+    (psys, fp32_eager, gross)          : log_r =   -0.708645
+  sd_spec    : 0.170916
+  w_star     : 0.019645
+  headline_1 : 8.700419
+  headline_2 : 0.420736
+
+State: efficientnet_b0_pruned70
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.544918 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.562834
+    (package-0, fp32_eager, gross)     : log_r =   -0.855056
+    (package-0, fp32_eager, net)       : log_r =   -0.872714
+    (psys, fp32_ts, gross)             : log_r =   -0.519280
+    (psys, fp32_eager, gross)          : log_r =   -0.834283
+  sd_spec    : 0.171703
+  w_star     : 0.016697
+  headline_1 : 10.283748
+  headline_2 : 0.315098
+
+State: efficientnet_b0_int8
+  Available specification points (6):
+    (package-0, fp32_ts, gross)        : log_r =   -0.451388 [PRIMARY]
+    (package-0, fp32_ts, net)          : log_r =   -0.443362
+    (package-0, fp32_eager, gross)     : log_r =   -0.761526
+    (package-0, fp32_eager, net)       : log_r =   -0.753242
+    (psys, fp32_ts, gross)             : log_r =   -0.460338
+    (psys, fp32_eager, gross)          : log_r =   -0.775340
+  sd_spec    : 0.170941
+  w_star     : 0.020195
+  headline_1 : 8.464562
+  headline_2 : 0.378701
+
+=== Specification Curve Summary Across States ===
+state                          primary_log_r  w_star       sd_spec      headline_1   headline_2  
+resnet18_pruned30              -0.403644      0.008600     0.028518     3.316029     0.070652    
+resnet18_pruned50              -1.060680      0.009415     0.028639     3.041835     0.027000    
+resnet18_pruned70              -1.787738      0.009333     0.028465     3.049843     0.015922    
+resnet18_int8                  -0.861771      0.009330     0.028562     3.061485     0.033144    
+mobilenet_v3_small_pruned30    -0.092674      0.023568     0.208526     8.847894     2.250104    
+mobilenet_v3_small_pruned50    -0.179872      0.019396     0.208988     10.774678    1.161870    
+mobilenet_v3_small_pruned70    -0.274838      0.027375     0.209197     7.641789     0.761164    
+mobilenet_v3_small_int8        -0.774683      0.019174     0.208684     10.883551    0.269379    
+efficientnet_b0_pruned30       -0.210024      0.013628     0.170736     12.528504    0.812935    
+efficientnet_b0_pruned50       -0.406230      0.019645     0.170916     8.700419     0.420736    
+efficientnet_b0_pruned70       -0.544918      0.016697     0.171703     10.283748    0.315098    
+efficientnet_b0_int8           -0.451388      0.020195     0.170941     8.464562     0.378701    
+
+=== Recorded Decision: _bnrecal Separate Fit ===
+Researcher decision recorded: The registered _bnrecal separate fit is not computed
+(only 6 of 9 cells exist by design under BNRECAL_SKIP; decision rule D3r1 answers its question).
+Per instructions, no attempt was made to fit fit_h2_gap_model on _bnrecal data.
+
