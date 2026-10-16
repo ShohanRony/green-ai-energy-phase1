@@ -32,6 +32,15 @@
 > test) — this fix was made before any Stage 5 statistics ran on CPU data, not
 > after. See `docs/deviation_log.md` D16.
 
+## Current status (2026-10-16)
+
+- **Analysis plan:** `docs/stage5_plan_v1.md` (sha256 `ace75a6b9bd9d38c947a44dde7aba8af9856986dbacfb4cbe5d7fb35a17b7434`), confirmed by amendment A10; frozen under tag `stage5-a7-frozen-20261012` (`70f84f0`). Plan archive: Zenodo `10.5281/zenodo.23357783` (deposited 2026-10-16, after data collection; see D34).
+- **Data:** x86-CPU confirmatory block, six sessions in `results_stage5/cpu/session_01..06` (2026-10-13 to 2026-10-14); x86-GPU supplementary block in `results_stage4b/main_session1..6`.
+- **Analysis outputs:** `analysis/results/` (output text summaries): `accuracy_table_output.txt`, `exclusion_counts.txt`, `gpu_supplementary_output.txt`, `h2_primary_output.txt`, `pruned_cpu_equivalence.txt`, `sensitivity_part1_output.txt`, `sensitivity_part2_output.txt`.
+- **Deviations:** `docs/deviation_log.md` (D1–D39).
+- **Paper checklist:** `docs/paper_must_include.md`.
+- **Pending:** M1-CPU replication (not collected), P1 wall-meter test (not run).
+
 RAPL+NVML paired energy-measurement harness for the Masaryk Green AI proposal's
 Phase 1 (see `docs/phase1-execution-plan.md`, `docs/stage1-implementation-brief.md`).
 Ported from `research/energy-pilot` (2026-10-03) — that repo stays with the other,
@@ -123,14 +132,22 @@ run, alongside the NVIDIA driver version and CPU governor.
   integration, counter-reset rejection, idle-duration/detection) plus the
   interval-floor, concurrent-GPU-guard, and platform-profile-guard tests added
   2026-10-03, plus the D16/item-3 tests added 2026-10-06 (RAPL domain-split
-  correctness, `find_rapl_domain()`, `--cpu-affinity`'s `p_core_set()`) — 40
-  tests total, all passing via `python -m unittest discover -s tests`.
+  correctness, `find_rapl_domain()`, `--cpu-affinity`'s `p_core_set()`) — 107
+  tests total from `measurement_env/bin/python3 -m unittest discover tests/`: 97
+  passed, 10 failed/errored (3 failures, 7 errors), 0 skipped. Tests needing the
+  performance governor fail when run outside an active measurement session where
+  the governor is set to powersave.
 - `scripts/` — `recompute_cpu_package_energy.py` (D16 offline recompute),
   `eval_artifacts.py` (full-test-set accuracy via `pilot.py`'s own loading
   path), `pruned_controls.py` (pruned-state class histograms + BN-stats-only
   recalibration).
+- `analysis/` — statistical models, sensitivity analysis, diagnostic fits, and specification curve scripts in R and Python (`analysis/results/` stores output text summaries).
+- `results_stage5/` — confirmatory x86-CPU measurement sessions (`results_stage5/cpu/session_01..06`).
 - `docs/` — the Phase 1 execution plan and Stage 1 implementation brief this repo
   is built against.
+- `docs/stage5_plan_v1.md` — frozen confirmatory and exploratory research plan (Stage 5 Plan v1).
+- `docs/deviation_log.md` — full audit trail of project deviations (D1–D39).
+- `docs/paper_must_include.md` — checklist of required disclosures, results, and limitations for the manuscript.
 
 ## Run
 

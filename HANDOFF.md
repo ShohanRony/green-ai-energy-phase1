@@ -1,3 +1,5 @@
+> Superseded (2026-10-16): this note describes the state on 2026-10-10 and is kept for history only. Current status: README.md, section Current status.
+
 # Handoff — 2026-10-10
 
 Written at the end of a documentation/design-only review (no training, no measurement, no
