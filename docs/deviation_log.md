@@ -1109,3 +1109,9 @@ the plan — recorded for completeness per the same openness principle.
 - **Discovery (2026-10-14, after sessions 1-6 completed, before inspection of energy results):** Plan v1 section 4 specifies the confirmatory test on $d = \log(r) - \log(\text{MAC ratio})$ per session and cell, but no script existed to extract and format the $(session, model, state, \log(r), \log(\text{MAC}))$ inputs required by `analysis/rq2_gap_model.R` from the session output directories.
 - **Fix:** Added `scripts/extract_h2_input.py` and unit tests (`tests/test_extract_h2_input.py`), tested on synthetic data only. Registered in amendment A12.
 - **Could this change the conclusions?** No. The script implements the exact computation already specified in Plan v1 section 4, using registered Stage 2 MAC reductions and gross energy per image, before any energy value in `results_stage5` was viewed or analysed.
+
+## D34. Zenodo deposit made after CPU-block sessions 1–6, before confirmatory analysis
+
+- **Discovery (2026-10-16):** The planned order was git tag + Zenodo deposit before the first CPU session (plan v1 section 11 / A11). The git tag (`stage5-a7-frozen-20261012`, commit `70f84f0`) was created and pushed on 12 October 2026 before any session, but the Zenodo deposit was published on 16 October 2026 (DOI 10.5281/zenodo.23357783) because earlier upload attempts failed.
+- **Timing:** Tagged 12 October 2026; data collection ran 13–14 October 2026; Zenodo deposit published 16 October 2026 before running any confirmatory analysis.
+- **Could this change the conclusions?** No: the deposited plan text is byte-identical to the tag (sha256 `ace75a6b9bd9d38c947a44dde7aba8af9856986dbacfb4cbe5d7fb35a17b7434`), and no energy value was inspected before the deposit. The paper will describe the registration as git-tag-based, with the Zenodo archive made after data collection.

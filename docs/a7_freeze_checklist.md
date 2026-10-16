@@ -365,3 +365,16 @@ whether any further action on the GitHub copy is wanted, separately from the Zen
 ## Correction (2026-10-10)
 - **Import closure & Deposit list update**: A recursive dependency check of `pilot.py`, `power_state.py`, `train_baseline.py`, and `scripts/run_cpu_block_session.py` shows the local module closure includes at least `train_baseline.py` (which was omitted from the previous freeze update's deposit list). The deposit list is hereby updated to explicitly include this full closure.
 - **Sensitive-string scan note**: The `@param` hits reported in the earlier sensitive-string scan are strictly R documentation (roxygen) tags, not e-mail addresses.
+
+## Deposit record (2026-10-16)
+
+- **DOI:** 10.5281/zenodo.23357783
+- **Record URL:** https://zenodo.org/records/23357783
+- **File name:** `stage5_frozen_tag_70f84f0.zip`
+- **MD5:** `740c46c219c436c9d47967fa1313b3b7`
+- **Archive SHA256:** `2198a74a80500d6db5a119b89ff3dac52ea45946f1cf94f53bed213ece5782d3`
+- **Git archive command:**
+  ```bash
+  git archive --format=zip --prefix=green-ai-energy-phase1-stage5-frozen/ -o ~/stage5_frozen_tag_70f84f0.zip stage5-a7-frozen-20261012 -- . ':(exclude)checkpoints' ':(exclude)checkpoints_p8' ':(exclude)results*' ':(exclude)docs/incidents'
+  ```
+- **Timing and status:** The deposit was made on 16 October 2026, after the six x86-CPU sessions (13-14 October 2026) and before the confirmatory analysis. Only the git tag (12 October 2026) predates data collection; the deposit is an archive of the frozen plan, not a prospective registration.
