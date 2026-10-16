@@ -1,0 +1,22 @@
+CPU vs CUDA Functional Equivalence Check for Zero-Finetune Pruned Artifacts
+Plan v1 section 9 rule: equivalent if McNemar p >= 0.05 AND |accuracy difference| <= 0.05 pp
+
+Model                State      CPU Correct  CUDA Correct  Diff (pp)  b    c    McNemar p   Class Diffs  Equivalent
+-------------------------------------------------------------------------------------------------------------------
+resnet18             pruned30           6482          6482 +0.00         0    0 1.0000                 1 yes       
+resnet18             pruned50           1761          1761 +0.00         0    0 1.0000                 3 yes       
+resnet18             pruned70           1035          1035 +0.00         0    0 1.0000                 0 yes       
+mobilenet_v3_small   pruned30           1716          1716 +0.00         1    1 1.0000                 4 yes       
+mobilenet_v3_small   pruned50           1000          1000 +0.00         0    0 1.0000                 0 yes       
+mobilenet_v3_small   pruned70           1000          1000 +0.00         0    0 1.0000                 0 yes       
+efficientnet_b0      pruned30           6030          6029 +0.01         1    0 1.0000                 1 yes       
+efficientnet_b0      pruned50           1333          1335 -0.02         0    2 0.5000                 3 yes       
+efficientnet_b0      pruned70           1000          1000 +0.00         0    0 1.0000                 0 yes       
+-------------------------------------------------------------------------------------------------------------------
+Summary: 9 of 9 equivalent under Plan v1 section 9 rule.
+
+Citation of code copied from scripts/eval_artifacts.py:
+  - Loading (load_model via torch.jit.load with build_model fallback): lines 49-55
+  - Normalisation constants (MEAN, STD): lines 38-39
+  - CIFAR-10 test transform and dataset loading: lines 69-72
+  - Batch handling, dtype casting, and inference loop (batch_size=200): lines 83-95
