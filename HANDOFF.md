@@ -1,4 +1,4 @@
-> Superseded (2026-10-16): this note describes the state on 2026-10-10 and is kept for history only. Current status: README.md, section Current status.
+> Superseded (2026-10-16): describes the state on 2026-10-10; kept for history. Current status: README.md. 'Supervisor' in this file means an AI assistant's advice (see README, Terminology note).
 
 # Handoff — 2026-10-10
 

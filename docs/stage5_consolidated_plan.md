@@ -208,8 +208,8 @@ discipline as the prose plan — `docs/analysis_environment.md`.
 Descriptive-only throughout: per-condition means in `session_log.md` files; the pinned-vs-unpinned
 data-quality check (D19); the `_bnrecal`-vs-zero-finetune check (D18 — an **energy** comparison, not
 accuracy-only as A7 point 13 originally said — corrected by A7r3(c)); two spot checks (pinned vs.
-unpinned +0.6%, range −1.6% to +3.5%; `_bnrecal` vs. zero-finetune ~1% apart) **run by the
-supervisor review, not the researcher** (corrected attribution, A7r3(c), fixing A7r1(g)'s
+unpinned +0.6%, range −1.6% to +3.5%; `_bnrecal` vs. zero-finetune ~1% apart) **run during
+design review, not by the researcher** (corrected attribution, A7r3(c), fixing A7r1(g)'s
 mislabel); and the 2026-10-10 integrity investigation's own look at per-session GPU power/regime
 and `windows.csv`/`environment.json` schema — A7r3(c). **No ratio, interval, or hypothesis test has
 been computed on any Stage 4b energy data at any point up to this summary.**
@@ -217,7 +217,7 @@ been computed on any Stage 4b energy data at any point up to this summary.**
 ## Open prerequisites (not yet satisfied, as of this summary)
 
 - **A7 and every dated revision (A7r1-A7r9), A8 and its revisions (A8r1-A8r2) — all still
-  DRAFT**, pending researcher/supervisor confirmation. Proposals D3r1 and D4r1 remain marked
+  DRAFT**, pending researcher confirmation. Proposals D3r1 and D4r1 remain marked
   "pending researcher confirmation" specifically.
 - No wall meter chosen; P1 protocol exists in draft only, not run.
 - No M1 hardware ever accessed; `docs/m1_check_commands.md`'s checks not yet run.
@@ -254,7 +254,7 @@ been computed on any Stage 4b energy data at any point up to this summary.**
 | A7 point 7 (RQ2 model, `(1\|model)` random) | A7r1(d) — model as fixed effect (P-MAC); further corrected by A7r3(f) — primary fit zero-finetune only |
 | A7r1(f)'s "D1-D5" (reconstructed from memory) | A7r2 — corrected D1r1-D5r1, audit's actual wording; "D3"/"D4" renamed P-CF/P-MAC |
 | A7r2's D2r1 practical note (TS sourced from series R directly) | A7r3(a) — bridged ratio is the only GPU-block construction (cross-session substitution unsafe per D17) |
-| A7 point 13 / A7r1(g) ("looked at" statement, attribution + scope) | A7r3(c) — attribution corrected (supervisor, not researcher), battery-check's own look added |
+| A7 point 13 / A7r1(g) ("looked at" statement, attribution + scope) | A7r3(c) — attribution corrected (design review, not researcher), battery-check's own look added |
 | A7r3(g) (`headline_2`, undivided denominator) | A7r4(a) — denominator floored at `max(\|log r*\|, ln 1.05)` |
 | A7r4(g) ("analysis environment: none of this exists yet") | A7r7(c) — environment now exists (R 4.3.3/lme4/lmerTest) |
 | A7r5(c) (source mislabelled "A7r1's Block M") | A7r7(d) — actual source is the 2026-10-10 integrity investigation |

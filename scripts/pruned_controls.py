@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Supervisor-requested pruned-state controls. NOT an energy measurement.
+"""Review-requested pruned-state controls. NOT an energy measurement.
 
 (a) Predicted-class histogram per pruned checkpoint, from eval_artifacts.py's saved
     predictions (results_accuracy/*_preds.npy) -- no new inference needed.

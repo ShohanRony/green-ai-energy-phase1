@@ -1,8 +1,8 @@
 # A5 rewrite draft — accuracy arm (draft only, not registered, nothing decided)
 
-**Status:** a draft for discussion. **Nothing in this document is decided** — the researcher and
-supervisor decide whether, and how, to adopt any of it. `stage5_analysis_plan.md`'s existing A5
-(DRAFT, pending supervisor review) is unchanged by this document; this is a separate draft that
+**Status:** a draft for discussion. **Nothing in this document is decided** — the researcher
+decides whether, and how, to adopt any of it. `stage5_analysis_plan.md`'s existing A5
+(DRAFT, pending review) is unchanged by this document; this is a separate draft that
 may inform a future dated revision of A5, not a replacement for it. No training is run as part of
 writing this document.
 
@@ -91,8 +91,8 @@ writing this document.
 ## Nothing decided
 
 This document proposes; it does not adopt. Whether any of (a), (b), the seed count, or the
-compute-time tradeoff is worth running is the researcher's and supervisor's decision — consistent
-with `stage5_analysis_plan.md` A5's own "DRAFT, pending supervisor review" status, which this
+compute-time tradeoff is worth running is the researcher's decision — consistent
+with `stage5_analysis_plan.md` A5's own "DRAFT, pending review" status, which this
 document does not change.
 
 ## Revision, 2026-10-10 (previous text above kept as-is, not edited)

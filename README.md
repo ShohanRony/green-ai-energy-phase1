@@ -32,17 +32,21 @@
 > test) — this fix was made before any Stage 5 statistics ran on CPU data, not
 > after. See `docs/deviation_log.md` D16.
 
+## Terminology note
+
+Where project documents refer to a 'supervisor', 'supervisor review' or 'supervisor decision', this means advice from an AI assistant used by the researcher. There is no human supervisor; all decisions were made and applied by the researcher.
+
 ## Current status (2026-10-16)
 
 - **Analysis plan:** `docs/stage5_plan_v1.md` (sha256 `ace75a6b9bd9d38c947a44dde7aba8af9856986dbacfb4cbe5d7fb35a17b7434`), confirmed by amendment A10; frozen under tag `stage5-a7-frozen-20261012` (`70f84f0`). Plan archive: Zenodo `10.5281/zenodo.23357783` (deposited 2026-10-16, after data collection; see D34).
 - **Data:** x86-CPU confirmatory block, six sessions in `results_stage5/cpu/session_01..06` (2026-10-13 to 2026-10-14); x86-GPU supplementary block in `results_stage4b/main_session1..6`.
 - **Analysis outputs:** `analysis/results/` (output text summaries): `accuracy_table_output.txt`, `exclusion_counts.txt`, `gpu_supplementary_output.txt`, `h2_primary_output.txt`, `pruned_cpu_equivalence.txt`, `sensitivity_part1_output.txt`, `sensitivity_part2_output.txt`.
-- **Deviations:** `docs/deviation_log.md` (D1–D39).
+- **Deviations:** `docs/deviation_log.md` (D1-D40).
 - **Paper checklist:** `docs/paper_must_include.md`.
 - **Pending:** M1-CPU replication (not collected), P1 wall-meter test (not run).
 
-RAPL+NVML paired energy-measurement harness for the Masaryk Green AI proposal's
-Phase 1 (see `docs/phase1-execution-plan.md`, `docs/stage1-implementation-brief.md`).
+RAPL+NVML paired energy-measurement harness for Phase 1 of this research project
+(see `docs/phase1-execution-plan.md`, `docs/stage1-implementation-brief.md`).
 Ported from `research/energy-pilot` (2026-10-03) — that repo stays with the other,
 earlier proposal (calibration/reliability angle); this repo is this proposal's own
 harness going forward.
@@ -146,7 +150,7 @@ run, alongside the NVIDIA driver version and CPU governor.
 - `docs/` — the Phase 1 execution plan and Stage 1 implementation brief this repo
   is built against.
 - `docs/stage5_plan_v1.md` — frozen confirmatory and exploratory research plan (Stage 5 Plan v1).
-- `docs/deviation_log.md` — full audit trail of project deviations (D1–D39).
+- `docs/deviation_log.md` — full audit trail of project deviations (D1-D40).
 - `docs/paper_must_include.md` — checklist of required disclosures, results, and limitations for the manuscript.
 
 ## Run

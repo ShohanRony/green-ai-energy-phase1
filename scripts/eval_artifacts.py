@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Full-test-set accuracy for all 18 checkpoints, loaded/preprocessed exactly as pilot.py
 does (same try/except TorchScript-vs-state_dict loading, same normalization constants,
-same dtype-casting rule, same per-state device). Supervisor-requested accuracy completion
+same dtype-casting rule, same per-state device). Review-requested accuracy completion
 -- NOT an energy measurement, no sensor involved.
 
 Per checkpoint:
