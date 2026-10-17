@@ -1153,3 +1153,13 @@ the plan — recorded for completeness per the same openness principle.
 - **Clarification (2026-10-16):** Where project documents refer to a 'supervisor', 'supervisor review' or 'supervisor decision', this means advice from an AI assistant used by the researcher. There is no human supervisor; all decisions were made and applied by the researcher.
 - **Handling of repository files:** Registered and archived documents (`docs/stage5_plan_v1.md`, `docs/stage5_analysis_plan.md`, `docs/deviation_log.md`, `docs/a7_freeze_checklist.md`, `docs/overnight-*`, `docs/stage4-supervisor-review.md`, `docs/history_rewrite_map.md`, `docs/phase1-execution-plan.md`, `docs/m1_harness_design.md`) keep the original word unchanged because they are append-only and archived on Zenodo. Live non-registered files (`docs/stage5_consolidated_plan.md`, `docs/a5_rewrite_draft.md`, `scripts/pruned_controls.py`, `scripts/eval_artifacts.py`, `README.md`, `HANDOFF.md`) have been reworded with neutral phrasing.
 - **Could this change the conclusions?** No. Conclusions unaffected.
+
+## D41. Record GPU power-limit configuration for x86-GPU sessions
+
+- **Context (2026-10-17):** The NVIDIA GeForce RTX 3050 Laptop GPU vendor specification lists a configurable Total Graphics Power (TGP) of up to 95 W (maximum configurable power limit of 95.00 W per `nvidia-smi`). Measurements in the x86-GPU sessions ran at the driver's default power limit of 60.00 W. The NVIDIA Dynamic Boost service (`nvidia-powerd.service`) was not installed on the system, so the GPU never exceeded 60 W.
+- **Session verification (sessions main_session1..6, 2026-10-07 to 2026-10-08):** Inspection of `environment.json` across all conditions in `results_stage4b/main_session1..6` confirms:
+  - For all 24 CUDA conditions per session: `nvidia_driver_version` was recorded as `"595.84"`, and `gpu_power_cap_w` was recorded as `60.0` (distinct values across all six sessions: driver `"595.84"`, power cap `60.0 W`).
+  - For all 6 CPU conditions per session (`fp32_cpu`, `int8`): `nvidia_driver_version` is `null` and `gpu_power_cap_w` is `null` (GPU not initialized for CPU execution).
+  - No other GPU power limit or power cap fields exist in `environment.json`.
+- **Consequences:** The x86-GPU supplementary results describe this 60 W configuration only and may differ at higher power limits up to the vendor maximum of 95 W. The confirmatory x86-CPU block is completely unaffected (no GPU use).
+- **Could this change the conclusions?** No. The x86-GPU block is designated as supplementary estimation in Plan v1 section 1 and section 6; the confirmatory H2 test and CPU conclusions are unaffected.
