@@ -1,0 +1,5 @@
+{
+  "ac_batt_output": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=34865251)\t100%; charged; 0:00 remaining present: true",
+  "ac_therm_output": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded",
+  "uptime_s_recorded_not_enforced": 5792968.525078058
+}

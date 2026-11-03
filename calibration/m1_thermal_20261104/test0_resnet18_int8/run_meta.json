@@ -1,0 +1,8 @@
+{
+  "arch": "resnet18",
+  "condition": "int8",
+  "engine_logged": "qnnpack",
+  "outfile": "/var/gai-powermetrics/thermalcal_int8_20261103T185530Z_72913.txt",
+  "n_windows": 180,
+  "n_samples": 2700
+}

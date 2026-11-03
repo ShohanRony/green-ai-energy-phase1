@@ -58,10 +58,22 @@ All x86 line references are to `pilot.py` at commit `0e426d1b772b790bc2879586048
 
 - Launch `sudo -n /usr/local/sbin/gai_powermetrics.sh INTERVAL_MS COUNT TAG` via
   `subprocess.Popen` (per-condition, not per-session or per-window — `HARNESS_PLAN.md` §4's
-  "one run per condition" decision, confirmed in that document). `COUNT` sized from this
-  condition's expected total duration (6 repeats × 4 phases × (3s settle + 5s window) = 192s)
-  plus model-load time already elapsed plus a margin (exact margin still open,
-  `HARNESS_PLAN.md` §6 — not fixed here either).
+  "one run per condition" decision, confirmed in that document).
+  **`COUNT = ceil(expected_duration_s / 0.405) + 5`**, where `expected_duration_s` is this
+  condition's expected total duration (6 repeats × 4 phases × (3s settle + 5s window) = 192s,
+  plus model-load time already elapsed before `powermetrics` starts). The divisor 0.405
+  (not the nominal requested 0.400s interval) is deliberately close to, but slightly below,
+  the measured mean actual sample interval of **410.36 ms** (calibration run, Test 2
+  duty-cycle, `calibration/m1_thermal_20261104/`: requested interval 400ms, actual mean
+  410.36ms across 6782 samples) — dividing by a value below the true actual interval
+  over-provisions `COUNT` rather than under-provisions it, and the fixed `+5` adds a small
+  further buffer. This closes the open margin question from `HARNESS_PLAN.md` §6, replacing
+  "exact margin still open" there.
+  **The harness must wait for the previous condition's `powermetrics` process to fully exit
+  before starting the next condition's `powermetrics` invocation** — sequential, never
+  overlapping (already stated as the per-condition design's intent elsewhere in this
+  document; restated here explicitly next to the `COUNT` formula since both govern the same
+  process lifecycle).
 - Locate the output file under `/var/gai-powermetrics/{TAG}_*.txt` created after this
   process's own start time (same glob-and-mtime-check pattern already used in
   `scripts/m1/flush_test.py` and `scripts/m1/edge_test.py`).
@@ -275,16 +287,10 @@ are added as real columns here rather than left for the caller to inject after t
 
 ## 4. Open items — must be resolved before the dated amendment, not deferred further
 
-- **`powermetrics` `COUNT` margin (§1.3).** The 192s base estimate (6×4×(3s+5s)) plus
-  model-load time plus "a margin" is still an open, unfixed quantity — carried over
-  unresolved from `HARNESS_PLAN.md` §6. This is not acceptable to leave open at amendment
-  time: too small a margin risks `powermetrics` exiting before a condition's last window
-  finishes (silently losing tail coverage, which this document's void rule for missing
-  live arrivals would then correctly catch — but only by voiding conditions, not by
-  getting the margin right in the first place); too large wastes session wall-clock time
-  against the 180-minute per-condition uptime limit. A specific numeric margin, derived
-  from measured condition-duration variance (not guessed), must be fixed before the dated
-  amendment this design otherwise feeds into.
+- **`powermetrics` `COUNT` margin (§1.3) — RESOLVED.** Now
+  `COUNT = ceil(expected_duration_s / 0.405) + 5`, derived from the measured mean actual
+  sample interval (410.36ms, not the nominal 400ms) in the Test 2 duty-cycle calibration
+  run (`calibration/m1_thermal_20261104/`). No longer an open item.
 - The `time.perf_counter()` cross-process comparability pre-check (§1.5) must be run, and
   its result (direct comparison vs wall-clock fallback) must be known, before the
   separate-process P2 design can be implemented as written.

@@ -1,0 +1,8 @@
+{
+  "arch": "resnet18",
+  "condition": "fp32_ts",
+  "engine_logged": null,
+  "outfile": "/var/gai-powermetrics/thermalcal_fp32_ts_20261103T183609Z_72753.txt",
+  "n_windows": 180,
+  "n_samples": 2700
+}
