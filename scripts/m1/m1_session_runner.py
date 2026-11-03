@@ -236,8 +236,13 @@ def run_m1_session(
                 out_dir=cond_out,
                 checkpoints_dir=checkpoints_dir,
             )
-            # Evaluate thermal or condition flags returned by runner
-            if isinstance(res, dict) and res.get('thermal_flagged'):
+            # Evaluate thermal or condition flags returned by runner or windows.csv
+            csv_path = cond_out / 'windows.csv'
+            if csv_path.exists():
+                from m1_pipeline import check_condition_thermal_flags
+                if check_condition_thermal_flags(csv_path):
+                    flagged = True
+            elif isinstance(res, dict) and res.get('thermal_flagged'):
                 flagged = True
         except Exception as e:
             crashed = True

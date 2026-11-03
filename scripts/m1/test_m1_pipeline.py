@@ -8,13 +8,25 @@ Verifies:
 5. Exact energy conservation via overlap-splitting across all phases.
 6. Time shift adjustment (e.g. -15 ms) effect on interval placement.
 """
+import csv
+import json
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from m1_pipeline import WindowPhase, process_condition_energy, summarize_condition
+from m1_pipeline import (
+    WindowPhase,
+    check_condition_thermal_flags,
+    evaluate_window_thermal_flag,
+    process_condition_energy,
+    read_thermal_thresholds_m1,
+    summarize_condition,
+    write_windows_csv,
+)
 
 
 class TestM1Pipeline(unittest.TestCase):
@@ -148,6 +160,166 @@ class TestM1Pipeline(unittest.TestCase):
         # Verify both runs produce valid energies within tight tolerance
         for ru, rs in zip(rows_unshifted, rows_shifted):
             self.assertAlmostEqual(ru['energy_j'], rs['energy_j'], delta=0.1)
+
+    def test_read_thermal_thresholds_m1_valid(self):
+        config = read_thermal_thresholds_m1()
+        self.assertAlmostEqual(config['T_mhz'], 2881.11, places=2)
+        self.assertEqual(config['rule_version'], 'm1-v1')
+        self.assertEqual(config['source'], 'calibration/m1_thermal_calibration_20261104')
+        self.assertEqual(config['metric'], 'pcore_mean_freq_mhz')
+        self.assertEqual(config['flag_rule'], 'window_mean_below_T')
+
+    def test_read_thermal_thresholds_m1_invalid(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_p = Path(tmpdir) / 'bad.json'
+            
+            # Missing file
+            with self.assertRaises(RuntimeError):
+                read_thermal_thresholds_m1(Path(tmpdir) / 'nonexistent.json')
+
+            # Invalid T_mhz
+            tmp_p.write_text(json.dumps({'T_mhz': -10, 'rule_version': 'm1-v1', 'source': 's', 'metric': 'pcore_mean_freq_mhz', 'flag_rule': 'window_mean_below_T'}))
+            with self.assertRaises(RuntimeError):
+                read_thermal_thresholds_m1(tmp_p)
+
+            # Invalid rule_version
+            tmp_p.write_text(json.dumps({'T_mhz': 2881.11, 'rule_version': 'v1', 'source': 's', 'metric': 'pcore_mean_freq_mhz', 'flag_rule': 'window_mean_below_T'}))
+            with self.assertRaises(RuntimeError):
+                read_thermal_thresholds_m1(tmp_p)
+
+            # Invalid metric
+            tmp_p.write_text(json.dumps({'T_mhz': 2881.11, 'rule_version': 'm1-v1', 'source': 's', 'metric': 'wrong_metric', 'flag_rule': 'window_mean_below_T'}))
+            with self.assertRaises(RuntimeError):
+                read_thermal_thresholds_m1(tmp_p)
+
+            # Invalid flag_rule
+            tmp_p.write_text(json.dumps({'T_mhz': 2881.11, 'rule_version': 'm1-v1', 'source': 's', 'metric': 'pcore_mean_freq_mhz', 'flag_rule': 'wrong_rule'}))
+            with self.assertRaises(RuntimeError):
+                read_thermal_thresholds_m1(tmp_p)
+
+    def test_evaluate_window_thermal_flag_rules(self):
+        T = 2881.11
+        # a1, repeat > 0, freq < T -> 'True'
+        self.assertEqual(evaluate_window_thermal_flag(2700.0, 'a1', 1, T), 'True')
+        # a2, repeat > 0, freq >= T -> 'False'
+        self.assertEqual(evaluate_window_thermal_flag(3204.0, 'a2', 2, T), 'False')
+        # cold repeat (repeat == 0) -> None
+        self.assertIsNone(evaluate_window_thermal_flag(2500.0, 'a1', 0, T))
+        self.assertIsNone(evaluate_window_thermal_flag(3204.0, 'a2', 0, T))
+        # idle phases -> None
+        self.assertIsNone(evaluate_window_thermal_flag(2500.0, 'idle_before', 1, T))
+        self.assertIsNone(evaluate_window_thermal_flag(2500.0, 'idle_after', 1, T))
+        # active window with repeat > 0 missing frequency -> empty string (triggers error on condition check)
+        self.assertEqual(evaluate_window_thermal_flag(None, 'a1', 1, T), '')
+
+    def test_real_throttled_int8_plateau_window_is_flagged(self):
+        """A real throttled INT8 plateau window from calibration data must be flagged."""
+        int8_file = Path('/home/shohan/thermal_extended_results/test1_int8/windows.json')
+        if not int8_file.exists():
+            int8_file = Path('/home/shohan/m1_thermal_calibration_results/resnet18_int8/windows.json')
+        
+        self.assertTrue(int8_file.exists(), f"Calibration file {int8_file} must exist")
+        windows = json.loads(int8_file.read_text())
+        # Window 100 is in the throttled plateau (~2650-2750 MHz)
+        throttled_w = windows[100]
+        pcore_freq = throttled_w['p47_mean_mhz']
+        self.assertLess(pcore_freq, 2881.11, "Throttled plateau window must be below T=2881.11 MHz")
+
+        flag = evaluate_window_thermal_flag(pcore_freq, phase='a1', repeat=1, threshold_t_mhz=2881.11)
+        self.assertEqual(flag, 'True', "Real throttled INT8 window must evaluate to thermal_flag='True'")
+
+    def test_real_duty_cycle_window_is_not_flagged(self):
+        """A real duty-cycle active window from calibration data must NOT be flagged."""
+        duty_file = Path('/home/shohan/thermal_extended_results/test2_dutycycle/active_windows.json')
+        self.assertTrue(duty_file.exists(), f"Calibration file {duty_file} must exist")
+        windows = json.loads(duty_file.read_text())
+        # Window 0 (or any window) is pegged at ~3204 MHz
+        nominal_w = windows[0]
+        pcore_freq = nominal_w['p47_mean_mhz']
+        self.assertGreaterEqual(pcore_freq, 2881.11, "Duty-cycle window must be >= T=2881.11 MHz")
+
+        flag = evaluate_window_thermal_flag(pcore_freq, phase='a1', repeat=1, threshold_t_mhz=2881.11)
+        self.assertEqual(flag, 'False', "Real duty-cycle active window must evaluate to thermal_flag='False'")
+
+    def test_check_condition_thermal_flags_voiding(self):
+        # Condition where all a1/a2 windows with repeat > 0 have thermal_flag='False' -> False (passed)
+        nominal_rows = [
+            {'phase': 'idle_before', 'repeat': 1, 'thermal_flag': 'None'},
+            {'phase': 'a1', 'repeat': 1, 'thermal_flag': 'False'},
+            {'phase': 'a2', 'repeat': 1, 'thermal_flag': 'False'},
+            {'phase': 'idle_after', 'repeat': 1, 'thermal_flag': 'None'},
+        ]
+        self.assertFalse(check_condition_thermal_flags(nominal_rows))
+
+        # Condition where one active window is flagged -> True (voided)
+        flagged_rows = [
+            {'phase': 'idle_before', 'repeat': 1, 'thermal_flag': 'None'},
+            {'phase': 'a1', 'repeat': 1, 'thermal_flag': 'False'},
+            {'phase': 'a2', 'repeat': 1, 'thermal_flag': 'True'},
+            {'phase': 'idle_after', 'repeat': 1, 'thermal_flag': 'None'},
+        ]
+        self.assertTrue(check_condition_thermal_flags(flagged_rows))
+
+        # Cold repeat 0 flagged does NOT void condition
+        cold_flagged_rows = [
+            {'phase': 'idle_before', 'repeat': 0, 'thermal_flag': 'None'},
+            {'phase': 'a1', 'repeat': 0, 'thermal_flag': 'True'},
+            {'phase': 'a2', 'repeat': 0, 'thermal_flag': 'True'},
+            {'phase': 'idle_after', 'repeat': 0, 'thermal_flag': 'None'},
+            {'phase': 'a1', 'repeat': 1, 'thermal_flag': 'False'},
+            {'phase': 'a2', 'repeat': 1, 'thermal_flag': 'False'},
+        ]
+        self.assertFalse(check_condition_thermal_flags(cold_flagged_rows))
+
+    def test_missing_evaluation_raises(self):
+        # Missing evaluation (empty string or None on repeat > 0 a1/a2) must raise RuntimeError
+        missing_rows = [
+            {'phase': 'a1', 'repeat': 1, 'thermal_flag': ''},
+        ]
+        with self.assertRaises(RuntimeError) as ctx:
+            check_condition_thermal_flags(missing_rows)
+        self.assertIn('Evaluation missing (empty thermal_flag)', str(ctx.exception))
+
+        missing_col_rows = [
+            {'phase': 'a1', 'repeat': 1},
+        ]
+        with self.assertRaises(RuntimeError) as ctx:
+            check_condition_thermal_flags(missing_col_rows)
+        self.assertIn('Evaluation missing (empty thermal_flag)', str(ctx.exception))
+
+        # In CSV format:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / 'windows.csv'
+            
+            # Missing thermal_flag column
+            with open(csv_path, 'w', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=['phase', 'repeat'])
+                writer.writeheader()
+                writer.writerow({'phase': 'a1', 'repeat': '1'})
+            with self.assertRaises(RuntimeError) as ctx:
+                check_condition_thermal_flags(csv_path)
+            self.assertIn('thermal_flag column missing', str(ctx.exception))
+
+            # Empty thermal_flag in CSV
+            with open(csv_path, 'w', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=['phase', 'repeat', 'thermal_flag'])
+                writer.writeheader()
+                writer.writerow({'phase': 'a1', 'repeat': '1', 'thermal_flag': ''})
+            with self.assertRaises(RuntimeError) as ctx:
+                check_condition_thermal_flags(csv_path)
+            self.assertIn('Evaluation missing (empty thermal_flag)', str(ctx.exception))
+
+    def test_write_windows_csv_roundtrip(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / 'windows.csv'
+            rows = [
+                {'phase': 'idle_before', 'repeat': 0, 'thermal_flag': 'None'},
+                {'phase': 'a1', 'repeat': 1, 'thermal_flag': 'False'},
+                {'phase': 'a2', 'repeat': 1, 'thermal_flag': 'False'},
+            ]
+            write_windows_csv(rows, csv_path)
+            self.assertTrue(csv_path.exists())
+            self.assertFalse(check_condition_thermal_flags(csv_path))
 
 
 if __name__ == '__main__':

@@ -1,0 +1,7 @@
+{
+  "T_mhz": 2881.11,
+  "rule_version": "m1-v1",
+  "source": "calibration/m1_thermal_calibration_20261104",
+  "metric": "pcore_mean_freq_mhz",
+  "flag_rule": "window_mean_below_T"
+}

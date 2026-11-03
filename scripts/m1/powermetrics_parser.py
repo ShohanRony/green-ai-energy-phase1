@@ -159,6 +159,21 @@ def _parse_sample_block(block_text: str, header_line: str, sample_index: int) ->
         raise MalformedPowermetricsError(f"Sample {sample_index}: Missing or malformed 'P-Cluster idle residency:'")
     sample['p_cluster_idle_residency_pct'] = float(m_pidle.group(1))
 
+    # 6. Per-CPU frequencies and P-core mean frequency
+    pcore_freqs = []
+    for c in range(4, 8):
+        m_c = re.search(rf'^CPU {c} frequency:\s*(\d+)\s*MHz', block_text, re.MULTILINE)
+        if m_c:
+            freq = int(m_c.group(1))
+            sample[f'cpu_{c}_freq_mhz'] = freq
+            pcore_freqs.append(freq)
+    if pcore_freqs:
+        sample['pcore_mean_freq_mhz'] = sum(pcore_freqs) / len(pcore_freqs)
+        sample['cpu4_7_mean_mhz'] = sample['pcore_mean_freq_mhz']
+    elif 'p_cluster_active_freq_mhz' in sample:
+        sample['pcore_mean_freq_mhz'] = float(sample['p_cluster_active_freq_mhz'])
+        sample['cpu4_7_mean_mhz'] = sample['pcore_mean_freq_mhz']
+
     return sample
 
 

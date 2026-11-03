@@ -5,10 +5,13 @@ and summarization to generate windows.csv and summary.json matching x86 pilot.py
 
 Spec: scripts/m1/HARNESS_PLAN.md sections 1, 4, 5; pilot.py summarize() logic.
 """
+import csv
+import json
 import math
 import statistics
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from powermetrics_parser import PowermetricsRun, split_energy_by_overlap
 
@@ -32,11 +35,133 @@ class WindowPhase:
         return max(0.0, self.end_t - self.start_t)
 
 
+def read_thermal_thresholds_m1(config_path: Optional[Union[str, Path]] = None) -> Dict[str, Any]:
+    """Read and validate M1 thermal thresholds configuration.
+    
+    Verifies:
+    - config/thermal_thresholds_m1.json exists
+    - T_mhz is a positive number
+    - rule_version == 'm1-v1'
+    - source is a non-empty string
+    - metric == 'pcore_mean_freq_mhz'
+    - flag_rule == 'window_mean_below_T'
+    """
+    if config_path is None:
+        config_path = Path(__file__).resolve().parent.parent.parent / 'config' / 'thermal_thresholds_m1.json'
+    else:
+        config_path = Path(config_path)
+
+    if not config_path.exists():
+        raise RuntimeError(f"M1 runs require config/thermal_thresholds_m1.json for thermal guard (not found at {config_path}).")
+
+    data = json.loads(config_path.read_text(encoding='utf-8'))
+    t_mhz = data.get('T_mhz')
+    version = data.get('rule_version')
+    source = data.get('source')
+    metric = data.get('metric')
+    flag_rule = data.get('flag_rule')
+
+    if not (isinstance(t_mhz, (int, float)) and t_mhz > 0):
+        raise RuntimeError("Invalid or missing T_mhz in thermal_thresholds_m1.json")
+    if version != "m1-v1":
+        raise RuntimeError("Invalid or missing rule_version in thermal_thresholds_m1.json (must be 'm1-v1')")
+    if not (isinstance(source, str) and source):
+        raise RuntimeError("Invalid or missing source in thermal_thresholds_m1.json")
+    if metric != "pcore_mean_freq_mhz":
+        raise RuntimeError("Invalid or missing metric in thermal_thresholds_m1.json (must be 'pcore_mean_freq_mhz')")
+    if flag_rule != "window_mean_below_T":
+        raise RuntimeError("Invalid or missing flag_rule in thermal_thresholds_m1.json (must be 'window_mean_below_T')")
+
+    return data
+
+
+def evaluate_window_thermal_flag(
+    pcore_freq_mhz: Optional[float],
+    phase: str,
+    repeat: int,
+    threshold_t_mhz: float,
+) -> Optional[str]:
+    """Evaluate thermal flag for a single window.
+    
+    Per frozen design: only a1/a2 phases with repeat > 0 are evaluated for throttling.
+    Returns 'True' if throttled (mean freq < T), 'False' if nominal (mean freq >= T),
+    or '' if active window with repeat > 0 is missing frequency data (triggers evaluation error).
+    Returns None for idle phases or cold repeat 0.
+    """
+    if phase in {"a1", "a2"} and repeat > 0:
+        if pcore_freq_mhz is None or math.isnan(pcore_freq_mhz):
+            return ""  # Missing evaluation -> triggers error when checked
+        return "True" if pcore_freq_mhz < threshold_t_mhz else "False"
+    return None
+
+
+def check_condition_thermal_flags(
+    rows_or_csv: Union[List[Dict[str, Any]], str, Path],
+    csv_path_for_err: Optional[str] = None,
+) -> bool:
+    """Evaluate whether any active measurement window in the condition was thermally flagged.
+    
+    Mirrors run_cpu_block_session.py:170-197:
+    - Checks only phases a1 and a2 with repeat > 0.
+    - Requires non-empty thermal_flag evaluation on all qualifying windows;
+      raises RuntimeError if evaluation is missing.
+    - Returns True if any window has thermal_flag == 'True' (condition voided).
+    - Returns False if all qualifying windows have thermal_flag == 'False'.
+    """
+    if isinstance(rows_or_csv, (str, Path)):
+        csv_path = Path(rows_or_csv)
+        if not csv_path.exists():
+            raise RuntimeError(f"windows.csv is missing in {csv_path.parent if csv_path.is_file() else csv_path}")
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            if 'thermal_flag' not in reader.fieldnames:
+                raise RuntimeError(f"thermal_flag column missing from {csv_path}")
+            for row in reader:
+                if row.get('phase') in {"a1", "a2"} and int(row.get('repeat', 0)) > 0:
+                    flag_val = row.get('thermal_flag', '')
+                    if not flag_val or flag_val == 'None':
+                        raise RuntimeError(f"Evaluation missing (empty thermal_flag) in {csv_path}")
+                    if flag_val == 'True':
+                        return True
+        return False
+
+    # List of dicts
+    for row in rows_or_csv:
+        phase = row.get('phase')
+        repeat = int(row.get('repeat', 0))
+        if phase in {"a1", "a2"} and repeat > 0:
+            if 'thermal_flag' not in row:
+                raise RuntimeError(f"Evaluation missing (empty thermal_flag) in {csv_path_for_err or 'windows'}")
+            flag_val = row.get('thermal_flag')
+            if flag_val is None or str(flag_val).strip() in ('', 'None'):
+                raise RuntimeError(f"Evaluation missing (empty thermal_flag) in {csv_path_for_err or 'windows'}")
+            if flag_val is True or str(flag_val).strip() == 'True':
+                return True
+    return False
+
+
+def write_windows_csv(rows: List[Dict[str, Any]], out_path: Union[str, Path]) -> None:
+    """Write window rows to windows.csv matching x86 format with thermal_flag."""
+    if not rows:
+        return
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(rows[0].keys())
+    if 'thermal_flag' not in fieldnames:
+        fieldnames.append('thermal_flag')
+    with open(out_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def process_condition_energy(
     parsed_samples: List[Dict[str, Any]],
     phase_windows: List[WindowPhase],
     time_shift_s: float = 0.0,
     power_key: str = 'cpu_power_mw',
+    thermal_thresholds: Optional[Dict[str, Any]] = None,
+    require_thermal_guard: bool = False,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Attribute powermetrics sample energy to phase windows via overlap-splitting.
     
@@ -46,6 +171,8 @@ def process_condition_energy(
         phase_windows: list of WindowPhase objects defining measurement windows.
         time_shift_s: time offset delta to apply to sample intervals (default 0.0).
         power_key: field name for power (default 'cpu_power_mw').
+        thermal_thresholds: optional thresholds dict from read_thermal_thresholds_m1.
+        require_thermal_guard: if True and thermal_thresholds is None, loads from config.
         
     Returns:
         (rows, summary_dict)
@@ -69,10 +196,19 @@ def process_condition_energy(
             start_t = end_t - dur
 
         power_val = float(s.get(power_key, 0.0))
+        freq_val = s.get('pcore_mean_freq_mhz')
+        if freq_val is None:
+            freq_val = s.get('cpu4_7_mean_mhz')
+        if freq_val is None:
+            freq_val = s.get('p_cluster_active_freq_mhz')
+        if freq_val is not None:
+            freq_val = float(freq_val)
+
         prepared_samples.append({
             'start': start_t,
             'end': end_t,
             'power': power_val,
+            'freq': freq_val,
         })
 
     # 2. Build window specs for overlap splitter
@@ -88,6 +224,11 @@ def process_condition_energy(
     split_res = split_energy_by_overlap(prepared_samples, window_specs, power_key='power')
     window_energies = split_res['window_energies']
 
+    # Load thermal thresholds if requested
+    t_thresh = thermal_thresholds
+    if t_thresh is None and require_thermal_guard:
+        t_thresh = read_thermal_thresholds_m1()
+
     # 4. Build per-window detailed rows
     rows = []
     for idx, w in enumerate(phase_windows):
@@ -96,6 +237,16 @@ def process_condition_energy(
         energy_j = energy_mj / 1000.0
         dur_s = w.duration_s
         mean_power_w = energy_j / dur_s if dur_s > 0 else 0.0
+
+        # Frequency attribution from overlapping samples
+        overlapping_freqs = [
+            ps['freq'] for ps in prepared_samples
+            if ps.get('freq') is not None and ps['end'] > w.start_t and ps['start'] < w.end_t
+        ]
+        pcore_mean_freq = (
+            sum(overlapping_freqs) / len(overlapping_freqs)
+            if overlapping_freqs else None
+        )
 
         row = {
             'device': w.device,
@@ -113,7 +264,16 @@ def process_condition_energy(
             'energy_j': energy_j,
             'mean_power_w': mean_power_w,
             'energy_mj': energy_mj,
+            'pcore_mean_freq_mhz': pcore_mean_freq,
+            'thermal_pcore_mean_freq_mhz': pcore_mean_freq,
         }
+
+        if t_thresh is not None:
+            t_mhz = t_thresh.get('T_mhz', 2881.11)
+            row['thermal_flag'] = evaluate_window_thermal_flag(
+                pcore_mean_freq, w.phase, w.repeat, t_mhz
+            )
+
         rows.append(row)
 
     # 5. Compute condition summary
@@ -124,6 +284,12 @@ def process_condition_energy(
         'outside_energy_j': split_res['outside_energy'] / 1000.0,
         'relative_discrepancy': split_res['relative_discrepancy'],
     }
+
+    if t_thresh is not None:
+        is_flagged = check_condition_thermal_flags(rows)
+        summary['thermal_flagged'] = is_flagged
+        summary['thermal_threshold_t_mhz'] = t_thresh.get('T_mhz', 2881.11)
+        summary['condition_voided'] = is_flagged
 
     return rows, summary
 
