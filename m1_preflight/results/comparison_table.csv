@@ -1,0 +1,28 @@
+model,state,status,m1_correct,x86_correct,diff_pp,b,c,mcnemar_p,class_diffs,rule_met,m1_pct_of_m1fp32,x86_pct_of_x86fp32,x86_file,x86_note
+resnet18,fp32_ts,OK,9309,9309,0.0,0,0,1.0,0,True,100.0,100.0,resnet18_fp32_cpu_preds.npy,CPU (x86 eager fp32 -- x86 has no TorchScript-specific preds file)
+resnet18,fp32,OK,9309,9309,0.0,0,0,1.0,0,True,100.0,100.0,resnet18_fp32_cpu_preds.npy,CPU
+resnet18,int8,OK,9320,9312,0.08,22,14,0.24298495403490966,40,False,100.1181652164572,100.0322268772156,resnet18_int8_preds.npy,"CPU (no _cpu suffix, but device=cpu per results_accuracy/summary.csv)"
+resnet18,pruned30,OK,6482,6482,0.0,0,0,1.0,0,True,69.63153937050167,69.63153937050167,resnet18_pruned30_cpu_preds.npy,CPU
+resnet18,pruned30_bnrecal,OK,8656,8656,0.0,0,0,1.0,0,True,92.98528305940489,92.98528305940489,resnet18_pruned30_bnrecal_preds.npy,CUDA (no x86 CPU variant exists for bnrecal states)
+resnet18,pruned50,OK,1761,1761,0.0,0,0,1.0,0,True,18.917176925555914,18.917176925555914,resnet18_pruned50_cpu_preds.npy,CPU
+resnet18,pruned50_bnrecal,OK,7101,7102,-0.01,0,1,1.0,1,True,76.28101836932001,76.29176066172522,resnet18_pruned50_bnrecal_preds.npy,CUDA (no x86 CPU variant exists for bnrecal states)
+resnet18,pruned70,OK,1035,1035,0.0,0,0,1.0,0,True,11.118272639381244,11.118272639381244,resnet18_pruned70_cpu_preds.npy,CPU
+resnet18,pruned70_bnrecal,OK,1713,1712,0.01,2,1,1.0,5,True,18.401546890106353,18.39080459770115,resnet18_pruned70_bnrecal_preds.npy,CUDA (no x86 CPU variant exists for bnrecal states)
+mobilenet_v3_small,fp32_ts,OK,8644,8644,0.0,0,0,1.0,0,True,100.0,100.0,mobilenet_v3_small_fp32_cpu_preds.npy,CPU (x86 eager fp32 -- x86 has no TorchScript-specific preds file)
+mobilenet_v3_small,fp32,OK,8644,8644,0.0,0,0,1.0,0,True,100.0,100.0,mobilenet_v3_small_fp32_cpu_preds.npy,CPU
+mobilenet_v3_small,int8,M1_FAILED,,,,,,,,,,,mobilenet_v3_small_int8_preds.npy,"CPU (no _cpu suffix, but device=cpu per results_accuracy/summary.csv)"
+mobilenet_v3_small,pruned30,OK,1716,1716,0.0,0,0,1.0,0,True,19.85192040721888,19.85192040721888,mobilenet_v3_small_pruned30_cpu_preds.npy,CPU
+mobilenet_v3_small,pruned30_bnrecal,OK,1894,1893,0.01,1,0,1.0,1,True,21.91115224433133,21.899583526145307,mobilenet_v3_small_pruned30_bnrecal_preds.npy,CUDA (no x86 CPU variant exists for bnrecal states)
+mobilenet_v3_small,pruned50,OK,1000,1000,0.0,0,0,1.0,0,True,11.56871818602499,11.56871818602499,mobilenet_v3_small_pruned50_cpu_preds.npy,CPU
+mobilenet_v3_small,pruned50_bnrecal,OK,1000,1000,0.0,0,0,1.0,0,True,11.56871818602499,11.56871818602499,mobilenet_v3_small_pruned50_bnrecal_preds.npy,CUDA (no x86 CPU variant exists for bnrecal states)
+mobilenet_v3_small,pruned70,OK,1000,1000,0.0,0,0,1.0,0,True,11.56871818602499,11.56871818602499,mobilenet_v3_small_pruned70_cpu_preds.npy,CPU
+mobilenet_v3_small,pruned70_bnrecal,OK,1000,1000,0.0,0,0,1.0,0,True,11.56871818602499,11.56871818602499,mobilenet_v3_small_pruned70_bnrecal_preds.npy,CUDA (no x86 CPU variant exists for bnrecal states)
+efficientnet_b0,fp32_ts,OK,8887,8887,0.0,0,0,1.0,0,True,100.0,100.0,efficientnet_b0_fp32_cpu_preds.npy,CPU (x86 eager fp32 -- x86 has no TorchScript-specific preds file)
+efficientnet_b0,fp32,OK,8887,8887,0.0,0,0,1.0,0,True,100.0,100.0,efficientnet_b0_fp32_cpu_preds.npy,CPU
+efficientnet_b0,int8,OK,8711,8718,-0.06999999999999999,127,134,0.7104231877880328,312,False,98.01957916057161,98.09834589850342,efficientnet_b0_int8_preds.npy,"CPU (no _cpu suffix, but device=cpu per results_accuracy/summary.csv)"
+efficientnet_b0,pruned30,OK,6030,6030,0.0,0,0,1.0,0,True,67.85191853268819,67.85191853268819,efficientnet_b0_pruned30_cpu_preds.npy,CPU
+efficientnet_b0,pruned30_bnrecal,OK,7809,7811,-0.02,0,2,0.5,2,True,87.86992235850119,87.89242714076741,efficientnet_b0_pruned30_bnrecal_preds.npy,CUDA (no x86 CPU variant exists for bnrecal states)
+efficientnet_b0,pruned50,OK,1333,1333,0.0,0,0,1.0,0,True,14.999437380443343,14.999437380443343,efficientnet_b0_pruned50_cpu_preds.npy,CPU
+efficientnet_b0,pruned50_bnrecal,OK,4628,4628,0.0,0,0,1.0,4,True,52.07606616405987,52.07606616405987,efficientnet_b0_pruned50_bnrecal_preds.npy,CUDA (no x86 CPU variant exists for bnrecal states)
+efficientnet_b0,pruned70,OK,1000,1000,0.0,0,0,1.0,0,True,11.252391133115786,11.252391133115786,efficientnet_b0_pruned70_cpu_preds.npy,CPU
+efficientnet_b0,pruned70_bnrecal,OK,1010,1010,0.0,0,0,1.0,0,True,11.364915044446946,11.364915044446946,efficientnet_b0_pruned70_bnrecal_preds.npy,CUDA (no x86 CPU variant exists for bnrecal states)

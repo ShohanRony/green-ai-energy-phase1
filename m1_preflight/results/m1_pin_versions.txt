@@ -1,0 +1,33 @@
+Green AI Phase 1 — exact versions used in Stage 5 (for M1 Mac pinning)
+Source: /home/shohan/green-ai-research/green-ai-energy-phase1
+Cross-checked: requirements.txt vs pip freeze in /home/shohan/green-ai-research/measurement_env
+             vs results_stage5/cpu/session_01/resnet18_fp32_eager/environment.json
+
+python          == 3.12.3   (from measurement_env/pyvenv.cfg; NOT pinned in requirements.txt)
+torch           == 2.7.1+cu118   (confirmed in environment.json; note: +cu118 build tag is CUDA-specific, irrelevant/unusable on Mac — use plain 2.7.1 arm64 wheel)
+torchvision     == 0.22.1+cu118  (confirmed in environment.json; same +cu118 caveat)
+torch-pruning   == 1.6.1
+numpy           == 2.5.2
+scipy           == 1.18.1   (NOT pinned in requirements.txt — only visible via pip freeze)
+pandas          == 3.0.5    (NOT pinned in requirements.txt — only visible via pip freeze)
+psutil          == 7.2.2    (NOT pinned in requirements.txt — only visible via pip freeze)
+pynvml          == 13.0.1   (NOT pinned in requirements.txt — only visible via pip freeze; NVIDIA-only, meaningless on Mac/no NVIDIA GPU)
+nvidia-ml-py    == 13.610.43 (NOT pinned by this exact name's version check vs pynvml separately; NVIDIA-only, meaningless on Mac)
+codecarbon      == 3.3.1
+
+Extra package present in venv, not in requirements.txt, not requested for pinning:
+torchaudio      == 2.7.1+cu118 (installed alongside torch/torchvision, unused by this benchmark as far as requirements.txt shows)
+
+DISAGREEMENT FOUND: requirements.txt pins only 6 packages (torch, torchvision, numpy,
+nvidia-ml-py, codecarbon, torch-pruning). scipy, pandas, psutil, pynvml, and torchaudio
+are installed in the actual Stage 5 venv but are absent from requirements.txt — i.e.
+requirements.txt is incomplete relative to what pip freeze shows was actually used.
+For the 6 packages requirements.txt does pin, versions match pip freeze exactly —
+no version conflicts, only omissions.
+
+Mac-specific note: torch/torchvision +cu118 build tags do not exist for macOS/arm64.
+On the Mac, install plain torch==2.7.1 / torchvision==0.22.1 (CPU/MPS arm64 wheels),
+not the +cu118 variant.
+
+torch-pruning installed on laptop: 1.6.0
+torch-pruning requirements.txt: 1.6.1 (provenance of the version used to build the pruned checkpoints: unknown)

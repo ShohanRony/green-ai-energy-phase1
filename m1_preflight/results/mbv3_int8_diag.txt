@@ -1,0 +1,1260 @@
+======================================================================
+STEP 1: ENVIRONMENT
+======================================================================
+torch.__version__: 2.7.1
+torch.backends.quantized.supported_engines (before): ['qnnpack', 'none']
+torch.backends.quantized.engine (before): none
+torch.backends.quantized.engine (after setting qnnpack): qnnpack
+torch.get_num_threads(): 4
+
+======================================================================
+STEP 2: INTEGRITY
+======================================================================
+shasum -a 256 computed here: 8eaa78bf02f8f57666a76d06dedabad74d0f0d070d3705de14c5ce678495adb7  /Users/shohan/green-ai-m1/repo/checkpoints/mobilenet_v3_small_int8.pt
+Line from ~/m1_checkpoint_hashes.txt: 8eaa78bf02f8f57666a76d06dedabad74d0f0d070d3705de14c5ce678495adb7  checkpoints/mobilenet_v3_small_int8.pt
+Match: True
+
+======================================================================
+STEP 3: LOAD TEST
+======================================================================
+torch.jit.load: SUCCESS
+
+======================================================================
+STEP 5: CONTROL (resnet18_int8.pt, efficientnet_b0_int8.pt), same session, qnnpack, torch.randn(1,3,32,32)
+======================================================================
+resnet18_int8.pt: SUCCESS, output shape (1, 10)
+efficientnet_b0_int8.pt: SUCCESS, output shape (1, 10)
+
+======================================================================
+STEP 6: LOCATE FAILING OPERATOR (read-only graph inspection)
+======================================================================
+--- model.code (full) ---
+def forward(self,
+    x: Tensor) -> Tensor:
+  features_0_0_input_scale_0 = self.features_0_0_input_scale_0
+  features_0_0_input_zero_point_0 = self.features_0_0_input_zero_point_0
+  quantize_per_tensor = torch.quantize_per_tensor(x, features_0_0_input_scale_0, features_0_0_input_zero_point_0, 13)
+  features = self.features
+  _0 = getattr(features, "0")
+  _00 = getattr(_0, "0")
+  features_0_0 = (_00).forward(quantize_per_tensor, )
+  features0 = self.features
+  _01 = getattr(features0, "0")
+  _2 = getattr(_01, "2")
+  features_0_2 = (_2).forward(features_0_0, )
+  features1 = self.features
+  _1 = getattr(features1, "1")
+  block = _1.block
+  _02 = getattr(block, "0")
+  _03 = getattr(_02, "0")
+  features_1_block_0_0 = (_03).forward(features_0_2, )
+  features2 = self.features
+  _10 = getattr(features2, "1")
+  block0 = _10.block
+  _11 = getattr(block0, "1")
+  avgpool = _11.avgpool
+  features_1_block_1_avgpool = (avgpool).forward(features_1_block_0_0, )
+  features3 = self.features
+  _12 = getattr(features3, "1")
+  block1 = _12.block
+  _13 = getattr(block1, "1")
+  fc1 = _13.fc1
+  features_1_block_1_fc1 = (fc1).forward(features_1_block_1_avgpool, )
+  features4 = self.features
+  _14 = getattr(features4, "1")
+  block2 = _14.block
+  _15 = getattr(block2, "1")
+  fc2 = _15.fc2
+  features_1_block_1_fc2 = (fc2).forward(features_1_block_1_fc1, )
+  features5 = self.features
+  _16 = getattr(features5, "1")
+  block3 = _16.block
+  _17 = getattr(block3, "1")
+  scale_activation = _17.scale_activation
+  features_1_block_1_scale_activation = (scale_activation).forward(features_1_block_1_fc2, )
+  features_1_block_1_scale_0 = self.features_1_block_1_scale_0
+  features_1_block_1_zero_point_0 = self.features_1_block_1_zero_point_0
+  _4 = annotate(float, features_1_block_1_scale_0)
+  _8 = annotate(int, features_1_block_1_zero_point_0)
+  mul_9 = ops.quantized.mul(features_1_block_1_scale_activation, features_1_block_0_0, _4, _8)
+  features6 = self.features
+  _19 = getattr(features6, "1")
+  block4 = _19.block
+  _20 = getattr(block4, "2")
+  _05 = getattr(_20, "0")
+  features_1_block_2_0 = (_05).forward(mul_9, )
+  features7 = self.features
+  _21 = getattr(features7, "2")
+  block5 = _21.block
+  _06 = getattr(block5, "0")
+  _07 = getattr(_06, "0")
+  features_2_block_0_0 = (_07).forward(features_1_block_2_0, )
+  features8 = self.features
+  _22 = getattr(features8, "2")
+  block6 = _22.block
+  _110 = getattr(block6, "1")
+  _08 = getattr(_110, "0")
+  features_2_block_1_0 = (_08).forward(features_2_block_0_0, )
+  features9 = self.features
+  _23 = getattr(features9, "2")
+  block7 = _23.block
+  _24 = getattr(block7, "2")
+  _09 = getattr(_24, "0")
+  features_2_block_2_0 = (_09).forward(features_2_block_1_0, )
+  features10 = self.features
+  _3 = getattr(features10, "3")
+  block8 = _3.block
+  _010 = getattr(block8, "0")
+  _011 = getattr(_010, "0")
+  features_3_block_0_0 = (_011).forward(features_2_block_2_0, )
+  features11 = self.features
+  _30 = getattr(features11, "3")
+  block9 = _30.block
+  _111 = getattr(block9, "1")
+  _012 = getattr(_111, "0")
+  features_3_block_1_0 = (_012).forward(features_3_block_0_0, )
+  features12 = self.features
+  _31 = getattr(features12, "3")
+  block10 = _31.block
+  _25 = getattr(block10, "2")
+  _013 = getattr(_25, "0")
+  features_3_block_2_0 = (_013).forward(features_3_block_1_0, )
+  features_3_scale_0 = self.features_3_scale_0
+  features_3_zero_point_0 = self.features_3_zero_point_0
+  _6 = annotate(float, features_3_scale_0)
+  _7 = annotate(int, features_3_zero_point_0)
+  add_6 = ops.quantized.add(features_3_block_2_0, features_2_block_2_0, _6, _7)
+  features13 = self.features
+  _40 = getattr(features13, "4")
+  block11 = _40.block
+  _014 = getattr(block11, "0")
+  _015 = getattr(_014, "0")
+  features_4_block_0_0 = (_015).forward(add_6, )
+  features14 = self.features
+  _41 = getattr(features14, "4")
+  block12 = _41.block
+  _016 = getattr(block12, "0")
+  _28 = getattr(_016, "2")
+  features_4_block_0_2 = (_28).forward(features_4_block_0_0, )
+  features15 = self.features
+  _42 = getattr(features15, "4")
+  block13 = _42.block
+  _112 = getattr(block13, "1")
+  _017 = getattr(_112, "0")
+  features_4_block_1_0 = (_017).forward(features_4_block_0_2, )
+  features16 = self.features
+  _43 = getattr(features16, "4")
+  block14 = _43.block
+  _113 = getattr(block14, "1")
+  _29 = getattr(_113, "2")
+  features_4_block_1_2 = (_29).forward(features_4_block_1_0, )
+  features17 = self.features
+  _44 = getattr(features17, "4")
+  block15 = _44.block
+  _210 = getattr(block15, "2")
+  avgpool0 = _210.avgpool
+  features_4_block_2_avgpool = (avgpool0).forward(features_4_block_1_2, )
+  features18 = self.features
+  _45 = getattr(features18, "4")
+  block16 = _45.block
+  _211 = getattr(block16, "2")
+  fc10 = _211.fc1
+  features_4_block_2_fc1 = (fc10).forward(features_4_block_2_avgpool, )
+  features19 = self.features
+  _46 = getattr(features19, "4")
+  block17 = _46.block
+  _212 = getattr(block17, "2")
+  fc20 = _212.fc2
+  features_4_block_2_fc2 = (fc20).forward(features_4_block_2_fc1, )
+  features20 = self.features
+  _47 = getattr(features20, "4")
+  block18 = _47.block
+  _213 = getattr(block18, "2")
+  scale_activation0 = _213.scale_activation
+  features_4_block_2_scale_activation = (scale_activation0).forward(features_4_block_2_fc2, )
+  features_4_block_2_scale_0 = self.features_4_block_2_scale_0
+  features_4_block_2_zero_point_0 = self.features_4_block_2_zero_point_0
+  _18 = annotate(float, features_4_block_2_scale_0)
+  _5 = annotate(int, features_4_block_2_zero_point_0)
+  mul_10 = ops.quantized.mul(features_4_block_2_scale_activation, features_4_block_1_2, _18, _5)
+  features21 = self.features
+  _49 = getattr(features21, "4")
+  block19 = _49.block
+  _33 = getattr(block19, "3")
+  _019 = getattr(_33, "0")
+  features_4_block_3_0 = (_019).forward(mul_10, )
+  features22 = self.features
+  _50 = getattr(features22, "5")
+  block20 = _50.block
+  _020 = getattr(block20, "0")
+  _021 = getattr(_020, "0")
+  features_5_block_0_0 = (_021).forward(features_4_block_3_0, )
+  features23 = self.features
+  _51 = getattr(features23, "5")
+  block21 = _51.block
+  _022 = getattr(block21, "0")
+  _214 = getattr(_022, "2")
+  features_5_block_0_2 = (_214).forward(features_5_block_0_0, )
+  features24 = self.features
+  _52 = getattr(features24, "5")
+  block22 = _52.block
+  _114 = getattr(block22, "1")
+  _023 = getattr(_114, "0")
+  features_5_block_1_0 = (_023).forward(features_5_block_0_2, )
+  features25 = self.features
+  _53 = getattr(features25, "5")
+  block23 = _53.block
+  _115 = getattr(block23, "1")
+  _215 = getattr(_115, "2")
+  features_5_block_1_2 = (_215).forward(features_5_block_1_0, )
+  features26 = self.features
+  _54 = getattr(features26, "5")
+  block24 = _54.block
+  _216 = getattr(block24, "2")
+  avgpool1 = _216.avgpool
+  features_5_block_2_avgpool = (avgpool1).forward(features_5_block_1_2, )
+  features27 = self.features
+  _55 = getattr(features27, "5")
+  block25 = _55.block
+  _217 = getattr(block25, "2")
+  fc11 = _217.fc1
+  features_5_block_2_fc1 = (fc11).forward(features_5_block_2_avgpool, )
+  features28 = self.features
+  _56 = getattr(features28, "5")
+  block26 = _56.block
+  _218 = getattr(block26, "2")
+  fc21 = _218.fc2
+  features_5_block_2_fc2 = (fc21).forward(features_5_block_2_fc1, )
+  features29 = self.features
+  _57 = getattr(features29, "5")
+  block27 = _57.block
+  _219 = getattr(block27, "2")
+  scale_activation1 = _219.scale_activation
+  features_5_block_2_scale_activation = (scale_activation1).forward(features_5_block_2_fc2, )
+  features_5_block_2_scale_0 = self.features_5_block_2_scale_0
+  features_5_block_2_zero_point_0 = self.features_5_block_2_zero_point_0
+  _26 = annotate(float, features_5_block_2_scale_0)
+  _27 = annotate(int, features_5_block_2_zero_point_0)
+  mul_11 = ops.quantized.mul(features_5_block_2_scale_activation, features_5_block_1_2, _26, _27)
+  features30 = self.features
+  _58 = getattr(features30, "5")
+  block28 = _58.block
+  _34 = getattr(block28, "3")
+  _028 = getattr(_34, "0")
+  features_5_block_3_0 = (_028).forward(mul_11, )
+  features_5_scale_0 = self.features_5_scale_0
+  features_5_zero_point_0 = self.features_5_zero_point_0
+  _32 = annotate(float, features_5_scale_0)
+  _9 = annotate(int, features_5_zero_point_0)
+  add_7 = ops.quantized.add(features_5_block_3_0, features_4_block_3_0, _32, _9)
+  features31 = self.features
+  _61 = getattr(features31, "6")
+  block29 = _61.block
+  _033 = getattr(block29, "0")
+  _034 = getattr(_033, "0")
+  features_6_block_0_0 = (_034).forward(add_7, )
+  features32 = self.features
+  _62 = getattr(features32, "6")
+  block30 = _62.block
+  _035 = getattr(block30, "0")
+  _220 = getattr(_035, "2")
+  features_6_block_0_2 = (_220).forward(features_6_block_0_0, )
+  features33 = self.features
+  _63 = getattr(features33, "6")
+  block31 = _63.block
+  _117 = getattr(block31, "1")
+  _036 = getattr(_117, "0")
+  features_6_block_1_0 = (_036).forward(features_6_block_0_2, )
+  features34 = self.features
+  _64 = getattr(features34, "6")
+  block32 = _64.block
+  _118 = getattr(block32, "1")
+  _221 = getattr(_118, "2")
+  features_6_block_1_2 = (_221).forward(features_6_block_1_0, )
+  features35 = self.features
+  _65 = getattr(features35, "6")
+  block33 = _65.block
+  _222 = getattr(block33, "2")
+  avgpool2 = _222.avgpool
+  features_6_block_2_avgpool = (avgpool2).forward(features_6_block_1_2, )
+  features36 = self.features
+  _66 = getattr(features36, "6")
+  block34 = _66.block
+  _223 = getattr(block34, "2")
+  fc12 = _223.fc1
+  features_6_block_2_fc1 = (fc12).forward(features_6_block_2_avgpool, )
+  features37 = self.features
+  _67 = getattr(features37, "6")
+  block35 = _67.block
+  _224 = getattr(block35, "2")
+  fc22 = _224.fc2
+  features_6_block_2_fc2 = (fc22).forward(features_6_block_2_fc1, )
+  features38 = self.features
+  _68 = getattr(features38, "6")
+  block36 = _68.block
+  _225 = getattr(block36, "2")
+  scale_activation2 = _225.scale_activation
+  features_6_block_2_scale_activation = (scale_activation2).forward(features_6_block_2_fc2, )
+  features_6_block_2_scale_0 = self.features_6_block_2_scale_0
+  features_6_block_2_zero_point_0 = self.features_6_block_2_zero_point_0
+  _37 = annotate(float, features_6_block_2_scale_0)
+  _38 = annotate(int, features_6_block_2_zero_point_0)
+  mul_12 = ops.quantized.mul(features_6_block_2_scale_activation, features_6_block_1_2, _37, _38)
+  features39 = self.features
+  _69 = getattr(features39, "6")
+  block37 = _69.block
+  _35 = getattr(block37, "3")
+  _039 = getattr(_35, "0")
+  features_6_block_3_0 = (_039).forward(mul_12, )
+  features_6_scale_0 = self.features_6_scale_0
+  features_6_zero_point_0 = self.features_6_zero_point_0
+  _48 = annotate(float, features_6_scale_0)
+  _59 = annotate(int, features_6_zero_point_0)
+  add_8 = ops.quantized.add(features_6_block_3_0, add_7, _48, _59)
+  features40 = self.features
+  _71 = getattr(features40, "7")
+  block38 = _71.block
+  _060 = getattr(block38, "0")
+  _061 = getattr(_060, "0")
+  features_7_block_0_0 = (_061).forward(add_8, )
+  features41 = self.features
+  _72 = getattr(features41, "7")
+  block39 = _72.block
+  _062 = getattr(block39, "0")
+  _226 = getattr(_062, "2")
+  features_7_block_0_2 = (_226).forward(features_7_block_0_0, )
+  features42 = self.features
+  _73 = getattr(features42, "7")
+  block40 = _73.block
+  _119 = getattr(block40, "1")
+  _063 = getattr(_119, "0")
+  features_7_block_1_0 = (_063).forward(features_7_block_0_2, )
+  features43 = self.features
+  _74 = getattr(features43, "7")
+  block41 = _74.block
+  _120 = getattr(block41, "1")
+  _227 = getattr(_120, "2")
+  features_7_block_1_2 = (_227).forward(features_7_block_1_0, )
+  features44 = self.features
+  _75 = getattr(features44, "7")
+  block42 = _75.block
+  _228 = getattr(block42, "2")
+  avgpool3 = _228.avgpool
+  features_7_block_2_avgpool = (avgpool3).forward(features_7_block_1_2, )
+  features45 = self.features
+  _76 = getattr(features45, "7")
+  block43 = _76.block
+  _229 = getattr(block43, "2")
+  fc13 = _229.fc1
+  features_7_block_2_fc1 = (fc13).forward(features_7_block_2_avgpool, )
+  features46 = self.features
+  _77 = getattr(features46, "7")
+  block44 = _77.block
+  _230 = getattr(block44, "2")
+  fc23 = _230.fc2
+  features_7_block_2_fc2 = (fc23).forward(features_7_block_2_fc1, )
+  features47 = self.features
+  _78 = getattr(features47, "7")
+  block45 = _78.block
+  _231 = getattr(block45, "2")
+  scale_activation3 = _231.scale_activation
+  features_7_block_2_scale_activation = (scale_activation3).forward(features_7_block_2_fc2, )
+  features_7_block_2_scale_0 = self.features_7_block_2_scale_0
+  features_7_block_2_zero_point_0 = self.features_7_block_2_zero_point_0
+  _70 = annotate(float, features_7_block_2_scale_0)
+  _79 = annotate(int, features_7_block_2_zero_point_0)
+  mul_13 = ops.quantized.mul(features_7_block_2_scale_activation, features_7_block_1_2, _70, _79)
+  features48 = self.features
+  _710 = getattr(features48, "7")
+  block46 = _710.block
+  _36 = getattr(block46, "3")
+  _080 = getattr(_36, "0")
+  features_7_block_3_0 = (_080).forward(mul_13, )
+  features49 = self.features
+  _82 = getattr(features49, "8")
+  block47 = _82.block
+  _081 = getattr(block47, "0")
+  _082 = getattr(_081, "0")
+  features_8_block_0_0 = (_082).forward(features_7_block_3_0, )
+  features50 = self.features
+  _83 = getattr(features50, "8")
+  block48 = _83.block
+  _083 = getattr(block48, "0")
+  _232 = getattr(_083, "2")
+  features_8_block_0_2 = (_232).forward(features_8_block_0_0, )
+  features51 = self.features
+  _84 = getattr(features51, "8")
+  block49 = _84.block
+  _121 = getattr(block49, "1")
+  _084 = getattr(_121, "0")
+  features_8_block_1_0 = (_084).forward(features_8_block_0_2, )
+  features52 = self.features
+  _85 = getattr(features52, "8")
+  block50 = _85.block
+  _122 = getattr(block50, "1")
+  _233 = getattr(_122, "2")
+  features_8_block_1_2 = (_233).forward(features_8_block_1_0, )
+  features53 = self.features
+  _86 = getattr(features53, "8")
+  block51 = _86.block
+  _234 = getattr(block51, "2")
+  avgpool4 = _234.avgpool
+  features_8_block_2_avgpool = (avgpool4).forward(features_8_block_1_2, )
+  features54 = self.features
+  _87 = getattr(features54, "8")
+  block52 = _87.block
+  _235 = getattr(block52, "2")
+  fc14 = _235.fc1
+  features_8_block_2_fc1 = (fc14).forward(features_8_block_2_avgpool, )
+  features55 = self.features
+  _88 = getattr(features55, "8")
+  block53 = _88.block
+  _236 = getattr(block53, "2")
+  fc24 = _236.fc2
+  features_8_block_2_fc2 = (fc24).forward(features_8_block_2_fc1, )
+  features56 = self.features
+  _89 = getattr(features56, "8")
+  block54 = _89.block
+  _237 = getattr(block54, "2")
+  scale_activation4 = _237.scale_activation
+  features_8_block_2_scale_activation = (scale_activation4).forward(features_8_block_2_fc2, )
+  features_8_block_2_scale_0 = self.features_8_block_2_scale_0
+  features_8_block_2_zero_point_0 = self.features_8_block_2_zero_point_0
+  _90 = annotate(float, features_8_block_2_scale_0)
+  _91 = annotate(int, features_8_block_2_zero_point_0)
+  mul_14 = ops.quantized.mul(features_8_block_2_scale_activation, features_8_block_1_2, _90, _91)
+  features57 = self.features
+  _810 = getattr(features57, "8")
+  block55 = _810.block
+  _39 = getattr(block55, "3")
+  _092 = getattr(_39, "0")
+  features_8_block_3_0 = (_092).forward(mul_14, )
+  features_8_scale_0 = self.features_8_scale_0
+  features_8_zero_point_0 = self.features_8_zero_point_0
+  _93 = annotate(float, features_8_scale_0)
+  _94 = annotate(int, features_8_zero_point_0)
+  add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+  features58 = self.features
+  _92 = getattr(features58, "9")
+  block56 = _92.block
+  _095 = getattr(block56, "0")
+  _096 = getattr(_095, "0")
+  features_9_block_0_0 = (_096).forward(add_9, )
+  features59 = self.features
+  _95 = getattr(features59, "9")
+  block57 = _95.block
+  _097 = getattr(block57, "0")
+  _238 = getattr(_097, "2")
+  features_9_block_0_2 = (_238).forward(features_9_block_0_0, )
+  features60 = self.features
+  _96 = getattr(features60, "9")
+  block58 = _96.block
+  _124 = getattr(block58, "1")
+  _098 = getattr(_124, "0")
+  features_9_block_1_0 = (_098).forward(features_9_block_0_2, )
+  features61 = self.features
+  _97 = getattr(features61, "9")
+  block59 = _97.block
+  _125 = getattr(block59, "1")
+  _239 = getattr(_125, "2")
+  features_9_block_1_2 = (_239).forward(features_9_block_1_0, )
+  features62 = self.features
+  _98 = getattr(features62, "9")
+  block60 = _98.block
+  _240 = getattr(block60, "2")
+  avgpool5 = _240.avgpool
+  features_9_block_2_avgpool = (avgpool5).forward(features_9_block_1_2, )
+  features63 = self.features
+  _99 = getattr(features63, "9")
+  block61 = _99.block
+  _241 = getattr(block61, "2")
+  fc15 = _241.fc1
+  features_9_block_2_fc1 = (fc15).forward(features_9_block_2_avgpool, )
+  features64 = self.features
+  _910 = getattr(features64, "9")
+  block62 = _910.block
+  _242 = getattr(block62, "2")
+  fc25 = _242.fc2
+  features_9_block_2_fc2 = (fc25).forward(features_9_block_2_fc1, )
+  features65 = self.features
+  _911 = getattr(features65, "9")
+  block63 = _911.block
+  _243 = getattr(block63, "2")
+  scale_activation5 = _243.scale_activation
+  features_9_block_2_scale_activation = (scale_activation5).forward(features_9_block_2_fc2, )
+  features_9_block_2_scale_0 = self.features_9_block_2_scale_0
+  features_9_block_2_zero_point_0 = self.features_9_block_2_zero_point_0
+  _100 = annotate(float, features_9_block_2_scale_0)
+  _101 = annotate(int, features_9_block_2_zero_point_0)
+  mul_15 = ops.quantized.mul(features_9_block_2_scale_activation, features_9_block_1_2, _100, _101)
+  features66 = self.features
+  _912 = getattr(features66, "9")
+  block64 = _912.block
+  _310 = getattr(block64, "3")
+  _0102 = getattr(_310, "0")
+  features_9_block_3_0 = (_0102).forward(mul_15, )
+  features67 = self.features
+  _102 = getattr(features67, "10")
+  block65 = _102.block
+  _0103 = getattr(block65, "0")
+  _0104 = getattr(_0103, "0")
+  features_10_block_0_0 = (_0104).forward(features_9_block_3_0, )
+  features68 = self.features
+  _103 = getattr(features68, "10")
+  block66 = _103.block
+  _0105 = getattr(block66, "0")
+  _245 = getattr(_0105, "2")
+  features_10_block_0_2 = (_245).forward(features_10_block_0_0, )
+  features69 = self.features
+  _104 = getattr(features69, "10")
+  block67 = _104.block
+  _127 = getattr(block67, "1")
+  _0106 = getattr(_127, "0")
+  features_10_block_1_0 = (_0106).forward(features_10_block_0_2, )
+  features70 = self.features
+  _105 = getattr(features70, "10")
+  block68 = _105.block
+  _128 = getattr(block68, "1")
+  _246 = getattr(_128, "2")
+  features_10_block_1_2 = (_246).forward(features_10_block_1_0, )
+  features71 = self.features
+  _106 = getattr(features71, "10")
+  block69 = _106.block
+  _247 = getattr(block69, "2")
+  avgpool6 = _247.avgpool
+  features_10_block_2_avgpool = (avgpool6).forward(features_10_block_1_2, )
+  features72 = self.features
+  _107 = getattr(features72, "10")
+  block70 = _107.block
+  _248 = getattr(block70, "2")
+  fc16 = _248.fc1
+  features_10_block_2_fc1 = (fc16).forward(features_10_block_2_avgpool, )
+  features73 = self.features
+  _108 = getattr(features73, "10")
+  block71 = _108.block
+  _249 = getattr(block71, "2")
+  fc26 = _249.fc2
+  features_10_block_2_fc2 = (fc26).forward(features_10_block_2_fc1, )
+  features74 = self.features
+  _109 = getattr(features74, "10")
+  block72 = _109.block
+  _250 = getattr(block72, "2")
+  scale_activation6 = _250.scale_activation
+  features_10_block_2_scale_activation = (scale_activation6).forward(features_10_block_2_fc2, )
+  features_10_block_2_scale_0 = self.features_10_block_2_scale_0
+  features_10_block_2_zero_point_0 = self.features_10_block_2_zero_point_0
+  _116 = annotate(float, features_10_block_2_scale_0)
+  _60 = annotate(int, features_10_block_2_zero_point_0)
+  mul_16 = ops.quantized.mul(features_10_block_2_scale_activation, features_10_block_1_2, _116, _60)
+  features75 = self.features
+  _1013 = getattr(features75, "10")
+  block73 = _1013.block
+  _312 = getattr(block73, "3")
+  _0117 = getattr(_312, "0")
+  features_10_block_3_0 = (_0117).forward(mul_16, )
+  features_10_scale_0 = self.features_10_scale_0
+  features_10_zero_point_0 = self.features_10_zero_point_0
+  _123 = annotate(float, features_10_scale_0)
+  _126 = annotate(int, features_10_zero_point_0)
+  add_10 = ops.quantized.add(features_10_block_3_0, features_9_block_3_0, _123, _126)
+  features76 = self.features
+  _1110 = getattr(features76, "11")
+  block74 = _1110.block
+  _0127 = getattr(block74, "0")
+  _0128 = getattr(_0127, "0")
+  features_11_block_0_0 = (_0128).forward(add_10, )
+  features77 = self.features
+  _1111 = getattr(features77, "11")
+  block75 = _1111.block
+  _0129 = getattr(block75, "0")
+  _263 = getattr(_0129, "2")
+  features_11_block_0_2 = (_263).forward(features_11_block_0_0, )
+  features78 = self.features
+  _1112 = getattr(features78, "11")
+  block76 = _1112.block
+  _156 = getattr(block76, "1")
+  _0130 = getattr(_156, "0")
+  features_11_block_1_0 = (_0130).forward(features_11_block_0_2, )
+  features79 = self.features
+  _1113 = getattr(features79, "11")
+  block77 = _1113.block
+  _157 = getattr(block77, "1")
+  _264 = getattr(_157, "2")
+  features_11_block_1_2 = (_264).forward(features_11_block_1_0, )
+  features80 = self.features
+  _1114 = getattr(features80, "11")
+  block78 = _1114.block
+  _265 = getattr(block78, "2")
+  avgpool7 = _265.avgpool
+  features_11_block_2_avgpool = (avgpool7).forward(features_11_block_1_2, )
+  features81 = self.features
+  _1115 = getattr(features81, "11")
+  block79 = _1115.block
+  _266 = getattr(block79, "2")
+  fc17 = _266.fc1
+  features_11_block_2_fc1 = (fc17).forward(features_11_block_2_avgpool, )
+  features82 = self.features
+  _1116 = getattr(features82, "11")
+  block80 = _1116.block
+  _267 = getattr(block80, "2")
+  fc27 = _267.fc2
+  features_11_block_2_fc2 = (fc27).forward(features_11_block_2_fc1, )
+  features83 = self.features
+  _1117 = getattr(features83, "11")
+  block81 = _1117.block
+  _268 = getattr(block81, "2")
+  scale_activation7 = _268.scale_activation
+  features_11_block_2_scale_activation = (scale_activation7).forward(features_11_block_2_fc2, )
+  features_11_block_2_scale_0 = self.features_11_block_2_scale_0
+  features_11_block_2_zero_point_0 = self.features_11_block_2_zero_point_0
+  _131 = annotate(float, features_11_block_2_scale_0)
+  _132 = annotate(int, features_11_block_2_zero_point_0)
+  mul_17 = ops.quantized.mul(features_11_block_2_scale_activation, features_11_block_1_2, _131, _132)
+  features84 = self.features
+  _1118 = getattr(features84, "11")
+  block82 = _1118.block
+  _311 = getattr(block82, "3")
+  _0133 = getattr(_311, "0")
+  features_11_block_3_0 = (_0133).forward(mul_17, )
+  features_11_scale_0 = self.features_11_scale_0
+  features_11_zero_point_0 = self.features_11_zero_point_0
+  _134 = annotate(float, features_11_scale_0)
+  _80 = annotate(int, features_11_zero_point_0)
+  add_11 = ops.quantized.add(features_11_block_3_0, add_10, _134, _80)
+  features85 = self.features
+  _129 = getattr(features85, "12")
+  _0135 = getattr(_129, "0")
+  features_12_0 = (_0135).forward(add_11, )
+  features86 = self.features
+  _1210 = getattr(features86, "12")
+  _281 = getattr(_1210, "2")
+  features_12_2 = (_281).forward(features_12_0, )
+  avgpool8 = self.avgpool
+  avgpool9 = (avgpool8).forward(features_12_2, )
+  flatten = torch.flatten(avgpool9, 1)
+  classifier = self.classifier
+  _0136 = getattr(classifier, "0")
+  classifier_0 = (_0136).forward(flatten, )
+  classifier0 = self.classifier
+  _161 = getattr(classifier0, "1")
+  classifier_1 = (_161).forward(classifier_0, )
+  classifier1 = self.classifier
+  _282 = getattr(classifier1, "2")
+  classifier_2 = (_282).forward(classifier_1, )
+  classifier2 = self.classifier
+  _313 = getattr(classifier2, "3")
+  classifier_3 = (_313).forward(classifier_2, )
+  return torch.dequantize(classifier_3)
+
+--- end model.code ---
+
+Quantized ops found in model.code, in textual order:
+  [0] ops.quantized.mul
+  [1] ops.quantized.add
+  [2] ops.quantized.mul
+  [3] ops.quantized.mul
+  [4] ops.quantized.add
+  [5] ops.quantized.mul
+  [6] ops.quantized.add
+  [7] ops.quantized.mul
+  [8] ops.quantized.mul
+  [9] ops.quantized.add
+  [10] ops.quantized.mul
+  [11] ops.quantized.mul
+  [12] ops.quantized.add
+  [13] ops.quantized.mul
+  [14] ops.quantized.add
+
+Known failing op from prior run (eval_m1.py traceback): ops.quantized.add (assigned to add_9, using features_8_scale_0 / features_8_zero_point_0, operating on features_8_block_3_0 and features_7_block_3_0).
+
+Attempting read-only attribute lookups for the failing add op scale/zero-point:
+  model.features_8_scale_0 = 0.027917159721255302
+  model.features_8_zero_point_0 = 66
+
+Lines in model.code defining features_8_block_3_0 / features_7_block_3_0 (the two inputs to the failing add):
+  features_7_block_3_0 = (_080).forward(mul_13, )
+  features_8_block_0_0 = (_082).forward(features_7_block_3_0, )
+  features_8_block_3_0 = (_092).forward(mul_14, )
+  add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+
+Attempting read-only attribute lookup for any scale/zero_point buffers referenced on those lines:
+  model.features_0_0_input_scale_0 = 0.03231420740485191
+  model.features_0_0_input_zero_point_0 = 62
+  model.features_10_block_2_scale_0 = 2.3521069181242638e-07
+  model.features_10_block_2_zero_point_0 = 72
+  model.features_10_scale_0 = 0.013691977597773075
+  model.features_10_zero_point_0 = 66
+  model.features_11_block_2_scale_0 = 2.5791538860175933e-07
+  model.features_11_block_2_zero_point_0 = 55
+  model.features_11_scale_0 = 0.013692009262740612
+  model.features_11_zero_point_0 = 66
+  model.features_1_block_1_scale_0 = 0.0135554950684309
+  model.features_1_block_1_zero_point_0 = 0
+  model.features_3_scale_0 = 0.04622165113687515
+  model.features_3_zero_point_0 = 65
+  model.features_4_block_2_scale_0 = 0.012827570550143719
+  model.features_4_block_2_zero_point_0 = 16
+  model.features_5_block_2_scale_0 = 0.005715831648558378
+  model.features_5_block_2_zero_point_0 = 33
+  model.features_5_scale_0 = 0.03220261633396149
+  model.features_5_zero_point_0 = 62
+  model.features_6_block_2_scale_0 = 0.005676616914570332
+  model.features_6_block_2_zero_point_0 = 33
+  model.features_6_scale_0 = 0.034224383533000946
+  model.features_6_zero_point_0 = 68
+  model.features_7_block_2_scale_0 = 0.024620214477181435
+  model.features_7_block_2_zero_point_0 = 8
+  model.features_8_block_2_scale_0 = 1.61261402809032e-06
+  model.features_8_block_2_zero_point_0 = 92
+  model.features_8_scale_0 = 0.027917159721255302
+  model.features_8_zero_point_0 = 66
+  model.features_9_block_2_scale_0 = 0.004266367759555578
+  model.features_9_block_2_zero_point_0 = 44
+
+Error message ratio reported earlier: 2.169492e-05 A-to-output scale ratio
+QNNPACK allowed range for this ratio: [2**-14, 2**8) = [6.103516e-05, 2.560000e+02)
+2.169492e-05 < 6.103516e-05  ->  True  (ratio is below the allowed minimum)
+
+======================================================================
+STEP 4: FORWARD TESTS, 3 FRESH PROCESSES EACH FOR MODES a/b/c
+======================================================================
+Error in QNNPACK: failed to create add operator with 2.169492e-05 A-to-output scale ratio: scale ratio must be in [2**-14, 2**8) range
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/diag_forward.py", line 49, in <module>
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+--- mode=a attempt=1 (fresh process, pid=69975) ---
+engine: qnnpack
+num_threads: 4
+input: torch.randn(1,3,32,32)
+RESULT: FAILED
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+Full traceback:
+--- end mode=a attempt=1 ---
+
+Error in QNNPACK: failed to create add operator with 2.169492e-05 A-to-output scale ratio: scale ratio must be in [2**-14, 2**8) range
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/diag_forward.py", line 49, in <module>
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+--- mode=a attempt=2 (fresh process, pid=69980) ---
+engine: qnnpack
+num_threads: 4
+input: torch.randn(1,3,32,32)
+RESULT: FAILED
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+Full traceback:
+--- end mode=a attempt=2 ---
+
+Error in QNNPACK: failed to create add operator with 2.169492e-05 A-to-output scale ratio: scale ratio must be in [2**-14, 2**8) range
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/diag_forward.py", line 49, in <module>
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+--- mode=a attempt=3 (fresh process, pid=69985) ---
+engine: qnnpack
+num_threads: 4
+input: torch.randn(1,3,32,32)
+RESULT: FAILED
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+Full traceback:
+--- end mode=a attempt=3 ---
+
+Error in QNNPACK: failed to create add operator with 2.169492e-05 A-to-output scale ratio: scale ratio must be in [2**-14, 2**8) range
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/diag_forward.py", line 49, in <module>
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+--- mode=b attempt=1 (fresh process, pid=69990) ---
+engine: qnnpack
+num_threads: 4
+input: first real CIFAR-10 test image (label=3), normalised per scripts/eval_artifacts.py (MEAN=[0.49140000343322754, 0.4821999967098236, 0.4465000033378601], STD=[0.24699999392032623, 0.24300000071525574, 0.26100000739097595])
+RESULT: FAILED
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+Full traceback:
+--- end mode=b attempt=1 ---
+
+Error in QNNPACK: failed to create add operator with 2.169492e-05 A-to-output scale ratio: scale ratio must be in [2**-14, 2**8) range
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/diag_forward.py", line 49, in <module>
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+--- mode=b attempt=2 (fresh process, pid=69995) ---
+engine: qnnpack
+num_threads: 4
+input: first real CIFAR-10 test image (label=3), normalised per scripts/eval_artifacts.py (MEAN=[0.49140000343322754, 0.4821999967098236, 0.4465000033378601], STD=[0.24699999392032623, 0.24300000071525574, 0.26100000739097595])
+RESULT: FAILED
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+Full traceback:
+--- end mode=b attempt=2 ---
+
+Error in QNNPACK: failed to create add operator with 2.169492e-05 A-to-output scale ratio: scale ratio must be in [2**-14, 2**8) range
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/diag_forward.py", line 49, in <module>
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+--- mode=b attempt=3 (fresh process, pid=70000) ---
+engine: qnnpack
+num_threads: 4
+input: first real CIFAR-10 test image (label=3), normalised per scripts/eval_artifacts.py (MEAN=[0.49140000343322754, 0.4821999967098236, 0.4465000033378601], STD=[0.24699999392032623, 0.24300000071525574, 0.26100000739097595])
+RESULT: FAILED
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+Full traceback:
+--- end mode=b attempt=3 ---
+
+Error in QNNPACK: failed to create add operator with 2.169492e-05 A-to-output scale ratio: scale ratio must be in [2**-14, 2**8) range
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/diag_forward.py", line 49, in <module>
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+--- mode=c attempt=1 (fresh process, pid=70005) ---
+engine: qnnpack
+num_threads: 1
+input: torch.randn(1,3,32,32)
+RESULT: FAILED
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+Full traceback:
+--- end mode=c attempt=1 ---
+
+Error in QNNPACK: failed to create add operator with 2.169492e-05 A-to-output scale ratio: scale ratio must be in [2**-14, 2**8) range
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/diag_forward.py", line 49, in <module>
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+--- mode=c attempt=2 (fresh process, pid=70010) ---
+engine: qnnpack
+num_threads: 1
+input: torch.randn(1,3,32,32)
+RESULT: FAILED
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+Full traceback:
+--- end mode=c attempt=2 ---
+
+Error in QNNPACK: failed to create add operator with 2.169492e-05 A-to-output scale ratio: scale ratio must be in [2**-14, 2**8) range
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/diag_forward.py", line 49, in <module>
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+--- mode=c attempt=3 (fresh process, pid=70015) ---
+engine: qnnpack
+num_threads: 1
+input: torch.randn(1,3,32,32)
+RESULT: FAILED
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+Full traceback:
+--- end mode=c attempt=3 ---
+

@@ -1,0 +1,53 @@
+Exception type: RuntimeError
+Exception message: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
+
+Full traceback:
+Traceback (most recent call last):
+  File "/Users/shohan/green-ai-m1/m1_scripts/eval_m1.py", line 144, in main
+    out = model(x)
+          ^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shohan/green-ai-m1/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript, serialized code (most recent call last):
+  File "code/__torch__/torch/fx/graph_module.py", line 450, in forward
+    _93 = annotate(float, features_8_scale_0)
+    _94 = annotate(int, features_8_zero_point_0)
+    add_9 = ops.quantized.add(features_8_block_3_0, features_7_block_3_0, _93, _94)
+            ~~~~~~~~~~~~~~~~~ <--- HERE
+    features58 = self.features
+    _92 = getattr(features58, "9")
+
+Traceback of TorchScript, original code (most recent call last):
+  File "<eval_with_key>.5", line 96, in forward
+    features_8_scale_0 = self.features_8_scale_0
+    features_8_zero_point_0 = self.features_8_zero_point_0
+    add_9 = torch.ops.quantized.add(features_8_block_3_0, features_7_block_3_0, features_8_scale_0, features_8_zero_point_0);  features_8_block_3_0 = features_7_block_3_0 = features_8_scale_0 = features_8_zero_point_0 = None
+            ~~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+    features_9_block_0_0 = getattr(getattr(getattr(self.features, "9").block, "0"), "0")(add_9);  add_9 = None
+    features_9_block_0_2 = getattr(getattr(getattr(self.features, "9").block, "0"), "2")(features_9_block_0_0);  features_9_block_0_0 = None
+RuntimeError: createStatus == pytorch_qnnp_status_success INTERNAL ASSERT FAILED at "/Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/native/quantized/cpu/BinaryOps.cpp":206, please report a bug to PyTorch. failed to create QNNPACK Add operator
+
