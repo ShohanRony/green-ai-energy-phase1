@@ -182,6 +182,10 @@ def verify_live_arrivals_coverage(
         w_start = w.start_t
         w_end = w.end_t
         for a in arrivals:
+            # Note: arrival_perf (poller child) and start_t/end_t (parent) use
+            # perf_counter from different processes. On macOS (mach_absolute_time),
+            # the epoch is shared; validated in calibration/m1_edge_20261103
+            # (cross-process offset: 0.477 µs). Not portable to Linux.
             arr_t = float(a['arrival_perf'])
             dur_s = float(a['elapsed_ms']) / 1000.0
             sample_start = arr_t - dur_s
@@ -333,7 +337,7 @@ def measure_condition(
                 time.sleep(0.5)
 
             # 2. Sizing formula
-            expected_duration_s = repeats * 4 * (settle_s + window_s) + 5.0
+            expected_duration_s = repeats * 4 * (settle_s + window_s)
             count = compute_powermetrics_count(expected_duration_s)
             tag = f"gai_{arch}_{condition}_{int(time.time())}"
 
