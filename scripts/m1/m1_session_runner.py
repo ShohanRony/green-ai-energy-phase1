@@ -144,8 +144,8 @@ def run_m1_session(
     architectures: List[str],
     out_base: Union[str, Path],
     checkpoints_dir: Union[str, Path],
-    condition_runner: Callable[..., Any],
-    get_boottime_fn: Callable[[], float],
+    condition_runner: Optional[Callable[..., Any]] = None,
+    get_boottime_fn: Optional[Callable[[], float]] = None,
     check_ac_fn: Callable[[], bool] = check_ac_power_m1,
     check_therm_fn: Callable[[], bool] = check_thermal_nominal_m1,
     get_vm_fn: Optional[Callable[[], Dict[str, Any]]] = None,
@@ -161,6 +161,26 @@ def run_m1_session(
     """
     out_base = Path(out_base)
     out_base.mkdir(parents=True, exist_ok=True)
+
+    if condition_runner is None:
+        from m1_condition_runner import measure_condition
+        condition_runner = measure_condition
+
+    if get_boottime_fn is None:
+        def _default_get_boottime() -> float:
+            out = subprocess.check_output(['sysctl', '-n', 'kern.boottime'], text=True)
+            return parse_boottime(out)
+        get_boottime_fn = _default_get_boottime
+
+    if get_vm_fn is None:
+        def _default_get_vm() -> Dict[str, Any]:
+            try:
+                out = subprocess.check_output(['vm_stat'], text=True)
+                return parse_vm_stat(out)
+            except Exception:
+                return {}
+        get_vm_fn = _default_get_vm
+
 
     # 1. Pre-session Guards. A3: any GuardError here writes session_abort.json
     # before re-raising, so the abort reason is on disk, not just in the
@@ -288,3 +308,44 @@ def run_m1_session(
     (out_base / 'void_log.json').write_text(json.dumps(void_log, indent=2))
 
     return log
+
+
+def main():
+    parser = argparse.ArgumentParser(description="M1-CPU session runner")
+    parser.add_argument('--session', type=int, default=1, help="Session number (1-6)")
+    parser.add_argument('--out-base', type=Path, required=True, help="Base directory for session outputs")
+    parser.add_argument('--checkpoints-dir', type=Path, required=True, help="Directory containing model checkpoints")
+    parser.add_argument('--data-dir', type=Path, default=None, help="CIFAR-10 data directory")
+    parser.add_argument('--architectures', nargs='+', default=['resnet18', 'mobilenet_v3_small', 'efficientnet_b0'],
+                        help="List of architectures to run")
+    parser.add_argument('--single-condition', nargs=2, metavar=('ARCH', 'COND'), default=None,
+                        help="Run only one single condition (for protocol checks)")
+    parser.add_argument('--include-collapsed-bnrecal', action='store_true',
+                        help="Include collapsed BN-recalibration conditions")
+    args = parser.parse_args()
+
+    if args.single_condition:
+        arch, cond = args.single_condition
+        from m1_condition_runner import measure_condition
+        cond_out = args.out_base / f"{arch}_{cond}"
+        res = measure_condition(
+            arch=arch,
+            condition=cond,
+            out_dir=cond_out,
+            checkpoints_dir=args.checkpoints_dir,
+            data_dir=args.data_dir,
+        )
+        print(json.dumps(res, indent=2))
+    else:
+        log = run_m1_session(
+            session_n=args.session,
+            architectures=args.architectures,
+            out_base=args.out_base,
+            checkpoints_dir=args.checkpoints_dir,
+            include_collapsed_bnrecal=args.include_collapsed_bnrecal,
+        )
+        print(f"Session {args.session} completed with {len(log['conditions'])} conditions.")
+
+
+if __name__ == '__main__':
+    main()

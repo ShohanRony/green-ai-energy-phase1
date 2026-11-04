@@ -160,13 +160,38 @@ def write_windows_csv(rows: List[Dict[str, Any]], out_path: Union[str, Path]) ->
         return
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = list(rows[0].keys())
-    if 'thermal_flag' not in fieldnames:
+    # Collect all fieldnames from all rows preserving encounter order
+    seen = set()
+    fieldnames = []
+    for r in rows:
+        for k in r.keys():
+            if k not in seen:
+                seen.add(k)
+                fieldnames.append(k)
+    if 'thermal_flag' not in seen:
         fieldnames.append('thermal_flag')
     with open(out_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def write_summary_csv(summary_dict: Dict[str, Any], out_path: Union[str, Path]) -> None:
+    """Write condition summary row to summary.csv matching x86 format."""
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Filter out nested dicts/lists from summary_dict for the flat CSV row
+    flat_row = {
+        k: v for k, v in summary_dict.items()
+        if not isinstance(v, (dict, list, tuple))
+    }
+    fieldnames = list(flat_row.keys())
+    with open(out_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerow(flat_row)
+
 
 
 def process_condition_energy(
@@ -196,9 +221,12 @@ def process_condition_energy(
     # 1. Prepare sample timing with time_shift_s
     prepared_samples = []
     for s in parsed_samples:
-        if 'arrival_t' in s and 'elapsed_ms' in s:
+        arr_val = s.get('arrival_t')
+        if arr_val is None:
+            arr_val = s.get('arrival_perf')
+        if arr_val is not None and 'elapsed_ms' in s:
             dur = float(s['elapsed_ms']) / 1000.0
-            end_t = float(s['arrival_t']) + time_shift_s
+            end_t = float(arr_val) + time_shift_s
             start_t = end_t - dur
         elif 'start' in s and 'end' in s:
             start_t = float(s['start']) + time_shift_s
