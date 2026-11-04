@@ -44,13 +44,18 @@ T6=1092.15 mW -- both flagged `Idle>3xMedian=True`) roughly an order of
 magnitude above the other four trials (19-304 mW), and correspondingly
 anomalous rise-offset fits for those two trials (`r` = -76.74 ms and -43.16 ms,
 sign-flipped relative to every other trial's +83 to +95 ms, with LOPO spreads
-of 184-198 ms vs <5 ms for the clean trials). This pattern -- elevated idle
-power plus a sign-flipped, high-spread offset fit, isolated to two trials out
-of six run back-to-back -- is consistent with transient background-process or
-thermal contamination during those two trials' idle windows, not a genuine
-shift in the edge timing being measured. That run's console output and report
-were not kept as part of this archive; the numbers above are quoted from the
-run's own report, which was inspected before being discarded.
+of 184-198 ms vs <5 ms for the clean trials). The cause was identified: a
+second agent overwrote `edge_test.py` mid-run, so Trials 5 and 6 executed
+different code than Trials 1-4, while a second `powermetrics` process ran
+concurrently with the one `edge_test.py` itself had started -- the two
+processes' samples contaminated each other's output file for those two
+trials. That run's console output and report were not kept as part of this
+archive; the numbers above are quoted from the run's own report, which was
+inspected before being discarded.
+
+Separately, AGY's own earlier edge-timing runs (a single-poller variant, and
+a dual-poller run under AGY's own harness) were also discarded and are not
+archived here.
 
 The **second** run (archived here) shows all 6 trials with `Idle>3xMedian =
 False`, idle power 19-114 mW, consistent rise offsets (+80.65 to +90.91 ms
