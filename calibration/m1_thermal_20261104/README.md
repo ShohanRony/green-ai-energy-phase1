@@ -17,12 +17,24 @@ and let anyone reproduce the derivation of `T_mhz` in
 - `test1_resnet18_int8/`, `test1_resnet18_fp32_ts/` — order-reversed repeat
   of the same 15-minute-per-condition protocol: INT8 first, FP32-TS second,
   with a >=10-minute idle cool-down enforced before starting and between
-  legs.
+  legs. **No `arrivals.csv` or `run_meta.json` for these two runs** -- see
+  note below.
 - `test2_dutycycle/` — 45-minute session-like duty-cycle check: 14
   alternating blocks (7 INT8, 7 FP32-TS), each block 6 repeats x (idle 3s
   settle + 5s idle, active 3s warm-up + 5s window, active 3s + 5s, idle 3s +
   5s) — 168 active 5s windows total (`active_windows.json`,
-  `active_windows_raw.jsonl`, raw file).
+  `active_windows_raw.jsonl`, raw file). **No `arrivals.csv` or
+  `run_meta.json`** -- see note below.
+
+**Note on missing `arrivals.csv`/`run_meta.json` for Test 1 and Test 2:**
+these were **never produced**, not omitted during archiving. Checked by
+grepping `scripts/m1/thermal_tests_extended.py` (the script that ran Test 1
+and Test 2) for any code writing `arrivals.csv` or `run_meta.json` --
+neither exists in that file. Checked both this laptop and the Mac's
+`~/thermal_extended_results/` for either filename under any Test 1/Test 2
+directory -- neither exists anywhere. Only `scripts/m1/thermal_calibration.py`
+(used for Test 0) writes these two files. Nothing has been added here to
+fill this gap, since there is nothing real to add.
 - `idle_check_pre_test1/` — the >=10-minute idle confirmation run before
   Test 1 started. This was a continuous passive monitor, not inference, and
   was never divided into windows -- `samples.csv` is per-sample (1537 rows,

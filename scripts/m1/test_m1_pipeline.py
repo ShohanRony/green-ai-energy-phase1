@@ -212,6 +212,45 @@ class TestM1Pipeline(unittest.TestCase):
         # active window with repeat > 0 missing frequency -> empty string (triggers error on condition check)
         self.assertEqual(evaluate_window_thermal_flag(None, 'a1', 1, T), '')
 
+    def test_non_nominal_pressure_flags_even_when_frequency_is_fine(self):
+        """A qualifying window must be flagged if any overlapping sample has
+        thermal pressure other than 'Nominal', independent of frequency."""
+        T = 2881.11
+        # Frequency well above T, but one overlapping sample is non-Nominal -> flagged True
+        self.assertEqual(
+            evaluate_window_thermal_flag(3204.0, 'a1', 1, T, thermal_pressures=['Nominal', 'Fair', 'Nominal']),
+            'True',
+        )
+        # All overlapping samples Nominal, frequency above T -> False
+        self.assertEqual(
+            evaluate_window_thermal_flag(3204.0, 'a1', 1, T, thermal_pressures=['Nominal', 'Nominal']),
+            'False',
+        )
+        # No pressure data passed at all (None, the default) -> unaffected, same as before this change
+        self.assertEqual(
+            evaluate_window_thermal_flag(3204.0, 'a1', 1, T, thermal_pressures=None),
+            'False',
+        )
+        # Empty pressure list (no overlapping samples had pressure data) -> unaffected
+        self.assertEqual(
+            evaluate_window_thermal_flag(3204.0, 'a1', 1, T, thermal_pressures=[]),
+            'False',
+        )
+        # Non-Nominal pressure present AND frequency already below T -> still True (not double-counted, just True)
+        self.assertEqual(
+            evaluate_window_thermal_flag(2700.0, 'a1', 1, T, thermal_pressures=['Serious']),
+            'True',
+        )
+        # Non-Nominal pressure on a cold repeat (repeat == 0) -> still None, not evaluated at all
+        self.assertIsNone(
+            evaluate_window_thermal_flag(3204.0, 'a1', 0, T, thermal_pressures=['Fair'])
+        )
+        # Missing frequency takes precedence over pressure -> still '' (missing evaluation)
+        self.assertEqual(
+            evaluate_window_thermal_flag(None, 'a1', 1, T, thermal_pressures=['Fair']),
+            '',
+        )
+
     def test_real_throttled_int8_plateau_window_is_flagged(self):
         """A real throttled INT8 plateau window from calibration data must be flagged."""
         int8_file = Path('/home/shohan/thermal_extended_results/test1_int8/windows.json')

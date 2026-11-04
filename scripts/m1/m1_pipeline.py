@@ -80,17 +80,31 @@ def evaluate_window_thermal_flag(
     phase: str,
     repeat: int,
     threshold_t_mhz: float,
+    thermal_pressures: Optional[List[str]] = None,
 ) -> Optional[str]:
     """Evaluate thermal flag for a single window.
-    
+
     Per frozen design: only a1/a2 phases with repeat > 0 are evaluated for throttling.
-    Returns 'True' if throttled (mean freq < T), 'False' if nominal (mean freq >= T),
-    or '' if active window with repeat > 0 is missing frequency data (triggers evaluation error).
+    Returns 'True' if throttled (mean freq < T) OR if any sample overlapping the
+    window reports a thermal pressure other than "Nominal" (independent of
+    frequency -- a non-Nominal pressure reading is itself cause for exclusion,
+    not just a frequency drop; added because the calibration evidence showed
+    pressure staying "Nominal" through a real frequency decline, i.e. pressure
+    alone under-detects, but a non-Nominal reading should still never be
+    waved through just because frequency happened to stay above T).
+    Returns 'False' if nominal (mean freq >= T and all overlapping samples,
+    if any pressure data was passed, are "Nominal").
+    Returns '' if active window with repeat > 0 is missing frequency data
+    (triggers evaluation error) -- checked before the pressure check, since a
+    missing primary metric is still a missing evaluation regardless of
+    pressure.
     Returns None for idle phases or cold repeat 0.
     """
     if phase in {"a1", "a2"} and repeat > 0:
         if pcore_freq_mhz is None or math.isnan(pcore_freq_mhz):
             return ""  # Missing evaluation -> triggers error when checked
+        if thermal_pressures and any(p != "Nominal" for p in thermal_pressures):
+            return "True"
         return "True" if pcore_freq_mhz < threshold_t_mhz else "False"
     return None
 
@@ -203,12 +217,14 @@ def process_condition_energy(
             freq_val = s.get('p_cluster_active_freq_mhz')
         if freq_val is not None:
             freq_val = float(freq_val)
+        pressure_val = s.get('thermal_pressure')
 
         prepared_samples.append({
             'start': start_t,
             'end': end_t,
             'power': power_val,
             'freq': freq_val,
+            'thermal_pressure': pressure_val,
         })
 
     # 2. Build window specs for overlap splitter
@@ -248,6 +264,12 @@ def process_condition_energy(
             if overlapping_freqs else None
         )
 
+        # Thermal pressure of every sample overlapping the window
+        overlapping_pressures = [
+            ps['thermal_pressure'] for ps in prepared_samples
+            if ps.get('thermal_pressure') is not None and ps['end'] > w.start_t and ps['start'] < w.end_t
+        ]
+
         row = {
             'device': w.device,
             'arch': w.arch,
@@ -271,7 +293,7 @@ def process_condition_energy(
         if t_thresh is not None:
             t_mhz = t_thresh.get('T_mhz', 2881.11)
             row['thermal_flag'] = evaluate_window_thermal_flag(
-                pcore_mean_freq, w.phase, w.repeat, t_mhz
+                pcore_mean_freq, w.phase, w.repeat, t_mhz, overlapping_pressures
             )
 
         rows.append(row)
