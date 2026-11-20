@@ -14,6 +14,7 @@ import csv
 import json
 import math
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -354,6 +355,118 @@ class TestM1ConditionRunnerRules(unittest.TestCase):
             first_cond_dir = out_base / log['conditions'][0]
             self.assertTrue((first_cond_dir / 'windows.csv').exists())
             self.assertTrue((first_cond_dir / 'summary.csv').exists())
+
+
+class TestM1V3EagerAndInput(unittest.TestCase):
+    """v3 fix: repo root on sys.path (train_baseline importable), fp32_eager mirrors x86
+    pilot.py's seeded random weights, and no silent synthetic-input fallback."""
+
+    SCRIPTS_M1_DIR = Path(__file__).resolve().parent
+    REAL_DATA_DIR = Path(__file__).resolve().parent.parent.parent / 'data'
+
+    def test_eager_import_works_from_subprocess_outside_repo_no_pythonpath(self):
+        """Reproduces the real CLI invocation shape: a fresh subprocess, cwd outside the
+        repo, no PYTHONPATH -- import m1_condition_runner the way `python3
+        scripts/m1/m1_condition_runner.py` would (sys.path[0] = scripts/m1 dir), then the
+        eager path's `from train_baseline import build_model` must succeed because
+        m1_condition_runner's own import-time sys.path.insert(repo root) ran.
+        Fails on 2e645f8 (ModuleNotFoundError: train_baseline) -- passes with the fix."""
+        with tempfile.TemporaryDirectory() as outside_repo_cwd:
+            env = dict(os.environ)
+            env.pop('PYTHONPATH', None)
+            code = (
+                f"import sys; sys.path.insert(0, {str(self.SCRIPTS_M1_DIR)!r}); "
+                "import m1_condition_runner; "
+                "from train_baseline import build_model; "
+                "print('IMPORT_OK')"
+            )
+            proc = subprocess.run(
+                [sys.executable, '-c', code],
+                cwd=outside_repo_cwd,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 0, msg=f"stdout={proc.stdout!r} stderr={proc.stderr!r}")
+            self.assertIn('IMPORT_OK', proc.stdout)
+
+    def _run_eager(self, out_dir):
+        fake_samples = [
+            {
+                'sample_k': i,
+                'arrival_perf': 1.0 + i * 0.4,
+                'elapsed_ms': 400.0,
+                'is_live': True,
+                'cpu_power_mw': 5000,
+                'pcore_mean_freq_mhz': 3200.0,
+                'thermal_pressure': 'Nominal',
+            }
+            for i in range(1, 20)
+        ]
+        return measure_condition(
+            arch='resnet18',
+            condition='fp32_eager',
+            out_dir=out_dir,
+            checkpoints_dir=Path(tempfile.mkdtemp()),
+            data_dir=self.REAL_DATA_DIR,
+            repeats=1,
+            settle_s=0.05,
+            window_s=0.1,
+            skip_preflight=True,
+            mock_powermetrics=True,
+            check_ac_fn=lambda: True,
+            check_therm_fn=lambda: True,
+            injected_samples=fake_samples,
+        )
+
+    def test_eager_builds_are_deterministic_same_seed(self):
+        """Two separate eager builds must produce identical weights (seed 2026, same as
+        x86 pilot.py) -- checked via the weights_sha256 this fix now logs."""
+        if not self.REAL_DATA_DIR.exists():
+            self.skipTest("real CIFAR-10 data/ not present in this checkout")
+        with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
+            self._run_eager(Path(d1))
+            self._run_eager(Path(d2))
+            env1 = json.loads((Path(d1) / 'environment.json').read_text())
+            env2 = json.loads((Path(d2) / 'environment.json').read_text())
+            self.assertIsNotNone(env1['weights_sha256'])
+            self.assertEqual(env1['weights_sha256'], env2['weights_sha256'])
+            self.assertIn('seeded random weights', env1['weights'])
+
+    def test_missing_input_raises_no_fallback(self):
+        """A data_dir that cannot be loaded must raise, never silently fall back to a
+        synthetic tensor. Fails on 2e645f8 (silently succeeds with random noise input) --
+        passes with the fix (RuntimeError)."""
+        with tempfile.TemporaryDirectory() as out_dir, tempfile.TemporaryDirectory() as empty_data_dir:
+            fake_samples = [
+                {
+                    'sample_k': i,
+                    'arrival_perf': 1.0 + i * 0.4,
+                    'elapsed_ms': 400.0,
+                    'is_live': True,
+                    'cpu_power_mw': 5000,
+                    'pcore_mean_freq_mhz': 3200.0,
+                    'thermal_pressure': 'Nominal',
+                }
+                for i in range(1, 20)
+            ]
+            with self.assertRaises(RuntimeError) as ctx:
+                measure_condition(
+                    arch='resnet18',
+                    condition='fp32_eager',
+                    out_dir=Path(out_dir),
+                    checkpoints_dir=Path(tempfile.mkdtemp()),
+                    data_dir=Path(empty_data_dir),  # exists but has no CIFAR-10 batches
+                    repeats=1,
+                    settle_s=0.05,
+                    window_s=0.1,
+                    skip_preflight=True,
+                    mock_powermetrics=True,
+                    check_ac_fn=lambda: True,
+                    check_therm_fn=lambda: True,
+                    injected_samples=fake_samples,
+                )
+            self.assertIn('No synthetic fallback', str(ctx.exception))
 
 
 if __name__ == '__main__':

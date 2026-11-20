@@ -21,6 +21,7 @@ import json
 import math
 import os
 import platform
+import random
 import shutil
 import signal
 import subprocess
@@ -30,6 +31,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from guards import (
     GuardError,
@@ -269,6 +271,9 @@ def measure_condition(
         quantized_engine = None
         work_fn = None
         cifar_x = None
+        weights_desc = None
+        weights_sha256 = None
+        input_source = None
 
         if not mock_forward:
             import torch
@@ -290,23 +295,60 @@ def measure_condition(
                     from train_baseline import build_model
                     model = build_model(arch)
                     model.load_state_dict(torch.load(str(ckpt_path), map_location='cpu', weights_only=True))
+                weights_desc = 'checkpoint'
             else:
+                # fp32_eager mirrors x86 pilot.py exactly: seeded random weights, built the
+                # same way, for the timing-only eager-vs-TorchScript comparison (A7/D2) --
+                # not a trained baseline. Seed set immediately before build_model, same as
+                # pilot.py's torch.manual_seed(2026); random.seed(2026) ordering.
+                torch.manual_seed(2026)
+                random.seed(2026)
                 from train_baseline import build_model
                 model = build_model(arch)
+                weights_desc = 'seeded random weights (seed 2026), timing only, as x86 pilot.py'
             model.eval()
+            if weights_desc != 'checkpoint':
+                sd_bytes = b''.join(v.cpu().numpy().tobytes() for v in model.state_dict().values())
+                weights_sha256 = hashlib.sha256(sd_bytes).hexdigest()
 
-            # Data prep: CIFAR-10 single image (32x32, normalized)
-            if data_dir is None:
-                data_dir = checkpoints_dir.parent / 'data'
-            if not Path(data_dir).exists():
-                data_dir = Path('/tmp/cifar10')
-            try:
-                ds = torchvision.datasets.CIFAR10(str(data_dir), train=False, download=False, transform=transforms.ToTensor())
-                raw = ds[0][0].unsqueeze(0)
-            except Exception:
-                # Seeded synthetic tensor matching CIFAR-10 resolution if dataset absent in testing
-                torch.manual_seed(2026)
-                raw = torch.randn(1, 3, 32, 32)
+            # Data prep: CIFAR-10 single image (32x32, normalized) -- same source, split,
+            # index and normalisation as x86 pilot.py (ds[0][0], ToTensor(), same mean/std).
+            # A missing/unloadable dataset is a measurement error: no synthetic fallback.
+            candidate_dirs = []
+            if data_dir is not None:
+                candidate_dirs.append(Path(data_dir))
+            else:
+                resolved_ckpt_dir = Path(checkpoints_dir).resolve()
+                candidate_dirs.append(resolved_ckpt_dir.parent / 'data')
+                candidate_dirs.append(resolved_ckpt_dir.parent.parent / 'data')
+
+            ds = None
+            used_data_dir = None
+            load_errors = []
+            for cand in candidate_dirs:
+                if not cand.exists():
+                    load_errors.append(f"{cand}: does not exist")
+                    continue
+                try:
+                    ds = torchvision.datasets.CIFAR10(str(cand), train=False, download=False,
+                                                        transform=transforms.ToTensor())
+                    used_data_dir = cand
+                    break
+                except Exception as e:
+                    load_errors.append(f"{cand}: {e}")
+            if ds is None:
+                raise RuntimeError(
+                    f"Could not load real CIFAR-10 test data for condition {arch}_{condition}. "
+                    f"Tried: {'; '.join(load_errors)}. No synthetic fallback is used."
+                )
+            raw = ds[0][0].unsqueeze(0)
+            input_source = {
+                'dataset': 'CIFAR-10',
+                'path': str(used_data_dir),
+                'split': 'test',
+                'index': 0,
+                'transform': 'ToTensor',
+            }
 
             norm_mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(1, 3, 1, 1)
             norm_std = torch.tensor([0.247, 0.243, 0.261]).view(1, 3, 1, 1)
@@ -577,6 +619,9 @@ def measure_condition(
             'settle_s': settle_s,
             'window_s': window_s,
             'repeats': repeats,
+            'weights': weights_desc,
+            'weights_sha256': weights_sha256,
+            'input_source': input_source,
         }
         (out_dir / 'environment.json').write_text(json.dumps(env_record, indent=2))
 
