@@ -1,0 +1,29 @@
+23 conditions to check
+
+arch                 condition              engine     load   forward  error
+----------------------------------------------------------------------------
+resnet18             fp32_ts                none       OK     OK       
+resnet18             fp32_eager             none       OK     OK       
+resnet18             int8                   qnnpack    OK     OK       
+resnet18             pruned30               qnnpack    OK     OK       
+resnet18             pruned50               qnnpack    OK     OK       
+resnet18             pruned70               qnnpack    OK     OK       
+resnet18             pruned30_bnrecal       qnnpack    OK     OK       
+resnet18             pruned50_bnrecal       qnnpack    OK     OK       
+resnet18             pruned70_bnrecal       qnnpack    OK     OK       
+mobilenet_v3_small   fp32_ts                qnnpack    OK     OK       
+mobilenet_v3_small   fp32_eager             qnnpack    OK     OK       
+mobilenet_v3_small   pruned30               qnnpack    OK     OK       
+mobilenet_v3_small   pruned50               qnnpack    OK     OK       
+mobilenet_v3_small   pruned70               qnnpack    OK     OK       
+mobilenet_v3_small   pruned30_bnrecal       qnnpack    OK     OK       
+efficientnet_b0      fp32_ts                qnnpack    OK     OK       
+efficientnet_b0      fp32_eager             qnnpack    OK     OK       
+efficientnet_b0      int8                   qnnpack    OK     OK       
+efficientnet_b0      pruned30               qnnpack    OK     OK       
+efficientnet_b0      pruned50               qnnpack    OK     OK       
+efficientnet_b0      pruned70               qnnpack    OK     OK       
+efficientnet_b0      pruned30_bnrecal       qnnpack    OK     OK       
+efficientnet_b0      pruned50_bnrecal       qnnpack    OK     OK       
+
+23/23 conditions OK
