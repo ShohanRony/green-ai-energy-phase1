@@ -12,6 +12,7 @@ import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -22,6 +23,7 @@ from m1_session_runner import (
     M1_STRUCTURAL_EXCLUSIONS,
     checkpoint_for,
     conditions_for,
+    preflight_m1_checkpoints,
     run_m1_session,
     session_order,
 )
@@ -91,6 +93,29 @@ class TestM1SessionRunner(unittest.TestCase):
         self.assertEqual(checkpoint_for('efficientnet_b0', 'int8'), 'efficientnet_b0_int8.pt')
         self.assertEqual(checkpoint_for('resnet18', 'pruned50'), 'resnet18_pruned50.pt')
         self.assertEqual(checkpoint_for('resnet18', 'pruned50_bnrecal'), 'resnet18_pruned50_bnrecal.pt')
+
+    def test_preflight_sets_qnnpack_engine_before_loading_int8_checkpoint(self):
+        """INT8 checkpoints are quantized TorchScript; torch.jit.load fails with
+        'NoQEngine' unless torch.backends.quantized.engine is set first (as
+        m1_condition_runner.py and thermal_calibration.py already do for
+        inference -- preflight validation must do the same before load)."""
+        import torch
+        with TemporaryDirectory() as tmp:
+            ckpt_dir = Path(tmp)
+            for cond in conditions_for('resnet18'):
+                ckpt_name = checkpoint_for('resnet18', cond)
+                if ckpt_name is not None:
+                    (ckpt_dir / ckpt_name).write_bytes(b'')
+            engine_at_load_time = []
+
+            def fake_load(path, map_location=None):
+                engine_at_load_time.append(str(torch.backends.quantized.engine))
+
+            with patch('torch.jit.load', side_effect=fake_load):
+                preflight_m1_checkpoints(['resnet18'], ckpt_dir)
+
+            self.assertTrue(engine_at_load_time)
+            self.assertTrue(all(e == 'qnnpack' for e in engine_at_load_time))
 
     def test_session_execution_with_rerun(self):
         with TemporaryDirectory() as tmpdir:

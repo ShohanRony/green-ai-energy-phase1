@@ -124,6 +124,7 @@ def preflight_m1_checkpoints(
 ) -> None:
     """Verify that all required checkpoints exist and can load with torch.jit.load."""
     import torch
+    torch.backends.quantized.engine = 'qnnpack'
     checkpoints_dir = Path(checkpoints_dir)
     for arch in architectures:
         for cond in conditions_for(arch, include_collapsed_bnrecal):
