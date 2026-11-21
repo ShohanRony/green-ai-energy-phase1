@@ -1,0 +1,23 @@
+{
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "python": "3.12.16 (main, Oct 26 2026, 13:59:40) [Clang 23.1.3 ]",
+  "arch": "resnet18",
+  "condition": "pruned30",
+  "quantized_engine": null,
+  "threads": 4,
+  "timestamp": 1795273001.747044,
+  "settle_s": 3.0,
+  "window_s": 5.0,
+  "repeats": 6,
+  "weights": "checkpoint",
+  "weights_sha256": null,
+  "input_source": {
+    "dataset": "CIFAR-10",
+    "path": "/Users/shohan/green-ai-m1/data",
+    "split": "test",
+    "index": 0,
+    "transform": "ToTensor"
+  }
+}

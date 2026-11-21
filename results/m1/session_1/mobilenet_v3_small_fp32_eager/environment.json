@@ -1,0 +1,23 @@
+{
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "python": "3.12.16 (main, Oct 26 2026, 13:59:40) [Clang 23.1.3 ]",
+  "arch": "mobilenet_v3_small",
+  "condition": "fp32_eager",
+  "quantized_engine": null,
+  "threads": 4,
+  "timestamp": 1795273591.831411,
+  "settle_s": 3.0,
+  "window_s": 5.0,
+  "repeats": 6,
+  "weights": "seeded random weights (seed 2026), timing only, as x86 pilot.py",
+  "weights_sha256": "7c98bd0bdd9966738559d73c2911b5e30e01d75bb1a9dda2e7442ed43a7ccc3d",
+  "input_source": {
+    "dataset": "CIFAR-10",
+    "path": "/Users/shohan/green-ai-m1/data",
+    "split": "test",
+    "index": 0,
+    "transform": "ToTensor"
+  }
+}

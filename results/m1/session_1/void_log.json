@@ -1,0 +1,12 @@
+{
+  "session": 1,
+  "voids": [
+    {
+      "condition": "efficientnet_b0_pruned50_bnrecal",
+      "is_rerun": false,
+      "crashed": true,
+      "thermal_flagged": false,
+      "error_text": "Traceback (most recent call last):\n  File \"/Users/shohan/green-ai-m1/repo/scripts/m1/m1_session_runner.py\", line 255, in process_condition\n    res = condition_runner(\n          ^^^^^^^^^^^^^^^^^\n  File \"/Users/shohan/green-ai-m1/repo/scripts/m1/m1_condition_runner.py\", line 582, in measure_condition\n    verify_live_arrivals_coverage(arrivals, phase_windows)\n  File \"/Users/shohan/green-ai-m1/repo/scripts/m1/m1_condition_runner.py\", line 199, in verify_live_arrivals_coverage\n    raise RuntimeError(\nRuntimeError: Condition voided: sample 475 overlapping window idle_after (repeat 5) lacks live arrival (captured post-mortem).\n"
+    }
+  ]
+}

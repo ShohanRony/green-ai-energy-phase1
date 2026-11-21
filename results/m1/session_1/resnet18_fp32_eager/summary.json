@@ -1,0 +1,29 @@
+{
+  "device": "cpu",
+  "arch": "resnet18",
+  "condition": "fp32_eager",
+  "size": 32,
+  "batch": 1,
+  "window_s": 5.0,
+  "pairs": 5,
+  "gross_j_per_image_mean": 0.037478605256790185,
+  "paired_difference_sd": 0.0002457602401419719,
+  "paired_order_bias": -0.0003274300215021994,
+  "approx_mde_j_per_image": 0.0003077404977495081,
+  "conservative_screen_fraction": 0.016947549539256947,
+  "candidate_for_confirmation": false,
+  "total_active_j_mean": 29.638068005552896,
+  "above_idle_j_mean": 29.01674976875615,
+  "above_idle_fraction_mean": 0.9790392681730644,
+  "idle_power_w_mean": 0.12418808360074624,
+  "images_per_s_mean": 158.06381797443376,
+  "overlap_diagnostics": {
+    "total_sample_energy_j": 580.9937591800037,
+    "total_accounted_energy_j": 580.9937591800037,
+    "outside_energy_j": 217.21060121248541,
+    "relative_discrepancy": 0.0
+  },
+  "thermal_flagged": false,
+  "thermal_threshold_t_mhz": 2881.11,
+  "condition_voided": false
+}
