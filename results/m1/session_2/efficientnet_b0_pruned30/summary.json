@@ -1,0 +1,29 @@
+{
+  "device": "cpu",
+  "arch": "efficientnet_b0",
+  "condition": "pruned30",
+  "size": 32,
+  "batch": 1,
+  "window_s": 5.0,
+  "pairs": 5,
+  "gross_j_per_image_mean": 0.4115465160969144,
+  "paired_difference_sd": 0.009517468008368758,
+  "paired_order_bias": 0.004327442256963509,
+  "approx_mde_j_per_image": 0.011917755046619564,
+  "conservative_screen_fraction": 0.03947353863580641,
+  "candidate_for_confirmation": false,
+  "total_active_j_mean": 26.37652116220201,
+  "above_idle_j_mean": 26.155102188495015,
+  "above_idle_fraction_mean": 0.9916061783421141,
+  "idle_power_w_mean": 0.04405388358201951,
+  "images_per_s_mean": 12.749615668071096,
+  "overlap_diagnostics": {
+    "total_sample_energy_j": 510.438468170002,
+    "total_accounted_energy_j": 510.438468170002,
+    "outside_energy_j": 191.43963935568917,
+    "relative_discrepancy": 0.0
+  },
+  "thermal_flagged": false,
+  "thermal_threshold_t_mhz": 2881.11,
+  "condition_voided": false
+}
